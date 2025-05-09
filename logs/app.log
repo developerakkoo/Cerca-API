@@ -1,0 +1,310 @@
+2025-05-03 20:31:29 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:31:52 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:31:58 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:33:39 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:34:18 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:34:19 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:34:42 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:39:22 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:39:23 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:39:46 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:39:47 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:40:16 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:40:18 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:40:40 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:40:41 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:40:47 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:41:42 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:41:43 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:42:58 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:43:32 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:45:10 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:46:08 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:47:06 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:47:08 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:49:07 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:49:12 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:50:06 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:56:23 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:57:20 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:58:09 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:59:27 [INFO]: Server is running on http://localhost:3000
+2025-05-03 20:59:51 [INFO]: Server is running on http://localhost:3000
+2025-05-03 23:23:27 [INFO]: Server is running on http://localhost:3000
+2025-05-03 23:23:42 [INFO]: Server is running on http://localhost:3000
+2025-05-03 23:23:44 [INFO]: Server is running on http://localhost:3000
+2025-05-03 23:33:51 [INFO]: Server is running on http://localhost:3000
+2025-05-03 23:35:02 [INFO]: Server is running on http://localhost:3000
+2025-05-03 23:35:06 [INFO]: Server is running on http://localhost:3000
+2025-05-03 23:37:29 [INFO]: Server is running on http://localhost:3000
+2025-05-03 23:37:49 [INFO]: Server is running on http://localhost:3000
+2025-05-03 23:39:33 [INFO]: Server is running on http://localhost:3000
+2025-05-03 23:39:37 [INFO]: Server is running on http://localhost:3000
+2025-05-03 23:40:33 [INFO]: Server is running on http://localhost:3000
+2025-05-03 23:40:44 [INFO]: Server is running on http://localhost:3000
+2025-05-03 23:41:33 [INFO]: Server is running on http://localhost:3000
+2025-05-03 23:41:35 [INFO]: Server is running on http://localhost:3000
+2025-05-03 23:42:19 [INFO]: Server is running on http://localhost:3000
+2025-05-03 23:42:22 [INFO]: Server is running on http://localhost:3000
+2025-05-03 23:43:12 [INFO]: Server is running on http://localhost:3000
+2025-05-03 23:44:35 [INFO]: Server is running on http://localhost:3000
+2025-05-03 23:49:51 [INFO]: Server is running on http://localhost:3000
+2025-05-03 23:49:53 [INFO]: Server is running on http://localhost:3000
+2025-05-08 16:59:27 [INFO]: Server is running on http://localhost:3000
+2025-05-08 17:31:00 [INFO]: Server is running on http://localhost:3000
+2025-05-08 17:31:01 [INFO]: Server is running on http://localhost:3000
+2025-05-08 17:32:00 [INFO]: Server is running on http://localhost:3000
+2025-05-08 17:32:08 [INFO]: Server is running on http://localhost:3000
+2025-05-08 17:34:41 [INFO]: Server is running on http://localhost:3000
+2025-05-08 17:34:45 [INFO]: Server is running on http://localhost:3000
+2025-05-08 17:34:48 [INFO]: Server is running on http://localhost:3000
+2025-05-08 17:35:03 [ERROR]: Error during driver login: Operation `drivers.findOne()` buffering timed out after 10000ms | Meta: {"stack":"MongooseError: Operation `drivers.findOne()` buffering timed out after 10000ms\n    at Timeout.<anonymous> (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/drivers/node-mongodb-native/collection.js:187:23)\n    at listOnTimeout (node:internal/timers:581:17)\n    at process.processTimers (node:internal/timers:519:7)"}
+2025-05-08 17:36:14 [ERROR]: Error during driver login: Operation `drivers.findOne()` buffering timed out after 10000ms | Meta: {"stack":"MongooseError: Operation `drivers.findOne()` buffering timed out after 10000ms\n    at Timeout.<anonymous> (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/drivers/node-mongodb-native/collection.js:187:23)\n    at listOnTimeout (node:internal/timers:581:17)\n    at process.processTimers (node:internal/timers:519:7)"}
+2025-05-08 17:37:23 [INFO]: Server is running on http://localhost:3000
+2025-05-08 17:44:24 [INFO]: Server is running on http://localhost:3000
+2025-05-08 17:44:25 [INFO]: MongoDB connected successfully
+2025-05-08 19:24:11 [INFO]: Server is running on http://localhost:3000
+2025-05-08 19:24:11 [INFO]: MongoDB connected successfully
+2025-05-08 19:24:15 [INFO]: Driver added successfully: test@gmail.com
+2025-05-08 19:25:57 [ERROR]: Error adding driver: E11000 duplicate key error collection: cerca.drivers index: phone_1 dup key: { phone: "8007477149" } | Meta: {"errorLabelSet":{},"errorResponse":{"index":0,"code":11000,"errmsg":"E11000 duplicate key error collection: cerca.drivers index: phone_1 dup key: { phone: \"8007477149\" }","keyPattern":{"phone":1},"keyValue":{"phone":"8007477149"}},"index":0,"code":11000,"keyPattern":{"phone":1},"keyValue":{"phone":"8007477149"},"stack":"MongoServerError: E11000 duplicate key error collection: cerca.drivers index: phone_1 dup key: { phone: \"8007477149\" }\n    at InsertOneOperation.execute (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async tryOperation (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/collection.js:157:16)"}
+2025-05-08 19:26:27 [INFO]: Server is running on http://localhost:3000
+2025-05-08 19:26:27 [INFO]: MongoDB connected successfully
+2025-05-08 19:26:32 [INFO]: Server is running on http://localhost:3000
+2025-05-08 19:26:33 [INFO]: MongoDB connected successfully
+2025-05-08 19:26:35 [INFO]: Server is running on http://localhost:3000
+2025-05-08 19:26:36 [INFO]: MongoDB connected successfully
+2025-05-08 19:26:39 [ERROR]: Error adding driver: E11000 duplicate key error collection: cerca.drivers index: phone_1 dup key: { phone: "8007477149" } | Meta: {"errorLabelSet":{},"errorResponse":{"index":0,"code":11000,"errmsg":"E11000 duplicate key error collection: cerca.drivers index: phone_1 dup key: { phone: \"8007477149\" }","keyPattern":{"phone":1},"keyValue":{"phone":"8007477149"}},"index":0,"code":11000,"keyPattern":{"phone":1},"keyValue":{"phone":"8007477149"},"stack":"MongoServerError: E11000 duplicate key error collection: cerca.drivers index: phone_1 dup key: { phone: \"8007477149\" }\n    at InsertOneOperation.execute (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async tryOperation (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/collection.js:157:16)"}
+2025-05-08 19:27:02 [INFO]: Server is running on http://localhost:3000
+2025-05-08 19:27:03 [INFO]: MongoDB connected successfully
+2025-05-08 19:27:13 [INFO]: Server is running on http://localhost:3000
+2025-05-08 19:27:13 [INFO]: MongoDB connected successfully
+2025-05-08 19:27:16 [ERROR]: Error adding driver: E11000 duplicate key error collection: cerca.drivers index: phone_1 dup key: { phone: "8007477149" } | Meta: {"errorLabelSet":{},"errorResponse":{"index":0,"code":11000,"errmsg":"E11000 duplicate key error collection: cerca.drivers index: phone_1 dup key: { phone: \"8007477149\" }","keyPattern":{"phone":1},"keyValue":{"phone":"8007477149"}},"index":0,"code":11000,"keyPattern":{"phone":1},"keyValue":{"phone":"8007477149"},"stack":"MongoServerError: E11000 duplicate key error collection: cerca.drivers index: phone_1 dup key: { phone: \"8007477149\" }\n    at InsertOneOperation.execute (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async tryOperation (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/collection.js:157:16)"}
+2025-05-08 19:28:18 [INFO]: Driver added successfully: akshay@gmail.com
+2025-05-08 19:29:00 [ERROR]: Error during driver login: secretOrPrivateKey must have a value | Meta: {"stack":"Error: secretOrPrivateKey must have a value\n    at module.exports [as sign] (/home/script/Projects/Backend/Cerca-API/node_modules/jsonwebtoken/sign.js:111:20)\n    at loginDriver (/home/script/Projects/Backend/Cerca-API/Controllers/User/Driver/driver.controller.js:66:27)"}
+2025-05-08 19:29:12 [ERROR]: Error during driver login: secretOrPrivateKey must have a value | Meta: {"stack":"Error: secretOrPrivateKey must have a value\n    at module.exports [as sign] (/home/script/Projects/Backend/Cerca-API/node_modules/jsonwebtoken/sign.js:111:20)\n    at loginDriver (/home/script/Projects/Backend/Cerca-API/Controllers/User/Driver/driver.controller.js:66:27)"}
+2025-05-08 19:31:22 [INFO]: Server is running on http://localhost:3000
+2025-05-08 19:31:23 [INFO]: MongoDB connected successfully
+2025-05-08 19:31:42 [INFO]: Server is running on http://localhost:3000
+2025-05-08 19:31:43 [INFO]: MongoDB connected successfully
+2025-05-08 19:31:53 [INFO]: Server is running on http://localhost:3000
+2025-05-08 19:31:53 [INFO]: MongoDB connected successfully
+2025-05-08 19:31:59 [INFO]: Driver logged in: test@gmail.com
+2025-05-08 19:35:15 [INFO]: Driver logged in: test@gmail.com
+2025-05-08 19:35:15 [INFO]: Driver logged in: test@gmail.com
+2025-05-08 19:40:04 [INFO]: Server is running on http://localhost:3000
+2025-05-08 19:40:04 [INFO]: MongoDB connected successfully
+2025-05-08 19:40:10 [INFO]: Server is running on http://localhost:3000
+2025-05-08 19:40:11 [INFO]: MongoDB connected successfully
+2025-05-08 19:40:44 [INFO]: Driver logged in: test@gmail.com
+2025-05-08 19:59:23 [INFO]: Server is running on http://localhost:3000
+2025-05-08 19:59:24 [INFO]: MongoDB connected successfully
+2025-05-08 19:59:54 [INFO]: Server is running on http://localhost:3000
+2025-05-08 19:59:55 [INFO]: MongoDB connected successfully
+2025-05-08 20:00:01 [INFO]: Server is running on http://localhost:3000
+2025-05-08 20:00:01 [INFO]: MongoDB connected successfully
+2025-05-08 20:00:14 [INFO]: Server is running on http://localhost:3000
+2025-05-08 20:00:14 [INFO]: MongoDB connected successfully
+2025-05-08 20:01:05 [INFO]: Server is running on http://localhost:3000
+2025-05-08 20:01:05 [INFO]: MongoDB connected successfully
+2025-05-08 20:01:46 [INFO]: Server is running on http://localhost:3000
+2025-05-08 20:01:46 [INFO]: MongoDB connected successfully
+2025-05-09 14:19:44 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:19:44 [INFO]: MongoDB connected successfully
+2025-05-09 14:23:23 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:23:24 [INFO]: MongoDB connected successfully
+2025-05-09 14:23:30 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:23:30 [INFO]: MongoDB connected successfully
+2025-05-09 14:31:11 [ERROR]: Error adding driver: Driver validation failed: location.coordinates: Path `location.coordinates` is required. | Meta: {"errors":{"location.coordinates":{"name":"ValidatorError","message":"Path `location.coordinates` is required.","properties":{"message":"Path `location.coordinates` is required.","type":"required","path":"location.coordinates"},"kind":"required","path":"location.coordinates"}},"_message":"Driver validation failed","stack":"ValidationError: Driver validation failed: location.coordinates: Path `location.coordinates` is required.\n    at Document.invalidate (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/document.js:3343:32)\n    at /home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/document.js:3104:17\n    at /home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/schemaType.js:1407:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)"}
+2025-05-09 14:31:27 [INFO]: Driver added successfully: akshay@test.com
+2025-05-09 14:33:17 [INFO]: Driver deleted successfully: akshay@test.com
+2025-05-09 14:34:22 [ERROR]: Error adding driver: Driver validation failed: location.coordinates: Path `location.coordinates` is required. | Meta: {"errors":{"location.coordinates":{"name":"ValidatorError","message":"Path `location.coordinates` is required.","properties":{"message":"Path `location.coordinates` is required.","type":"required","path":"location.coordinates"},"kind":"required","path":"location.coordinates"}},"_message":"Driver validation failed","stack":"ValidationError: Driver validation failed: location.coordinates: Path `location.coordinates` is required.\n    at Document.invalidate (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/document.js:3343:32)\n    at /home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/document.js:3104:17\n    at /home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/schemaType.js:1407:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)"}
+2025-05-09 14:36:01 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:36:01 [INFO]: MongoDB connected successfully
+2025-05-09 14:36:06 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:36:06 [INFO]: MongoDB connected successfully
+2025-05-09 14:36:36 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:36:36 [INFO]: MongoDB connected successfully
+2025-05-09 14:36:56 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:36:57 [INFO]: MongoDB connected successfully
+2025-05-09 14:37:02 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:37:03 [INFO]: MongoDB connected successfully
+2025-05-09 14:37:18 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:37:19 [INFO]: MongoDB connected successfully
+2025-05-09 14:37:24 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:37:24 [INFO]: MongoDB connected successfully
+2025-05-09 14:38:42 [ERROR]: Error adding driver: Driver validation failed: phone: Path `phone` is required. | Meta: {"errors":{"phone":{"name":"ValidatorError","message":"Path `phone` is required.","properties":{"message":"Path `phone` is required.","type":"required","path":"phone"},"kind":"required","path":"phone"}},"_message":"Driver validation failed","stack":"ValidationError: Driver validation failed: phone: Path `phone` is required.\n    at Document.invalidate (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/document.js:3343:32)\n    at /home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/document.js:3104:17\n    at /home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/schemaType.js:1407:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)"}
+2025-05-09 14:38:58 [INFO]: Driver added successfully: akshay@test.com
+2025-05-09 14:41:05 [INFO]: Documents added to driver: akshay@test.com
+2025-05-09 14:41:59 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:42:00 [INFO]: MongoDB connected successfully
+2025-05-09 14:42:03 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:42:03 [INFO]: MongoDB connected successfully
+2025-05-09 14:44:54 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:44:55 [INFO]: MongoDB connected successfully
+2025-05-09 14:44:57 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:44:58 [INFO]: MongoDB connected successfully
+2025-05-09 14:45:32 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:45:32 [INFO]: MongoDB connected successfully
+2025-05-09 14:45:35 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:45:35 [INFO]: MongoDB connected successfully
+2025-05-09 14:45:46 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:45:46 [INFO]: MongoDB connected successfully
+2025-05-09 14:48:13 [INFO]: Driver documents updated successfully: akshay@test.com
+2025-05-09 14:48:32 [INFO]: Driver documents updated successfully: akshay@test.com
+2025-05-09 14:49:15 [INFO]: Driver updated successfully: akshay@test.com
+2025-05-09 14:52:48 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:52:48 [INFO]: MongoDB connected successfully
+2025-05-09 14:52:58 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:52:59 [INFO]: MongoDB connected successfully
+2025-05-09 14:53:33 [ERROR]: Error fetching rides of driver: Schema hasn't been registered for model "Ride".
+Use mongoose.model(name, schema) | Meta: {"stack":"MissingSchemaError: Schema hasn't been registered for model \"Ride\".\nUse mongoose.model(name, schema)\n    at NativeConnection.model (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/connection.js:1491:13)\n    at _getModelFromConn (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/helpers/populate/getModelsMapForPopulate.js:579:15)\n    at addModelNamesToMap (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/helpers/populate/getModelsMapForPopulate.js:507:17)\n    at getModelsMapForPopulate (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/helpers/populate/getModelsMapForPopulate.js:208:7)\n    at _populatePath (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/model.js:4445:21)\n    at Function.populate (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/model.js:4412:21)\n    at /home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/query.js:2605:11\n    at _init (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/query.js:3273:5)\n    at Document.init (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/document.js:654:5)\n    at Document.$init (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/document.js:667:42)"}
+2025-05-09 14:54:08 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:54:08 [INFO]: MongoDB connected successfully
+2025-05-09 14:54:10 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:54:10 [INFO]: MongoDB connected successfully
+2025-05-09 14:54:14 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:54:15 [INFO]: MongoDB connected successfully
+2025-05-09 14:54:20 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:54:21 [INFO]: MongoDB connected successfully
+2025-05-09 14:54:24 [ERROR]: Error fetching rides of driver: Schema hasn't been registered for model "Ride".
+Use mongoose.model(name, schema) | Meta: {"stack":"MissingSchemaError: Schema hasn't been registered for model \"Ride\".\nUse mongoose.model(name, schema)\n    at NativeConnection.model (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/connection.js:1491:13)\n    at _getModelFromConn (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/helpers/populate/getModelsMapForPopulate.js:579:15)\n    at addModelNamesToMap (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/helpers/populate/getModelsMapForPopulate.js:507:17)\n    at getModelsMapForPopulate (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/helpers/populate/getModelsMapForPopulate.js:208:7)\n    at _populatePath (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/model.js:4445:21)\n    at Function.populate (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/model.js:4412:21)\n    at /home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/query.js:2605:11\n    at _init (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/query.js:3273:5)\n    at Document.init (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/document.js:654:5)\n    at Document.$init (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/document.js:667:42)"}
+2025-05-09 14:54:26 [ERROR]: Error fetching rides of driver: Schema hasn't been registered for model "Ride".
+Use mongoose.model(name, schema) | Meta: {"stack":"MissingSchemaError: Schema hasn't been registered for model \"Ride\".\nUse mongoose.model(name, schema)\n    at NativeConnection.model (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/connection.js:1491:13)\n    at _getModelFromConn (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/helpers/populate/getModelsMapForPopulate.js:579:15)\n    at addModelNamesToMap (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/helpers/populate/getModelsMapForPopulate.js:507:17)\n    at getModelsMapForPopulate (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/helpers/populate/getModelsMapForPopulate.js:208:7)\n    at _populatePath (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/model.js:4445:21)\n    at Function.populate (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/model.js:4412:21)\n    at /home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/query.js:2605:11\n    at _init (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/query.js:3273:5)\n    at Document.init (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/document.js:654:5)\n    at Document.$init (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/document.js:667:42)"}
+2025-05-09 14:55:42 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:55:42 [INFO]: MongoDB connected successfully
+2025-05-09 14:55:45 [INFO]: Server is running on http://localhost:3000
+2025-05-09 14:55:45 [INFO]: MongoDB connected successfully
+2025-05-09 15:04:18 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:04:19 [INFO]: MongoDB connected successfully
+2025-05-09 15:06:40 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:06:41 [INFO]: MongoDB connected successfully
+2025-05-09 15:10:26 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:10:27 [INFO]: MongoDB connected successfully
+2025-05-09 15:10:29 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:10:30 [INFO]: MongoDB connected successfully
+2025-05-09 15:11:13 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:11:13 [INFO]: MongoDB connected successfully
+2025-05-09 15:13:25 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:13:25 [INFO]: MongoDB connected successfully
+2025-05-09 15:13:28 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:13:28 [INFO]: MongoDB connected successfully
+2025-05-09 15:13:51 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:13:52 [INFO]: MongoDB connected successfully
+2025-05-09 15:13:59 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:14:00 [INFO]: MongoDB connected successfully
+2025-05-09 15:14:09 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:14:10 [INFO]: MongoDB connected successfully
+2025-05-09 15:14:24 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:14:24 [INFO]: MongoDB connected successfully
+2025-05-09 15:15:27 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:15:28 [INFO]: MongoDB connected successfully
+2025-05-09 15:15:57 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:15:57 [INFO]: MongoDB connected successfully
+2025-05-09 15:16:06 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:16:06 [INFO]: MongoDB connected successfully
+2025-05-09 15:16:13 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:16:13 [INFO]: MongoDB connected successfully
+2025-05-09 15:16:23 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:16:23 [INFO]: MongoDB connected successfully
+2025-05-09 15:16:30 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:16:30 [INFO]: MongoDB connected successfully
+2025-05-09 15:16:48 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:16:48 [INFO]: MongoDB connected successfully
+2025-05-09 15:16:57 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:16:57 [INFO]: MongoDB connected successfully
+2025-05-09 15:17:05 [ERROR]: Error fetching sub-admins: Admin.find is not a function | Meta: {"stack":"TypeError: Admin.find is not a function\n    at getAllSubAdmins (/home/script/Projects/Backend/Cerca-API/Controllers/admin.controller.js:44:39)\n    at Layer.handleRequest (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/layer.js:152:17)\n    at next (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/route.js:157:13)\n    at Route.dispatch (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/route.js:117:3)\n    at handle (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:435:11)\n    at Layer.handleRequest (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/layer.js:152:17)\n    at /home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:295:15\n    at processParams (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:582:12)\n    at next (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:291:5)\n    at Function.handle (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:186:3)"}
+2025-05-09 15:19:03 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:19:04 [INFO]: MongoDB connected successfully
+2025-05-09 15:19:41 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:19:42 [INFO]: MongoDB connected successfully
+2025-05-09 15:19:48 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:19:49 [INFO]: MongoDB connected successfully
+2025-05-09 15:20:00 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:20:01 [INFO]: MongoDB connected successfully
+2025-05-09 15:20:05 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:20:05 [INFO]: MongoDB connected successfully
+2025-05-09 15:20:08 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:20:08 [INFO]: MongoDB connected successfully
+2025-05-09 15:20:38 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:20:39 [INFO]: MongoDB connected successfully
+2025-05-09 15:21:02 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:21:03 [INFO]: MongoDB connected successfully
+2025-05-09 15:21:04 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:21:05 [INFO]: MongoDB connected successfully
+2025-05-09 15:21:14 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:21:15 [INFO]: MongoDB connected successfully
+2025-05-09 15:30:14 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:30:15 [INFO]: MongoDB connected successfully
+2025-05-09 15:30:29 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:30:29 [INFO]: MongoDB connected successfully
+2025-05-09 15:30:40 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:30:40 [INFO]: MongoDB connected successfully
+2025-05-09 15:33:50 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:33:51 [INFO]: MongoDB connected successfully
+2025-05-09 15:33:58 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:33:59 [INFO]: MongoDB connected successfully
+2025-05-09 15:34:09 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:34:09 [INFO]: MongoDB connected successfully
+2025-05-09 15:34:15 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:34:15 [INFO]: MongoDB connected successfully
+2025-05-09 15:34:31 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:34:32 [INFO]: MongoDB connected successfully
+2025-05-09 15:34:50 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:34:50 [INFO]: MongoDB connected successfully
+2025-05-09 15:34:58 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:34:58 [INFO]: MongoDB connected successfully
+2025-05-09 15:35:41 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:35:41 [INFO]: MongoDB connected successfully
+2025-05-09 15:35:52 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:35:53 [INFO]: MongoDB connected successfully
+2025-05-09 15:41:55 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:41:57 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:41:57 [INFO]: MongoDB connected successfully
+2025-05-09 15:42:43 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:42:43 [INFO]: MongoDB connected successfully
+2025-05-09 15:43:42 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:43:43 [INFO]: MongoDB connected successfully
+2025-05-09 15:44:54 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:44:54 [INFO]: MongoDB connected successfully
+2025-05-09 15:46:35 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:46:35 [INFO]: MongoDB connected successfully
+2025-05-09 15:48:42 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:48:43 [INFO]: MongoDB connected successfully
+2025-05-09 15:48:45 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:48:46 [INFO]: MongoDB connected successfully
+2025-05-09 15:50:33 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:50:34 [INFO]: MongoDB connected successfully
+2025-05-09 15:50:36 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:50:36 [INFO]: MongoDB connected successfully
+2025-05-09 15:50:45 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:50:45 [INFO]: MongoDB connected successfully
+2025-05-09 15:50:47 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:50:48 [INFO]: MongoDB connected successfully
+2025-05-09 15:51:35 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:51:36 [INFO]: MongoDB connected successfully
+2025-05-09 15:51:39 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:51:40 [INFO]: MongoDB connected successfully
+2025-05-09 15:51:41 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:51:41 [INFO]: MongoDB connected successfully
+2025-05-09 15:51:44 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:51:44 [INFO]: MongoDB connected successfully
+2025-05-09 15:51:57 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:51:58 [INFO]: MongoDB connected successfully
+2025-05-09 15:52:02 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:52:02 [INFO]: MongoDB connected successfully
+2025-05-09 15:52:04 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:52:05 [INFO]: MongoDB connected successfully
+2025-05-09 15:52:09 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:52:09 [INFO]: MongoDB connected successfully
+2025-05-09 15:52:11 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:52:11 [INFO]: MongoDB connected successfully
+2025-05-09 15:52:16 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:52:16 [INFO]: MongoDB connected successfully
+2025-05-09 15:52:40 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:52:40 [INFO]: MongoDB connected successfully
+2025-05-09 15:52:41 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:52:42 [INFO]: MongoDB connected successfully
+2025-05-09 15:52:45 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:52:46 [INFO]: MongoDB connected successfully
+2025-05-09 15:52:51 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:52:52 [INFO]: MongoDB connected successfully
