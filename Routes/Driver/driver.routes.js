@@ -10,6 +10,7 @@ const {
     addDriverDocuments,
     updateDriverDocuments,
     getAllRidesOfDriver,
+    updateDriverLocation,
 } = require('../../Controllers/Driver/driver.controller.js');
 
 const router = express.Router();
@@ -42,5 +43,8 @@ router.put('/:id/documents', upload.array('documents', 10), updateDriverDocument
 
 // Route to get all rides of a driver
 router.get('/:id/rides', getAllRidesOfDriver);
+
+// Route to update a driver's location
+router.patch('/:id/location', updateDriverLocation);
 
 module.exports = router;

@@ -9,7 +9,7 @@ const rideSchema = new mongoose.Schema({
     driver: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Driver',
-        required: true,
+        required: false,
     },
     pickupLocation: {
         type: {
@@ -33,6 +33,8 @@ const rideSchema = new mongoose.Schema({
             required: true,
         },
     },
+    //First 1.5 km is 37rs
+    // After that, 25  * per km rate
     // Total Fare = Base Fare + (Distance Traveled × Per-Km Rate) + (Ride Duration × Per-Minute Rate) + Surge Pricing + Booking Fee + Taxes + Tolls - Discountsd
     fare: {
         type: Number,

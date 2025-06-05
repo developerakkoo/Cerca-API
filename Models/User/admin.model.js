@@ -66,8 +66,6 @@ const adminSchema = new Schema(
   }
 );
 
-// Indexes
-adminSchema.index({ email: 1 });
-adminSchema.index({ phoneNumber: 1 });
+
 
 export default model('Admin', adminSchema);

@@ -12,11 +12,18 @@ const addDriver = async (req, res) => {
     try {
         const { name, email, phone, password, location } = req.body;
 
+        console.log('Received driver data:');
+        console.log(req.body);
+        
+        let driver = await Driver.findOne({ phone });
+        if (driver) {
+            return res.status(400).json({ message: 'Driver with this phone number already exists' });
+        }
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Create a new driver
-        const driver = new Driver({
+        const driverObj = new Driver({
             name,
             email,
             phone,
@@ -25,10 +32,10 @@ const addDriver = async (req, res) => {
             documents: [], // Initialize with an empty array
         });
 
-        await driver.save();
+        await driverObj.save();
 
-        logger.info(`Driver added successfully: ${driver.email}`);
-        res.status(201).json(driver);
+        logger.info(`Driver added successfully: ${driverObj.email}`);
+        res.status(201).json({ id: driverObj, message: 'Driver added successfully' });
     } catch (error) {
         logger.error('Error adding driver:', error);
         res.status(400).json({ message: 'Error adding driver', error });
@@ -281,6 +288,34 @@ const getAllRidesOfDriver = async (req, res) => {
     }
 };
 
+/**
+ * @desc    Update the location of a driver
+ * @route   PATCH /drivers/:id/location
+ */
+const updateDriverLocation = async (req, res) => {
+    try {
+        const { coordinates } = req.body;
+
+        if (!Array.isArray(coordinates) || coordinates.length !== 2) {
+            return res.status(400).json({ message: 'Invalid coordinates. Must be an array of [longitude, latitude].' });
+        }
+
+        const driver = await Driver.findById(req.params.id);
+
+        if (!driver) {
+            return res.status(404).json({ message: 'Driver not found' });
+        }
+
+        driver.location.coordinates = coordinates;
+        await driver.save();
+
+        res.status(200).json({ message: 'Driver location updated successfully', location: driver.location });
+    } catch (error) {
+        logger.error('Error updating driver location:', error);
+        res.status(500).json({ message: 'Error updating driver location', error });
+    }
+};
+
 module.exports = {
     addDriver,
     addDriverDocuments,
@@ -292,4 +327,5 @@ module.exports = {
     updateDriverDocuments,
     updateDriverIsReadyForRides,
     getAllRidesOfDriver,
+    updateDriverLocation,
 };

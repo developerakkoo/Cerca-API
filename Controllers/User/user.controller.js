@@ -167,7 +167,7 @@ export const loginUserByMobile = async (req, res) => {
             // Generate a JWT token
             const token = jwt.sign(
                 { id: user._id, phoneNumber: user.phoneNumber },
-                process.env.JWT_SECRET, // Ensure you have a JWT_SECRET in your environment variables
+                "@#@!#@dasd4234jkdh3874#$@#$#$@#$#$dkjashdlk$#442343%#$%f34234T$vtwefcEC$%", // Ensure you have a JWT_SECRET in your environment variables
                 { expiresIn: '7d' } // Token expiration time
             );
 
@@ -180,9 +180,9 @@ export const loginUserByMobile = async (req, res) => {
         } else {
             // If the user is not found, return isNewUser: false
             logger.warn(`Login attempt with unregistered phone number: ${phoneNumber}`);
-            return res.status(404).json({
+            return res.status(200).json({
                 message: 'User not found',
-                isNewUser: false,
+                isNewUser: true,
             });
         }
     } catch (error) {
@@ -191,5 +191,50 @@ export const loginUserByMobile = async (req, res) => {
             message: 'An error occurred during login',
             error: error.message,
         });
+    }
+};
+
+// Add wallet-related controller functions
+
+/**
+ * @desc    Get the wallet balance of a user by ID
+ * @route   GET /users/:id/wallet
+ */
+export const getUserWallet = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        res.status(200).json({ walletBalance: user.walletBalance });
+    } catch (error) {
+        logger.error('Error fetching wallet balance:', error);
+        res.status(500).json({ message: 'Error fetching wallet balance', error });
+    }
+};
+
+/**
+ * @desc    Update the wallet balance of a user by ID
+ * @route   PUT /users/:id/wallet
+ */
+export const updateUserWallet = async (req, res) => {
+    try {
+        const { amount } = req.body;
+        if (typeof amount !== 'number' || amount < 0) {
+            return res.status(400).json({ message: 'Invalid wallet amount' });
+        }
+
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        user.walletBalance = amount;
+        await user.save();
+
+        res.status(200).json({ message: 'Wallet balance updated successfully', walletBalance: user.walletBalance });
+    } catch (error) {
+        logger.error('Error updating wallet balance:', error);
+        res.status(500).json({ message: 'Error updating wallet balance', error });
     }
 };

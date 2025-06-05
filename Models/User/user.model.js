@@ -34,7 +34,6 @@ const userSchema = new Schema(
     email: {
       type: String,
       required: [true, 'Email address is required'],
-      unique: true,
       lowercase: true,
       trim: true,
       match: [/.+@.+\..+/, 'Please enter a valid email address'],
@@ -44,7 +43,6 @@ const userSchema = new Schema(
       unique: true,
       sparse: true,
       trim: true,
-      match: [/^\+\d{10,15}$/, 'Please enter a valid international phone number'],
     },
 
     // Authentication
@@ -100,13 +98,7 @@ const userSchema = new Schema(
   }
 );
 
-// Indexes
-userSchema.index({ email: 1 }); // Define index explicitly
-userSchema.index({ phoneNumber: 1 }); // Define index explicitly
-userSchema.index(
-  { 'oauthProviders.provider': 1, 'oauthProviders.providerId': 1 },
-  { unique: true, sparse: true }
-);
+
 
 // Virtuals
 userSchema.virtual('firstName').get(function () {

@@ -6,7 +6,6 @@ const logger = require('./utils/logger'); // Import logger
 const multer = require('multer');
 const path = require('path');
 const connectDB = require('./db'); // Import MongoDB connection
-
 const app = express();
 const port = 3000;
 

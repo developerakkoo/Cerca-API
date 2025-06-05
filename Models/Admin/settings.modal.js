@@ -13,6 +13,12 @@ const SettingsSchema = new mongoose.Schema({
         platformFees: { type: Number, required: true },
         driverCommissions: { type: Number, required: true },
     },
+    services: [
+        {
+            name: { type: String, required: true },
+            price: { type: Number, required: true },
+        },
+    ],
     systemSettings: {
         maintenanceMode: { type: Boolean, default: false },
         forceUpdate: { type: Boolean, default: false },

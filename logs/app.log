@@ -308,3 +308,271 @@ Use mongoose.model(name, schema) | Meta: {"stack":"MissingSchemaError: Schema ha
 2025-05-09 15:52:46 [INFO]: MongoDB connected successfully
 2025-05-09 15:52:51 [INFO]: Server is running on http://localhost:3000
 2025-05-09 15:52:52 [INFO]: MongoDB connected successfully
+2025-05-09 15:58:59 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:58:59 [INFO]: MongoDB connected successfully
+2025-05-09 15:59:01 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:59:01 [INFO]: MongoDB connected successfully
+2025-05-09 15:59:22 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:59:22 [INFO]: MongoDB connected successfully
+2025-05-09 15:59:25 [INFO]: Server is running on http://localhost:3000
+2025-05-09 15:59:26 [INFO]: MongoDB connected successfully
+2025-05-11 14:38:50 [INFO]: Server is running on http://localhost:3000
+2025-05-11 14:39:25 [ERROR]: Error connecting to MongoDB: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/ | Meta: {"errorLabelSet":{},"reason":{"type":"ReplicaSetNoPrimary","servers":{"ac-sndzu4u-shard-00-00.uo0vjhs.mongodb.net:27017":{"address":"ac-sndzu4u-shard-00-00.uo0vjhs.mongodb.net:27017","type":"Unknown","hosts":[],"passives":[],"arbiters":[],"tags":{},"minWireVersion":0,"maxWireVersion":0,"roundTripTime":-1,"minRoundTripTime":0,"lastUpdateTime":423524,"lastWriteDate":0,"error":{"errorLabelSet":{},"beforeHandshake":false},"topologyVersion":null,"setName":null,"setVersion":null,"electionId":null,"logicalSessionTimeoutMinutes":null,"maxMessageSizeBytes":null,"maxWriteBatchSize":null,"maxBsonObjectSize":null,"primary":null,"me":null,"$clusterTime":null,"iscryptd":false},"ac-sndzu4u-shard-00-01.uo0vjhs.mongodb.net:27017":{"address":"ac-sndzu4u-shard-00-01.uo0vjhs.mongodb.net:27017","type":"Unknown","hosts":[],"passives":[],"arbiters":[],"tags":{},"minWireVersion":0,"maxWireVersion":0,"roundTripTime":-1,"minRoundTripTime":0,"lastUpdateTime":423504,"lastWriteDate":0,"error":{"errorLabelSet":{},"beforeHandshake":false},"topologyVersion":null,"setName":null,"setVersion":null,"electionId":null,"logicalSessionTimeoutMinutes":null,"maxMessageSizeBytes":null,"maxWriteBatchSize":null,"maxBsonObjectSize":null,"primary":null,"me":null,"$clusterTime":null,"iscryptd":false},"ac-sndzu4u-shard-00-02.uo0vjhs.mongodb.net:27017":{"address":"ac-sndzu4u-shard-00-02.uo0vjhs.mongodb.net:27017","type":"Unknown","hosts":[],"passives":[],"arbiters":[],"tags":{},"minWireVersion":0,"maxWireVersion":0,"roundTripTime":-1,"minRoundTripTime":0,"lastUpdateTime":423693,"lastWriteDate":0,"error":{"errorLabelSet":{},"beforeHandshake":false},"topologyVersion":null,"setName":null,"setVersion":null,"electionId":null,"logicalSessionTimeoutMinutes":null,"maxMessageSizeBytes":null,"maxWriteBatchSize":null,"maxBsonObjectSize":null,"primary":null,"me":null,"$clusterTime":null,"iscryptd":false}},"stale":false,"compatible":true,"heartbeatFrequencyMS":10000,"localThresholdMS":15,"setName":"atlas-12k0tf-shard-0","maxElectionId":null,"maxSetVersion":null,"commonWireVersion":0,"logicalSessionTimeoutMinutes":null},"stack":"MongooseServerSelectionError: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/\n    at _handleConnectionErrors (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/connection.js:1165:11)\n    at NativeConnection.openUri (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/connection.js:1096:11)\n    at async connectDB (/home/script/Projects/Backend/Cerca-API/db.js:8:9)"}
+2025-05-11 14:46:49 [INFO]: Server is running on http://localhost:3000
+2025-05-11 14:47:29 [ERROR]: Error connecting to MongoDB: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/ | Meta: {"errorLabelSet":{},"reason":{"type":"ReplicaSetNoPrimary","servers":{"ac-sndzu4u-shard-00-00.uo0vjhs.mongodb.net:27017":{"address":"ac-sndzu4u-shard-00-00.uo0vjhs.mongodb.net:27017","type":"Unknown","hosts":[],"passives":[],"arbiters":[],"tags":{},"minWireVersion":0,"maxWireVersion":0,"roundTripTime":-1,"minRoundTripTime":0,"lastUpdateTime":908200,"lastWriteDate":0,"error":{"errorLabelSet":{},"beforeHandshake":false},"topologyVersion":null,"setName":null,"setVersion":null,"electionId":null,"logicalSessionTimeoutMinutes":null,"maxMessageSizeBytes":null,"maxWriteBatchSize":null,"maxBsonObjectSize":null,"primary":null,"me":null,"$clusterTime":null,"iscryptd":false},"ac-sndzu4u-shard-00-01.uo0vjhs.mongodb.net:27017":{"address":"ac-sndzu4u-shard-00-01.uo0vjhs.mongodb.net:27017","type":"Unknown","hosts":[],"passives":[],"arbiters":[],"tags":{},"minWireVersion":0,"maxWireVersion":0,"roundTripTime":-1,"minRoundTripTime":0,"lastUpdateTime":908039,"lastWriteDate":0,"error":{"errorLabelSet":{},"beforeHandshake":false},"topologyVersion":null,"setName":null,"setVersion":null,"electionId":null,"logicalSessionTimeoutMinutes":null,"maxMessageSizeBytes":null,"maxWriteBatchSize":null,"maxBsonObjectSize":null,"primary":null,"me":null,"$clusterTime":null,"iscryptd":false},"ac-sndzu4u-shard-00-02.uo0vjhs.mongodb.net:27017":{"address":"ac-sndzu4u-shard-00-02.uo0vjhs.mongodb.net:27017","type":"Unknown","hosts":[],"passives":[],"arbiters":[],"tags":{},"minWireVersion":0,"maxWireVersion":0,"roundTripTime":-1,"minRoundTripTime":0,"lastUpdateTime":907866,"lastWriteDate":0,"error":{"errorLabelSet":{},"beforeHandshake":false},"topologyVersion":null,"setName":null,"setVersion":null,"electionId":null,"logicalSessionTimeoutMinutes":null,"maxMessageSizeBytes":null,"maxWriteBatchSize":null,"maxBsonObjectSize":null,"primary":null,"me":null,"$clusterTime":null,"iscryptd":false}},"stale":false,"compatible":true,"heartbeatFrequencyMS":10000,"localThresholdMS":15,"setName":"atlas-12k0tf-shard-0","maxElectionId":null,"maxSetVersion":null,"commonWireVersion":0,"logicalSessionTimeoutMinutes":null},"stack":"MongooseServerSelectionError: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/\n    at _handleConnectionErrors (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/connection.js:1165:11)\n    at NativeConnection.openUri (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/connection.js:1096:11)\n    at async connectDB (/home/script/Projects/Backend/Cerca-API/db.js:8:9)"}
+2025-05-11 14:47:56 [INFO]: Server is running on http://localhost:3000
+2025-05-11 14:48:00 [INFO]: MongoDB connected successfully
+2025-05-11 14:51:41 [WARN]: Login attempt with unregistered phone number: 8007477149
+2025-05-11 16:14:44 [WARN]: Login attempt with unregistered phone number: 8007477149
+2025-05-11 16:14:44 [WARN]: Login attempt with unregistered phone number: 8007477149
+2025-05-11 16:16:03 [WARN]: Login attempt with unregistered phone number: 8007477149
+2025-05-11 16:17:07 [WARN]: Login attempt with unregistered phone number: 8007477149
+2025-05-11 16:17:57 [WARN]: Login attempt with unregistered phone number: 8007477149
+2025-05-11 16:18:33 [WARN]: Login attempt with unregistered phone number: 8007477149
+2025-05-12 15:16:52 [INFO]: Server is running on http://localhost:3000
+2025-05-12 15:16:52 [INFO]: MongoDB connected successfully
+2025-05-12 15:18:27 [INFO]: Server is running on http://localhost:3000
+2025-05-12 15:18:27 [INFO]: MongoDB connected successfully
+2025-05-12 15:19:16 [WARN]: Login attempt with unregistered phone number: 8007477149
+2025-05-12 15:20:06 [INFO]: Server is running on http://localhost:3000
+2025-05-12 15:20:06 [INFO]: MongoDB connected successfully
+2025-05-12 15:20:10 [WARN]: Login attempt with unregistered phone number: 8007477149
+2025-05-12 15:21:04 [WARN]: Login attempt with unregistered phone number: 8007477149
+2025-05-12 15:35:46 [WARN]: Login attempt with unregistered phone number: 8007477149
+2025-05-12 15:44:30 [ERROR]: Error creating user: User validation failed: phoneNumber: Please enter a valid international phone number | Meta: {"errors":{"phoneNumber":{"name":"ValidatorError","message":"Please enter a valid international phone number","properties":{"message":"Please enter a valid international phone number","type":"regexp","regexp":{},"path":"phoneNumber","value":"8007477149"},"kind":"regexp","path":"phoneNumber","value":"8007477149"}},"_message":"User validation failed","stack":"ValidationError: User validation failed: phoneNumber: Please enter a valid international phone number\n    at Document.invalidate (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/document.js:3343:32)\n    at /home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/document.js:3104:17\n    at /home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/schemaType.js:1407:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)"}
+2025-05-12 15:45:09 [INFO]: Server is running on http://localhost:3000
+2025-05-12 15:45:09 [INFO]: MongoDB connected successfully
+2025-05-12 15:45:15 [INFO]: User created successfully: developerakshayjadhav@gmail.com
+2025-05-12 15:46:31 [ERROR]: Error creating user: E11000 duplicate key error collection: cerca.users index: email_1 dup key: { email: "developerakshayjadhav@gmail.com" } | Meta: {"errorLabelSet":{},"errorResponse":{"index":0,"code":11000,"errmsg":"E11000 duplicate key error collection: cerca.users index: email_1 dup key: { email: \"developerakshayjadhav@gmail.com\" }","keyPattern":{"email":1},"keyValue":{"email":"developerakshayjadhav@gmail.com"}},"index":0,"code":11000,"keyPattern":{"email":1},"keyValue":{"email":"developerakshayjadhav@gmail.com"},"stack":"MongoServerError: E11000 duplicate key error collection: cerca.users index: email_1 dup key: { email: \"developerakshayjadhav@gmail.com\" }\n    at InsertOneOperation.execute (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async tryOperation (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/collection.js:157:16)"}
+2025-05-12 15:46:53 [INFO]: Server is running on http://localhost:3000
+2025-05-12 15:46:53 [INFO]: MongoDB connected successfully
+2025-05-12 15:46:55 [INFO]: Server is running on http://localhost:3000
+2025-05-12 15:46:55 [INFO]: MongoDB connected successfully
+2025-05-12 15:47:02 [INFO]: Server is running on http://localhost:3000
+2025-05-12 15:47:02 [INFO]: MongoDB connected successfully
+2025-05-12 15:47:11 [ERROR]: Error creating user: E11000 duplicate key error collection: cerca.users index: email_1 dup key: { email: "developerakshayjadhav@gmail.com" } | Meta: {"errorLabelSet":{},"errorResponse":{"index":0,"code":11000,"errmsg":"E11000 duplicate key error collection: cerca.users index: email_1 dup key: { email: \"developerakshayjadhav@gmail.com\" }","keyPattern":{"email":1},"keyValue":{"email":"developerakshayjadhav@gmail.com"}},"index":0,"code":11000,"keyPattern":{"email":1},"keyValue":{"email":"developerakshayjadhav@gmail.com"},"stack":"MongoServerError: E11000 duplicate key error collection: cerca.users index: email_1 dup key: { email: \"developerakshayjadhav@gmail.com\" }\n    at InsertOneOperation.execute (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async tryOperation (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/collection.js:157:16)"}
+2025-05-12 15:49:17 [INFO]: User created successfully: developerakshayjadhav@gmail.com
+2025-05-12 15:59:13 [ERROR]: Error during login: secretOrPrivateKey must have a value | Meta: {"stack":"Error: secretOrPrivateKey must have a value\n    at module.exports [as sign] (/home/script/Projects/Backend/Cerca-API/node_modules/jsonwebtoken/sign.js:111:20)\n    at loginUserByMobile (file:///home/script/Projects/Backend/Cerca-API/Controllers/User/user.controller.js:168:31)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)"}
+2025-05-12 16:00:09 [INFO]: Server is running on http://localhost:3000
+2025-05-12 16:00:11 [INFO]: Server is running on http://localhost:3000
+2025-05-12 16:00:11 [INFO]: MongoDB connected successfully
+2025-05-12 16:00:16 [INFO]: User logged in: 8007477149
+2025-05-12 16:04:37 [WARN]: Login attempt with unregistered phone number: 8007477149
+2025-05-12 16:04:58 [INFO]: User created successfully: dewveloper@g.com
+2025-05-12 16:10:51 [WARN]: Login attempt with unregistered phone number: 8007477149
+2025-05-12 16:11:04 [INFO]: User created successfully: developer@g.com
+2025-05-12 16:14:10 [INFO]: User logged in: 8007477149
+2025-05-12 16:16:29 [WARN]: Login attempt with unregistered phone number: 8007477149
+2025-05-12 16:16:42 [INFO]: User created successfully: developer@g.com
+2025-05-13 10:32:04 [INFO]: Server is running on http://localhost:3000
+2025-05-13 10:32:34 [ERROR]: Error connecting to MongoDB: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/ | Meta: {"errorLabelSet":{},"reason":{"type":"ReplicaSetNoPrimary","servers":{"ac-sndzu4u-shard-00-00.uo0vjhs.mongodb.net:27017":{"address":"ac-sndzu4u-shard-00-00.uo0vjhs.mongodb.net:27017","type":"Unknown","hosts":[],"passives":[],"arbiters":[],"tags":{},"minWireVersion":0,"maxWireVersion":0,"roundTripTime":-1,"minRoundTripTime":0,"lastUpdateTime":788415,"lastWriteDate":0,"error":{"errorLabelSet":{},"beforeHandshake":false},"topologyVersion":null,"setName":null,"setVersion":null,"electionId":null,"logicalSessionTimeoutMinutes":null,"maxMessageSizeBytes":null,"maxWriteBatchSize":null,"maxBsonObjectSize":null,"primary":null,"me":null,"$clusterTime":null,"iscryptd":false},"ac-sndzu4u-shard-00-01.uo0vjhs.mongodb.net:27017":{"address":"ac-sndzu4u-shard-00-01.uo0vjhs.mongodb.net:27017","type":"Unknown","hosts":[],"passives":[],"arbiters":[],"tags":{},"minWireVersion":0,"maxWireVersion":0,"roundTripTime":-1,"minRoundTripTime":0,"lastUpdateTime":793549,"lastWriteDate":0,"error":{"errorLabelSet":{},"beforeHandshake":false},"topologyVersion":null,"setName":null,"setVersion":null,"electionId":null,"logicalSessionTimeoutMinutes":null,"maxMessageSizeBytes":null,"maxWriteBatchSize":null,"maxBsonObjectSize":null,"primary":null,"me":null,"$clusterTime":null,"iscryptd":false},"ac-sndzu4u-shard-00-02.uo0vjhs.mongodb.net:27017":{"address":"ac-sndzu4u-shard-00-02.uo0vjhs.mongodb.net:27017","type":"Unknown","hosts":[],"passives":[],"arbiters":[],"tags":{},"minWireVersion":0,"maxWireVersion":0,"roundTripTime":-1,"minRoundTripTime":0,"lastUpdateTime":796955,"lastWriteDate":0,"error":{"errorLabelSet":{},"beforeHandshake":false},"topologyVersion":null,"setName":null,"setVersion":null,"electionId":null,"logicalSessionTimeoutMinutes":null,"maxMessageSizeBytes":null,"maxWriteBatchSize":null,"maxBsonObjectSize":null,"primary":null,"me":null,"$clusterTime":null,"iscryptd":false}},"stale":false,"compatible":true,"heartbeatFrequencyMS":10000,"localThresholdMS":15,"setName":"atlas-12k0tf-shard-0","maxElectionId":null,"maxSetVersion":null,"commonWireVersion":0,"logicalSessionTimeoutMinutes":null},"stack":"MongooseServerSelectionError: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/\n    at _handleConnectionErrors (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/connection.js:1165:11)\n    at NativeConnection.openUri (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/connection.js:1096:11)\n    at async connectDB (/home/script/Projects/Backend/Cerca-API/db.js:8:9)"}
+2025-05-13 13:28:05 [INFO]: Server is running on http://localhost:3000
+2025-05-13 13:28:06 [INFO]: MongoDB connected successfully
+2025-05-13 15:54:12 [INFO]: Server is running on http://localhost:3000
+2025-05-13 15:54:12 [INFO]: MongoDB connected successfully
+2025-05-13 21:32:38 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:33:13 [ERROR]: Error connecting to MongoDB: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/ | Meta: {"errorLabelSet":{},"reason":{"type":"ReplicaSetNoPrimary","servers":{"ac-sndzu4u-shard-00-00.uo0vjhs.mongodb.net:27017":{"address":"ac-sndzu4u-shard-00-00.uo0vjhs.mongodb.net:27017","type":"Unknown","hosts":[],"passives":[],"arbiters":[],"tags":{},"minWireVersion":0,"maxWireVersion":0,"roundTripTime":-1,"minRoundTripTime":0,"lastUpdateTime":129172,"lastWriteDate":0,"error":{"errorLabelSet":{},"beforeHandshake":false},"topologyVersion":null,"setName":null,"setVersion":null,"electionId":null,"logicalSessionTimeoutMinutes":null,"maxMessageSizeBytes":null,"maxWriteBatchSize":null,"maxBsonObjectSize":null,"primary":null,"me":null,"$clusterTime":null,"iscryptd":false},"ac-sndzu4u-shard-00-01.uo0vjhs.mongodb.net:27017":{"address":"ac-sndzu4u-shard-00-01.uo0vjhs.mongodb.net:27017","type":"Unknown","hosts":[],"passives":[],"arbiters":[],"tags":{},"minWireVersion":0,"maxWireVersion":0,"roundTripTime":-1,"minRoundTripTime":0,"lastUpdateTime":129551,"lastWriteDate":0,"error":{"errorLabelSet":{},"beforeHandshake":false},"topologyVersion":null,"setName":null,"setVersion":null,"electionId":null,"logicalSessionTimeoutMinutes":null,"maxMessageSizeBytes":null,"maxWriteBatchSize":null,"maxBsonObjectSize":null,"primary":null,"me":null,"$clusterTime":null,"iscryptd":false},"ac-sndzu4u-shard-00-02.uo0vjhs.mongodb.net:27017":{"address":"ac-sndzu4u-shard-00-02.uo0vjhs.mongodb.net:27017","type":"Unknown","hosts":[],"passives":[],"arbiters":[],"tags":{},"minWireVersion":0,"maxWireVersion":0,"roundTripTime":-1,"minRoundTripTime":0,"lastUpdateTime":129725,"lastWriteDate":0,"error":{"errorLabelSet":{},"beforeHandshake":false},"topologyVersion":null,"setName":null,"setVersion":null,"electionId":null,"logicalSessionTimeoutMinutes":null,"maxMessageSizeBytes":null,"maxWriteBatchSize":null,"maxBsonObjectSize":null,"primary":null,"me":null,"$clusterTime":null,"iscryptd":false}},"stale":false,"compatible":true,"heartbeatFrequencyMS":10000,"localThresholdMS":15,"setName":"atlas-12k0tf-shard-0","maxElectionId":null,"maxSetVersion":null,"commonWireVersion":0,"logicalSessionTimeoutMinutes":null},"stack":"MongooseServerSelectionError: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/\n    at _handleConnectionErrors (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/connection.js:1165:11)\n    at NativeConnection.openUri (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/connection.js:1096:11)\n    at async connectDB (/home/script/Projects/Backend/Cerca-API/db.js:8:9)"}
+2025-05-13 21:35:09 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:35:37 [INFO]: MongoDB connected successfully
+2025-05-13 21:40:01 [INFO]: Socket.IO initialized
+2025-05-13 21:40:01 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:40:05 [INFO]: MongoDB connected successfully
+2025-05-13 21:40:17 [INFO]: Socket.IO initialized
+2025-05-13 21:40:18 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:40:42 [INFO]: Socket.IO initialized
+2025-05-13 21:40:42 [INFO]: Socket.IO server started
+2025-05-13 21:40:42 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:40:43 [INFO]: MongoDB connected successfully
+2025-05-13 21:41:04 [INFO]: Socket.IO initialized
+2025-05-13 21:41:05 [INFO]: Socket.IO server started
+2025-05-13 21:41:05 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:41:08 [INFO]: Socket.IO initialized
+2025-05-13 21:41:08 [INFO]: Socket.IO server started
+2025-05-13 21:41:08 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:41:12 [INFO]: Socket.IO initialized
+2025-05-13 21:41:12 [INFO]: Socket.IO server started
+2025-05-13 21:41:12 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:41:18 [INFO]: Socket.IO initialized
+2025-05-13 21:41:18 [INFO]: Socket.IO server started
+2025-05-13 21:41:18 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:41:20 [INFO]: MongoDB connected successfully
+2025-05-13 21:41:27 [INFO]: Socket.IO initialized
+2025-05-13 21:41:27 [INFO]: Socket.IO server started
+2025-05-13 21:41:27 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:41:28 [INFO]: MongoDB connected successfully
+2025-05-13 21:41:30 [INFO]: Socket.IO initialized
+2025-05-13 21:41:31 [INFO]: Socket.IO server started
+2025-05-13 21:41:31 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:41:31 [INFO]: MongoDB connected successfully
+2025-05-13 21:41:39 [INFO]: Socket.IO initialized
+2025-05-13 21:41:40 [INFO]: Socket.IO server started
+2025-05-13 21:41:40 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:41:45 [INFO]: Socket.IO initialized
+2025-05-13 21:41:45 [INFO]: Socket.IO server started
+2025-05-13 21:41:45 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:41:55 [INFO]: MongoDB connected successfully
+2025-05-13 21:42:04 [INFO]: Socket.IO initialized
+2025-05-13 21:42:04 [INFO]: Socket.IO server started
+2025-05-13 21:42:04 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:42:05 [INFO]: MongoDB connected successfully
+2025-05-13 21:42:07 [INFO]: Socket.IO initialized
+2025-05-13 21:42:08 [INFO]: Socket.IO server started
+2025-05-13 21:42:08 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:42:08 [INFO]: MongoDB connected successfully
+2025-05-13 21:42:15 [INFO]: Socket.IO initialized
+2025-05-13 21:42:15 [INFO]: Socket.IO server started
+2025-05-13 21:42:15 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:42:16 [INFO]: MongoDB connected successfully
+2025-05-13 21:42:19 [INFO]: Socket.IO initialized
+2025-05-13 21:42:19 [INFO]: Socket.IO server started
+2025-05-13 21:42:19 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:42:20 [INFO]: MongoDB connected successfully
+2025-05-13 21:42:25 [INFO]: Socket.IO initialized
+2025-05-13 21:42:25 [INFO]: Socket.IO server started
+2025-05-13 21:42:25 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:42:26 [INFO]: MongoDB connected successfully
+2025-05-13 21:48:45 [INFO]: Socket.IO server started
+2025-05-13 21:48:45 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:48:57 [INFO]: MongoDB connected successfully
+2025-05-13 21:49:44 [INFO]: Socket.IO server started
+2025-05-13 21:49:44 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:50:38 [INFO]: Socket.IO server started
+2025-05-13 21:50:38 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:50:46 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:50:51 [INFO]: MongoDB connected successfully
+2025-05-13 21:51:04 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:51:14 [INFO]: MongoDB connected successfully
+2025-05-13 21:54:01 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:54:07 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:54:12 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:54:35 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:54:40 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:54:51 [INFO]: MongoDB connected successfully
+2025-05-13 21:54:54 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:55:09 [INFO]: MongoDB connected successfully
+2025-05-13 21:56:16 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:56:19 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:56:22 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:56:24 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:56:26 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:56:36 [INFO]: MongoDB connected successfully
+2025-05-13 21:56:53 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:56:59 [INFO]: MongoDB connected successfully
+2025-05-13 21:57:18 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:57:18 [INFO]: MongoDB connected successfully
+2025-05-13 21:57:20 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:57:21 [INFO]: MongoDB connected successfully
+2025-05-13 21:57:29 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:57:39 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:57:40 [INFO]: MongoDB connected successfully
+2025-05-13 21:57:58 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:57:58 [INFO]: MongoDB connected successfully
+2025-05-13 21:58:04 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:58:09 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:58:14 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:58:19 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:58:26 [INFO]: MongoDB connected successfully
+2025-05-13 21:58:32 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:58:32 [INFO]: MongoDB connected successfully
+2025-05-13 21:58:42 [INFO]: Server is running on http://localhost:3000
+2025-05-13 21:58:53 [INFO]: MongoDB connected successfully
+2025-05-13 22:05:19 [INFO]: Server is running on http://localhost:3000
+2025-05-13 22:05:20 [INFO]: MongoDB connected successfully
+2025-05-13 22:05:22 [INFO]: Server is running on http://localhost:3000
+2025-05-13 22:05:24 [INFO]: Server is running on http://localhost:3000
+2025-05-13 22:05:31 [INFO]: Server is running on http://localhost:3000
+2025-05-13 22:05:38 [INFO]: Server is running on http://localhost:3000
+2025-05-13 22:05:42 [INFO]: Server is running on http://localhost:3000
+2025-05-13 22:05:48 [INFO]: MongoDB connected successfully
+2025-05-14 11:37:29 [INFO]: Server is running on http://localhost:3000
+2025-05-14 11:37:29 [INFO]: MongoDB connected successfully
+2025-05-14 14:45:15 [INFO]: Server is running on http://localhost:3000
+2025-05-14 14:45:15 [INFO]: MongoDB connected successfully
+2025-05-14 14:45:18 [INFO]: Server is running on http://localhost:3000
+2025-05-14 14:45:19 [INFO]: MongoDB connected successfully
+2025-05-14 14:45:22 [INFO]: Server is running on http://localhost:3000
+2025-05-14 14:45:23 [INFO]: MongoDB connected successfully
+2025-05-14 14:45:30 [INFO]: Server is running on http://localhost:3000
+2025-05-14 14:45:30 [INFO]: MongoDB connected successfully
+2025-05-14 14:45:33 [INFO]: Server is running on http://localhost:3000
+2025-05-14 14:45:34 [INFO]: MongoDB connected successfully
+2025-05-14 14:45:45 [INFO]: Server is running on http://localhost:3000
+2025-05-14 14:45:46 [INFO]: MongoDB connected successfully
+2025-05-14 14:45:49 [INFO]: Server is running on http://localhost:3000
+2025-05-14 14:45:49 [INFO]: MongoDB connected successfully
+2025-05-14 14:45:56 [INFO]: Server is running on http://localhost:3000
+2025-05-14 14:45:57 [INFO]: MongoDB connected successfully
+2025-05-14 14:45:58 [INFO]: Server is running on http://localhost:3000
+2025-05-14 14:45:59 [INFO]: MongoDB connected successfully
+2025-05-27 13:00:46 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:00:46 [INFO]: MongoDB connected successfully
+2025-05-27 13:04:49 [ERROR]: Error adding driver: Cannot destructure property 'name' of 'req.body' as it is undefined. | Meta: {"stack":"TypeError: Cannot destructure property 'name' of 'req.body' as it is undefined.\n    at addDriver (/home/script/Projects/Backend/Cerca-API/Controllers/Driver/driver.controller.js:13:17)\n    at Layer.handleRequest (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/layer.js:152:17)\n    at next (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/route.js:157:13)\n    at Route.dispatch (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/route.js:117:3)\n    at handle (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:435:11)\n    at Layer.handleRequest (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/layer.js:152:17)\n    at /home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:295:15\n    at processParams (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:582:12)\n    at next (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:291:5)\n    at Function.handle (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:186:3)"}
+2025-05-27 13:16:51 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:16:52 [INFO]: MongoDB connected successfully
+2025-05-27 13:16:58 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:16:58 [INFO]: MongoDB connected successfully
+2025-05-27 13:17:02 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:17:02 [INFO]: MongoDB connected successfully
+2025-05-27 13:17:16 [ERROR]: Error adding driver: Cannot destructure property 'name' of 'req.body' as it is undefined. | Meta: {"stack":"TypeError: Cannot destructure property 'name' of 'req.body' as it is undefined.\n    at addDriver (/home/script/Projects/Backend/Cerca-API/Controllers/Driver/driver.controller.js:13:17)\n    at Layer.handleRequest (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/layer.js:152:17)\n    at next (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/route.js:157:13)\n    at Route.dispatch (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/route.js:117:3)\n    at handle (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:435:11)\n    at Layer.handleRequest (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/layer.js:152:17)\n    at /home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:295:15\n    at processParams (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:582:12)\n    at next (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:291:5)\n    at Function.handle (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:186:3)"}
+2025-05-27 13:17:34 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:17:35 [INFO]: MongoDB connected successfully
+2025-05-27 13:17:36 [ERROR]: Error adding driver: Cannot destructure property 'name' of 'req.body' as it is undefined. | Meta: {"stack":"TypeError: Cannot destructure property 'name' of 'req.body' as it is undefined.\n    at addDriver (/home/script/Projects/Backend/Cerca-API/Controllers/Driver/driver.controller.js:13:17)\n    at Layer.handleRequest (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/layer.js:152:17)\n    at next (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/route.js:157:13)\n    at Route.dispatch (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/route.js:117:3)\n    at handle (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:435:11)\n    at Layer.handleRequest (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/layer.js:152:17)\n    at /home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:295:15\n    at processParams (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:582:12)\n    at next (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:291:5)\n    at Function.handle (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:186:3)"}
+2025-05-27 13:18:37 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:18:37 [INFO]: MongoDB connected successfully
+2025-05-27 13:18:44 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:18:44 [INFO]: MongoDB connected successfully
+2025-05-27 13:19:15 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:19:15 [INFO]: MongoDB connected successfully
+2025-05-27 13:19:28 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:19:28 [INFO]: MongoDB connected successfully
+2025-05-27 13:19:36 [ERROR]: Error adding driver: Cannot destructure property 'name' of 'req.body' as it is undefined. | Meta: {"stack":"TypeError: Cannot destructure property 'name' of 'req.body' as it is undefined.\n    at addDriver (/home/script/Projects/Backend/Cerca-API/Controllers/Driver/driver.controller.js:13:17)\n    at Layer.handleRequest (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/layer.js:152:17)\n    at next (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/route.js:157:13)\n    at Route.dispatch (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/route.js:117:3)\n    at handle (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:435:11)\n    at Layer.handleRequest (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/layer.js:152:17)\n    at /home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:295:15\n    at processParams (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:582:12)\n    at next (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:291:5)\n    at Function.handle (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:186:3)"}
+2025-05-27 13:20:05 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:20:07 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:20:09 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:20:09 [INFO]: MongoDB connected successfully
+2025-05-27 13:20:16 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:20:16 [INFO]: MongoDB connected successfully
+2025-05-27 13:20:20 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:20:20 [INFO]: MongoDB connected successfully
+2025-05-27 13:20:23 [ERROR]: Error adding driver: Cannot destructure property 'name' of 'req.body' as it is undefined. | Meta: {"stack":"TypeError: Cannot destructure property 'name' of 'req.body' as it is undefined.\n    at addDriver (/home/script/Projects/Backend/Cerca-API/Controllers/Driver/driver.controller.js:13:17)\n    at Layer.handleRequest (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/layer.js:152:17)\n    at next (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/route.js:157:13)\n    at Route.dispatch (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/route.js:117:3)\n    at handle (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:435:11)\n    at Layer.handleRequest (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/layer.js:152:17)\n    at /home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:295:15\n    at processParams (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:582:12)\n    at next (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:291:5)\n    at Function.handle (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:186:3)"}
+2025-05-27 13:20:33 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:20:34 [INFO]: MongoDB connected successfully
+2025-05-27 13:20:36 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:20:36 [INFO]: MongoDB connected successfully
+2025-05-27 13:20:42 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:20:42 [INFO]: MongoDB connected successfully
+2025-05-27 13:20:45 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:20:45 [INFO]: MongoDB connected successfully
+2025-05-27 13:20:50 [ERROR]: Error adding driver: name is not defined | Meta: {"stack":"ReferenceError: name is not defined\n    at addDriver (/home/script/Projects/Backend/Cerca-API/Controllers/Driver/driver.controller.js:23:13)\n    at Layer.handleRequest (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/layer.js:152:17)\n    at next (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/route.js:157:13)\n    at Route.dispatch (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/route.js:117:3)\n    at handle (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:435:11)\n    at Layer.handleRequest (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/layer.js:152:17)\n    at /home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:295:15\n    at processParams (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:582:12)\n    at next (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:291:5)\n    at Function.handle (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:186:3)"}
+2025-05-27 13:27:14 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:27:15 [INFO]: MongoDB connected successfully
+2025-05-27 13:27:23 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:27:23 [INFO]: MongoDB connected successfully
+2025-05-27 13:28:42 [ERROR]: Error adding driver: Cannot destructure property 'name' of 'req.body' as it is undefined. | Meta: {"stack":"TypeError: Cannot destructure property 'name' of 'req.body' as it is undefined.\n    at addDriver (/home/script/Projects/Backend/Cerca-API/Controllers/Driver/driver.controller.js:13:17)\n    at Layer.handleRequest (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/layer.js:152:17)\n    at next (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/route.js:157:13)\n    at Route.dispatch (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/route.js:117:3)\n    at handle (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:435:11)\n    at Layer.handleRequest (/home/script/Projects/Backend/Cerca-API/node_modules/router/lib/layer.js:152:17)\n    at /home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:295:15\n    at processParams (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:582:12)\n    at next (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:291:5)\n    at Function.handle (/home/script/Projects/Backend/Cerca-API/node_modules/router/index.js:186:3)"}
+2025-05-27 13:30:15 [ERROR]: Error adding driver: E11000 duplicate key error collection: cerca.drivers index: phone_1 dup key: { phone: "8007477149" } | Meta: {"errorLabelSet":{},"errorResponse":{"index":0,"code":11000,"errmsg":"E11000 duplicate key error collection: cerca.drivers index: phone_1 dup key: { phone: \"8007477149\" }","keyPattern":{"phone":1},"keyValue":{"phone":"8007477149"}},"index":0,"code":11000,"keyPattern":{"phone":1},"keyValue":{"phone":"8007477149"},"stack":"MongoServerError: E11000 duplicate key error collection: cerca.drivers index: phone_1 dup key: { phone: \"8007477149\" }\n    at InsertOneOperation.execute (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async tryOperation (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/collection.js:157:16)"}
+2025-05-27 13:30:47 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:30:47 [INFO]: MongoDB connected successfully
+2025-05-27 13:31:21 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:31:21 [INFO]: MongoDB connected successfully
+2025-05-27 13:31:26 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:31:27 [INFO]: MongoDB connected successfully
+2025-05-27 13:31:30 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:31:31 [INFO]: MongoDB connected successfully
+2025-05-27 13:31:33 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:31:34 [INFO]: MongoDB connected successfully
+2025-05-27 13:31:36 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:31:37 [INFO]: MongoDB connected successfully
+2025-05-27 13:31:40 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:31:41 [INFO]: MongoDB connected successfully
+2025-05-27 13:31:47 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:31:47 [INFO]: MongoDB connected successfully
+2025-05-27 13:34:49 [INFO]: Driver added successfully: ramesh@gmail.com
+2025-05-27 13:35:00 [INFO]: Driver logged in: ramesh@gmail.com
+2025-05-27 13:44:45 [ERROR]: Error fetching driver: getaddrinfo EAI_AGAIN ac-sndzu4u-shard-00-01.uo0vjhs.mongodb.net | Meta: {"errorLabelSet":{},"reason":{"type":"ReplicaSetNoPrimary","servers":{"ac-sndzu4u-shard-00-01.uo0vjhs.mongodb.net:27017":{"address":"ac-sndzu4u-shard-00-01.uo0vjhs.mongodb.net:27017","type":"Unknown","hosts":[],"passives":[],"arbiters":[],"tags":{},"minWireVersion":0,"maxWireVersion":0,"roundTripTime":-1,"minRoundTripTime":0,"lastUpdateTime":2767695,"lastWriteDate":0,"error":{"errorLabelSet":{},"beforeHandshake":false},"topologyVersion":null,"setName":null,"setVersion":null,"electionId":null,"logicalSessionTimeoutMinutes":null,"maxMessageSizeBytes":null,"maxWriteBatchSize":null,"maxBsonObjectSize":null,"primary":null,"me":null,"$clusterTime":null,"iscryptd":false},"ac-sndzu4u-shard-00-02.uo0vjhs.mongodb.net:27017":{"address":"ac-sndzu4u-shard-00-02.uo0vjhs.mongodb.net:27017","type":"Unknown","hosts":[],"passives":[],"arbiters":[],"tags":{},"minWireVersion":0,"maxWireVersion":0,"roundTripTime":-1,"minRoundTripTime":0,"lastUpdateTime":2767700,"lastWriteDate":0,"error":{"errorLabelSet":{},"beforeHandshake":false},"topologyVersion":null,"setName":null,"setVersion":null,"electionId":null,"logicalSessionTimeoutMinutes":null,"maxMessageSizeBytes":null,"maxWriteBatchSize":null,"maxBsonObjectSize":null,"primary":null,"me":null,"$clusterTime":null,"iscryptd":false},"ac-sndzu4u-shard-00-00.uo0vjhs.mongodb.net:27017":{"address":"ac-sndzu4u-shard-00-00.uo0vjhs.mongodb.net:27017","type":"Unknown","hosts":[],"passives":[],"arbiters":[],"tags":{},"minWireVersion":0,"maxWireVersion":0,"roundTripTime":-1,"minRoundTripTime":0,"lastUpdateTime":2767702,"lastWriteDate":0,"error":{"errorLabelSet":{},"beforeHandshake":false},"topologyVersion":null,"setName":null,"setVersion":null,"electionId":null,"logicalSessionTimeoutMinutes":null,"maxMessageSizeBytes":null,"maxWriteBatchSize":null,"maxBsonObjectSize":null,"primary":null,"me":null,"$clusterTime":null,"iscryptd":false}},"stale":false,"compatible":true,"heartbeatFrequencyMS":10000,"localThresholdMS":15,"setName":"atlas-12k0tf-shard-0","maxElectionId":{"$oid":"7fffffff0000000000000225"},"maxSetVersion":220,"commonWireVersion":0,"logicalSessionTimeoutMinutes":null},"stack":"MongoServerSelectionError: getaddrinfo EAI_AGAIN ac-sndzu4u-shard-00-01.uo0vjhs.mongodb.net\n    at Topology.selectServer (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/sdam/topology.js:321:38)\n    at async tryOperation (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/operations/execute_operation.js:145:18)\n    at async executeOperation (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async FindCursor._initialize (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/cursor/find_cursor.js:61:26)\n    at async FindCursor.cursorInit (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/cursor/abstract_cursor.js:633:27)\n    at async FindCursor.fetchBatch (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/cursor/abstract_cursor.js:667:13)\n    at async FindCursor.next (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/cursor/abstract_cursor.js:347:17)\n    at async Collection.findOne (/home/script/Projects/Backend/Cerca-API/node_modules/mongodb/lib/collection.js:277:21)\n    at async model.Query._findOne (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/query.js:2661:15)\n    at async model.Query.exec (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/query.js:4548:63)","cause":{"errorLabelSet":{},"beforeHandshake":false}}
+2025-05-27 13:45:45 [INFO]: Server is running on http://localhost:3000
+2025-05-27 13:45:45 [INFO]: MongoDB connected successfully
+2025-05-29 14:06:33 [INFO]: Server is running on http://localhost:3000
+2025-05-29 14:06:34 [INFO]: MongoDB connected successfully
+2025-05-29 14:07:11 [INFO]: Driver logged in: ramesh@gmail.com
+2025-06-05 18:51:16 [INFO]: Server is running on http://localhost:3000
+2025-06-05 18:51:21 [INFO]: MongoDB connected successfully

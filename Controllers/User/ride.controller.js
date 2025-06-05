@@ -18,7 +18,7 @@ export const createRide = async (req, res) => {
             return res.status(500).json({ message: 'Admin settings not found' });
         }
 
-        const { baseFare, perKmRate, minimumFare } = settings.pricingConfigurations;
+        const { perKmRate, minimumFare } = settings.pricingConfigurations;
 
         // Calculate distance (in km) between pickup and dropoff locations
         const [pickupLng, pickupLat] = rideData.pickupLocation.coordinates;
@@ -28,12 +28,20 @@ export const createRide = async (req, res) => {
         // Add distance to the ride data
         rideData.distanceInKm = distance;
 
-        // Calculate fare
-        let fare = baseFare + distance * perKmRate;
+        // Fetch the selected service from the ride data
+        const selectedService = rideData.service;
+        const service = settings.services.find(s => s.name === selectedService);
+        if (!service) {
+            return res.status(400).json({ message: 'Invalid service selected' });
+        }
+
+        // Calculate fare based on the service price
+        let fare = service.price + distance * perKmRate;
         fare = Math.max(fare, minimumFare); // Ensure fare is at least the minimum fare
 
-        // Add fare to the ride data
+        // Add fare and service to the ride data
         rideData.fare = fare;
+        rideData.service = service.name;
 
         // Generate start and stop OTPs
         const startOtp = crypto.randomInt(1000, 9999).toString();
