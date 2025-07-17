@@ -22,6 +22,9 @@ const rideSchema = new mongoose.Schema({
             required: true,
         },
     },
+    driverSocketId: { type: String }, // Driver's socket ID for notifications
+    userSocketId: { type: String }, // Rider's socket ID for notifications
+    
     dropoffLocation: {
         type: {
             type: String,

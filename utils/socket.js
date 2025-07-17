@@ -1,6 +1,6 @@
 const { Server } = require('socket.io');
 const logger = require('./logger');
-
+const {updateDriverStatus,updateDriverLocation } = require('./ride_booking_functions'); // Import ride booking logic
 let io; // Declare a variable to hold the Socket.IO instance
 let riders = [];
 let drivers = [];
@@ -30,11 +30,50 @@ function initializeSocket(server) {
         socket.on('driverConnect', (data) => {
             console.log('Driver connected:', data);
             // Add the driver to the list of connected drivers
-            drivers.push(data);
+            // drivers.push(data);
+            updateDriverStatus(data.driverId, true,socket.id) // Update driver status to active
+                .then((updatedDriver) => {
+                    console.log('Driver status updated:', updatedDriver);
+                })
+                .catch((error) => {
+                    console.error('Error updating driver status:', error);
+                });
+
             // Broadcast the message to all connected clients
             io.emit('driverConnect', data);
         }
         );
+
+        socket.on('driverDisconnect', (data) => {
+            console.log('Driver disconnected:', data);
+            // Remove the driver from the list of connected drivers
+            updateDriverStatus(data.driverId, false, "") // Update driver status to inactive
+                .then((updatedDriver) => {
+                    console.log('Driver status updated:', updatedDriver);
+                })
+                .catch((error) => {
+                    console.error('Error updating driver status:', error);
+                });
+            // drivers = drivers.filter((driver) => driver.id !== data.id);
+            // Broadcast the message to all connected clients
+            io.emit('driverDisconnect', data);
+        }
+        );
+
+        socket.on('driverLocationUpdate', (data) => {
+            console.log('Driver location update:', data);
+            // Update the driver's location in the database
+            updateDriverLocation(data.driverId, data.location) // Update driver status to active
+                .then((updatedDriver) => {
+                    console.log('Driver location updated:', updatedDriver);
+                })
+                .catch((error) => {
+                    console.error('Error updating driver location:', error);
+                });
+            // Broadcast the updated location to all connected riders
+            io.emit('driverLocationUpdate', data);
+        }   );
+
 
         socket.on('newRideRequest', (data) => {
             console.log('New ride request:', data);
@@ -92,14 +131,7 @@ function initializeSocket(server) {
             io.emit('riderDisconnect', data);
         });
 
-        socket.on('driverDisconnect', (data) => {
-            console.log('Driver disconnected:', data);
-            // Remove the driver from the list of connected drivers
-            drivers = drivers.filter((driver) => driver.id !== data.id);
-            // Broadcast the message to all connected clients
-            io.emit('driverDisconnect', data);
-        }
-        );
+       
 
         socket.on('disconnect', () => {
             console.log('A user disconnected:', socket.id);

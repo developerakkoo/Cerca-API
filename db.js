@@ -6,6 +6,8 @@ const logger = require('./utils/logger');
 const connectDB = async () => {
     try {
         await mongoose.connect("mongodb+srv://techlapsebusiness:68rttbD6B7hNXCrL@cerca-cluster0.uo0vjhs.mongodb.net/cerca", {
+           useUnifiedTopology: true,
+            serverSelectionTimeoutMS:20000
         });
         logger.info('MongoDB connected successfully');
     } catch (error) {

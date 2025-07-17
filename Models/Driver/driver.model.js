@@ -12,6 +12,9 @@ const driverSchema = new mongoose.Schema({
         // unique: true,
         lowercase: true,
     },
+    socketId:{
+        type:String,
+    },
     phone: {
         type: String,
         required: true,

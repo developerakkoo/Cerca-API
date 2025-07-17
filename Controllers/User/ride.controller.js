@@ -200,3 +200,34 @@ export const getRidesByDriverId = async (req, res) => {
         res.status(500).json({ message: 'Error fetching rides for driver', error });
     }
 };
+
+// Search for nearby drivers based on user location
+export const searchRide = async (req, res) => {
+    const { pickupLocation } = req.body; // User's pickup location (lat, lon)
+    const { lat, lon } = pickupLocation;
+
+    try {
+        const nearbyDrivers = await Driver.find({
+            location: {
+                $near: {
+                    $geometry: {
+                        type: "Point",
+                        coordinates: [lon, lat], // MongoDB uses [longitude, latitude]
+                    },
+                    $maxDistance: 5000, // Example: 5 km radius
+                },
+            },
+            isActive: true, // Only active drivers
+        });
+
+        // Notify nearby drivers (via Socket.IO)
+        if (nearbyDrivers.length > 0) {
+           getSocketIO().emit('newRideRequest', { userId: req.params.id, location: pickupLocation });
+        }
+
+        res.status(200).json({ nearbyDrivers });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error fetching nearby drivers' });
+    }
+};
