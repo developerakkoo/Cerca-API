@@ -791,3 +791,7 @@ Use mongoose.model(name, schema) | Meta: {"stack":"MissingSchemaError: Schema ha
 2025-07-18 13:43:57 [INFO]: Driver logged in: akshay@test.com
 2025-07-18 13:44:06 [INFO]: Driver updated successfully: akshay@test.com
 2025-07-18 13:44:09 [INFO]: Driver updated successfully: akshay@test.com
+2025-07-18 14:02:45 [INFO]: Server is running on http://0.0.0.0:3000
+2025-07-18 14:02:53 [INFO]: Server is running on http://0.0.0.0:3000
+2025-07-18 14:03:23 [INFO]: Server is running on http://localhost:3000
+2025-07-18 14:03:27 [INFO]: Server is running on http://localhost:3000

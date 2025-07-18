@@ -89,7 +89,7 @@ app.post('/upload', upload.single('image'), (req, res) => {
 });
 
 // Start server
-server.listen(port, "0.0.0.0", () => {
-    logger.info(`Server is running on http://0.0.0.0:${port}`);
+server.listen(port, () => {
+    logger.info(`Server is running on http://localhost:${port}`);
 
 });
