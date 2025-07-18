@@ -21,9 +21,16 @@ initializeSocket(server);
 // Middleware
 app.use(express.json());
 
-app.use(cors({ origin: '*' }));
+app.use(cors({
+    origin: '*', // Allow all origins
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allowed HTTP methods
+    allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
+}));
+app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
+app.use(express.static('public')); // Serve static files from 'public' directory
 // Serve static files from the uploads directory
 app.use('/uploads', express.static('uploads'));
+app.use('/images', express.static('uploads/images'));
 
 // Configure multer for image uploads
 const storage = multer.diskStorage({
@@ -82,6 +89,7 @@ app.post('/upload', upload.single('image'), (req, res) => {
 });
 
 // Start server
-server.listen(port, () => {
-    logger.info(`Server is running on http://localhost:${port}`);
+server.listen(port, "0.0.0.0", () => {
+    logger.info(`Server is running on http://0.0.0.0:${port}`);
+
 });

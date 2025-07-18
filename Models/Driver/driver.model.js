@@ -42,6 +42,10 @@ const driverSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+    isBusy: {
+        type: Boolean,
+        default: false,
+    },
     documents: {
         type: [String], // Array of document URLs or file paths
         required: true,

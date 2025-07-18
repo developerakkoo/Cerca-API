@@ -34,6 +34,7 @@ function initializeSocket(server) {
             updateDriverStatus(data.driverId, true,socket.id) // Update driver status to active
                 .then((updatedDriver) => {
                     console.log('Driver status updated:', updatedDriver);
+                    io.emit('driverConnected', updatedDriver); // Emit the updated driver status to all clients
                 })
                 .catch((error) => {
                     console.error('Error updating driver status:', error);

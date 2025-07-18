@@ -708,3 +708,86 @@ Use mongoose.model(name, schema) | Meta: {"stack":"MissingSchemaError: Schema ha
 2025-07-15 18:57:29 [INFO]: User logged in: 8007477149
 2025-07-16 18:36:52 [INFO]: Server is running on http://localhost:3000
 2025-07-16 18:37:27 [INFO]: MongoDB connected successfully
+2025-07-18 12:11:03 [INFO]: Server is running on http://localhost:3000
+2025-07-18 12:11:04 [INFO]: MongoDB connected successfully
+2025-07-18 12:14:05 [INFO]: Server is running on http://localhost:3000
+2025-07-18 12:14:09 [INFO]: Server is running on http://localhost:3000
+2025-07-18 12:14:18 [INFO]: Server is running on http://localhost:3000
+2025-07-18 12:14:25 [INFO]: Server is running on http://localhost:3000
+2025-07-18 12:14:38 [INFO]: Server is running on http://localhost:3000
+2025-07-18 12:14:41 [INFO]: Server is running on http://localhost:3000
+2025-07-18 12:14:43 [INFO]: Server is running on http://localhost:3000
+2025-07-18 12:14:45 [INFO]: Server is running on http://localhost:3000
+2025-07-18 12:14:52 [INFO]: Server is running on http://localhost:3000
+2025-07-18 12:15:14 [INFO]: MongoDB connected successfully
+2025-07-18 12:18:04 [INFO]: Server is running on http://localhost:3000
+2025-07-18 12:18:10 [INFO]: Server is running on http://localhost:3000
+2025-07-18 12:18:12 [INFO]: Server is running on http://localhost:3000
+2025-07-18 12:18:27 [ERROR]: Error fetching driver: Operation `drivers.findOne()` buffering timed out after 10000ms | Meta: {"stack":"MongooseError: Operation `drivers.findOne()` buffering timed out after 10000ms\n    at Timeout.<anonymous> (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/drivers/node-mongodb-native/collection.js:187:23)\n    at listOnTimeout (node:internal/timers:581:17)\n    at process.processTimers (node:internal/timers:519:7)"}
+2025-07-18 12:18:38 [INFO]: Server is running on http://localhost:3000
+2025-07-18 12:18:49 [ERROR]: Error fetching driver: Operation `drivers.findOne()` buffering timed out after 10000ms | Meta: {"stack":"MongooseError: Operation `drivers.findOne()` buffering timed out after 10000ms\n    at Timeout.<anonymous> (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/drivers/node-mongodb-native/collection.js:187:23)\n    at listOnTimeout (node:internal/timers:581:17)\n    at process.processTimers (node:internal/timers:519:7)"}
+2025-07-18 12:19:12 [INFO]: Server is running on http://localhost:3000
+2025-07-18 12:19:20 [INFO]: MongoDB connected successfully
+2025-07-18 12:27:16 [INFO]: Server is running on http://localhost:3000
+2025-07-18 12:27:31 [ERROR]: Error fetching driver: Operation `drivers.findOne()` buffering timed out after 10000ms | Meta: {"stack":"MongooseError: Operation `drivers.findOne()` buffering timed out after 10000ms\n    at Timeout.<anonymous> (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/drivers/node-mongodb-native/collection.js:187:23)\n    at listOnTimeout (node:internal/timers:581:17)\n    at process.processTimers (node:internal/timers:519:7)"}
+2025-07-18 12:27:36 [ERROR]: Error connecting to MongoDB: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/ | Meta: {"errorLabelSet":{},"reason":{"type":"ReplicaSetNoPrimary","servers":{"ac-sndzu4u-shard-00-00.uo0vjhs.mongodb.net:27017":{"address":"ac-sndzu4u-shard-00-00.uo0vjhs.mongodb.net:27017","type":"Unknown","hosts":[],"passives":[],"arbiters":[],"tags":{},"minWireVersion":0,"maxWireVersion":0,"roundTripTime":-1,"minRoundTripTime":0,"lastUpdateTime":1071456,"lastWriteDate":0,"error":null,"topologyVersion":null,"setName":null,"setVersion":null,"electionId":null,"logicalSessionTimeoutMinutes":null,"maxMessageSizeBytes":null,"maxWriteBatchSize":null,"maxBsonObjectSize":null,"primary":null,"me":null,"$clusterTime":null,"iscryptd":false},"ac-sndzu4u-shard-00-01.uo0vjhs.mongodb.net:27017":{"address":"ac-sndzu4u-shard-00-01.uo0vjhs.mongodb.net:27017","type":"Unknown","hosts":[],"passives":[],"arbiters":[],"tags":{},"minWireVersion":0,"maxWireVersion":0,"roundTripTime":-1,"minRoundTripTime":0,"lastUpdateTime":1071456,"lastWriteDate":0,"error":null,"topologyVersion":null,"setName":null,"setVersion":null,"electionId":null,"logicalSessionTimeoutMinutes":null,"maxMessageSizeBytes":null,"maxWriteBatchSize":null,"maxBsonObjectSize":null,"primary":null,"me":null,"$clusterTime":null,"iscryptd":false},"ac-sndzu4u-shard-00-02.uo0vjhs.mongodb.net:27017":{"address":"ac-sndzu4u-shard-00-02.uo0vjhs.mongodb.net:27017","type":"Unknown","hosts":[],"passives":[],"arbiters":[],"tags":{},"minWireVersion":0,"maxWireVersion":0,"roundTripTime":-1,"minRoundTripTime":0,"lastUpdateTime":1071456,"lastWriteDate":0,"error":null,"topologyVersion":null,"setName":null,"setVersion":null,"electionId":null,"logicalSessionTimeoutMinutes":null,"maxMessageSizeBytes":null,"maxWriteBatchSize":null,"maxBsonObjectSize":null,"primary":null,"me":null,"$clusterTime":null,"iscryptd":false}},"stale":false,"compatible":true,"heartbeatFrequencyMS":10000,"localThresholdMS":15,"setName":"atlas-12k0tf-shard-0","maxElectionId":null,"maxSetVersion":null,"commonWireVersion":0,"logicalSessionTimeoutMinutes":null},"stack":"MongooseServerSelectionError: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/\n    at _handleConnectionErrors (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/connection.js:1165:11)\n    at NativeConnection.openUri (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/connection.js:1096:11)\n    at async connectDB (/home/script/Projects/Backend/Cerca-API/db.js:8:9)"}
+2025-07-18 12:28:11 [INFO]: Server is running on http://localhost:3000
+2025-07-18 12:28:11 [INFO]: MongoDB connected successfully
+2025-07-18 12:41:11 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 12:41:14 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 12:43:48 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 12:44:13 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 12:47:19 [INFO]: Server is running on http://localhost:3000
+2025-07-18 12:47:34 [ERROR]: Error updating driver: Operation `drivers.findOne()` buffering timed out after 10000ms | Meta: {"stack":"MongooseError: Operation `drivers.findOne()` buffering timed out after 10000ms\n    at Timeout.<anonymous> (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/drivers/node-mongodb-native/collection.js:187:23)\n    at listOnTimeout (node:internal/timers:581:17)\n    at process.processTimers (node:internal/timers:519:7)"}
+2025-07-18 12:47:34 [INFO]: MongoDB connected successfully
+2025-07-18 12:47:49 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 12:47:54 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 12:49:05 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 12:49:08 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 12:50:02 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 12:50:05 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 12:51:52 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 12:51:54 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 12:53:43 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 12:53:45 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 12:59:32 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 13:00:20 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 13:00:25 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 13:06:04 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 13:06:07 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 13:06:12 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 13:07:22 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 13:07:25 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 13:07:29 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 13:09:27 [INFO]: Driver logged in: akshay@test.com
+2025-07-18 13:09:42 [INFO]: Driver updated successfully: akshay@test.com
+2025-07-18 13:09:48 [INFO]: Driver updated successfully: akshay@test.com
+2025-07-18 13:11:08 [INFO]: Driver updated successfully: akshay@test.com
+2025-07-18 13:11:10 [INFO]: Driver updated successfully: akshay@test.com
+2025-07-18 13:34:23 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 13:34:26 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 13:35:19 [INFO]: Driver logged in: akshay@test.com
+2025-07-18 13:35:30 [INFO]: Driver updated successfully: akshay@test.com
+2025-07-18 13:35:45 [INFO]: Driver updated successfully: akshay@test.com
+2025-07-18 13:37:13 [INFO]: Driver updated successfully: akshay@test.com
+2025-07-18 13:37:31 [INFO]: Driver updated successfully: akshay@test.com
+2025-07-18 13:37:42 [INFO]: Driver updated successfully: akshay@test.com
+2025-07-18 13:40:28 [INFO]: Server is running on http://localhost:3000
+2025-07-18 13:40:33 [INFO]: Server is running on http://localhost:3000
+2025-07-18 13:40:39 [INFO]: MongoDB connected successfully
+2025-07-18 13:40:41 [INFO]: Server is running on http://localhost:3000
+2025-07-18 13:40:50 [INFO]: Server is running on http://localhost:3000
+2025-07-18 13:40:51 [INFO]: MongoDB connected successfully
+2025-07-18 13:40:54 [INFO]: Server is running on http://0.0.0.0:3000
+2025-07-18 13:40:54 [INFO]: MongoDB connected successfully
+2025-07-18 13:41:05 [INFO]: Server is running on http://0.0.0.0:3000
+2025-07-18 13:41:12 [INFO]: Server is running on http://0.0.0.0:3000
+2025-07-18 13:41:17 [INFO]: MongoDB connected successfully
+2025-07-18 13:41:35 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 13:41:43 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 13:42:10 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 13:42:16 [INFO]: Driver updated successfully: ramesh@gmail.com
+2025-07-18 13:43:53 [ERROR]: Error fetching driver: Cast to ObjectId failed for value "null" (type string) at path "_id" for model "Driver" | Meta: {"stringValue":"\"null\"","kind":"ObjectId","value":"null","path":"_id","reason":{},"valueType":"string","stack":"CastError: Cast to ObjectId failed for value \"null\" (type string) at path \"_id\" for model \"Driver\"\n    at SchemaObjectId.cast (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/schema/objectId.js:251:11)\n    at SchemaType.applySetters (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/schemaType.js:1255:12)\n    at SchemaType.castForQuery (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/schemaType.js:1673:17)\n    at cast (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/cast.js:390:32)\n    at Query.cast (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/query.js:4999:12)\n    at Query._castConditions (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/query.js:2325:10)\n    at model.Query._findOne (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/query.js:2648:8)\n    at model.Query.exec (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/query.js:4548:80)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async getDriverById (/home/script/Projects/Backend/Cerca-API/Controllers/Driver/driver.controller.js:138:24)"}
+2025-07-18 13:43:57 [INFO]: Driver logged in: akshay@test.com
+2025-07-18 13:44:06 [INFO]: Driver updated successfully: akshay@test.com
+2025-07-18 13:44:09 [INFO]: Driver updated successfully: akshay@test.com
