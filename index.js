@@ -60,6 +60,7 @@ const upload = multer({
 
 //Routes
 const userRoutes = require('./Routes/User/user.routes.js');
+const addressRoutes = require('./Routes/User/address.route.js');
 const driverRoutes = require('./Routes/Driver/driver.routes.js');
 const adminRoutes = require('./Routes/admin.routes.js');
 const settingsRoutes = require('./Routes/admin.routes.js');
@@ -69,7 +70,7 @@ app.use('/driver',driverRoutes);
 app.use('/admin', adminRoutes);
 app.use('/settings', settingsRoutes);
 app.use('/coupons', couponRoutes);
-// Basic route
+app.use('/address', addressRoutes); // Basic route
 app.get('/', (req, res) => {
     logger.info('GET / - Welcome route accessed');
     res.send('Welcome to Cerca API!');
