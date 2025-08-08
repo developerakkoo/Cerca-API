@@ -70,7 +70,7 @@ app.use('/driver',driverRoutes);
 app.use('/admin', adminRoutes);
 app.use('/settings', settingsRoutes);
 app.use('/coupons', couponRoutes);
-app.use('/address', addressRoutes); // Basic route
+app.use('/address', addressRoutes);
 app.get('/', (req, res) => {
     logger.info('GET / - Welcome route accessed');
     res.send('Welcome to Cerca API!');

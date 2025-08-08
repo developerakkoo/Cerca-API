@@ -23,7 +23,7 @@ const driverSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    location: {
+     location: {
         type: {
             type: String,
             enum: ['Point'],
@@ -78,7 +78,8 @@ driverSchema.pre('save', function (next) {
     this.updatedAt = Date.now();
     next();
 });
-
+// Add 2dsphere index for geospatial queries
+driverSchema.index({ location: '2dsphere' });
 const Driver = mongoose.model('Driver', driverSchema);
 
 module.exports = Driver;

@@ -865,3 +865,22 @@ Use mongoose.model(name, schema) | Meta: {"stack":"MissingSchemaError: Schema ha
 2025-08-07 18:19:11 [INFO]: MongoDB connected successfully
 2025-08-07 18:21:24 [INFO]: Server is running on http://localhost:3000
 2025-08-07 18:21:25 [INFO]: MongoDB connected successfully
+2025-08-07 18:08:06 [INFO]: Server is running on http://localhost:3000
+2025-08-07 18:08:07 [INFO]: MongoDB connected successfully
+2025-08-07 18:10:35 [INFO]: GET / - Welcome route accessed
+2025-08-07 20:39:13 [INFO]: Server is running on http://localhost:3000
+2025-08-07 20:39:13 [INFO]: MongoDB connected successfully
+2025-08-07 20:43:58 [INFO]: Server is running on http://localhost:3000
+2025-08-07 20:43:58 [INFO]: MongoDB connected successfully
+2025-08-07 20:49:23 [INFO]: Server is running on http://localhost:3000
+2025-08-07 20:49:23 [INFO]: MongoDB connected successfully
+2025-08-07 20:51:02 [INFO]: Server is running on http://localhost:3000
+2025-08-07 20:51:02 [INFO]: MongoDB connected successfully
+2025-08-07 20:55:19 [INFO]: Server is running on http://localhost:3000
+2025-08-07 20:55:19 [INFO]: MongoDB connected successfully
+2025-08-07 20:56:47 [INFO]: Server is running on http://localhost:3000
+2025-08-07 20:56:47 [INFO]: MongoDB connected successfully
+2025-08-07 20:57:38 [INFO]: Server is running on http://localhost:3000
+2025-08-07 20:57:38 [INFO]: MongoDB connected successfully
+2025-08-07 20:59:55 [INFO]: Server is running on http://localhost:3000
+2025-08-07 20:59:56 [INFO]: MongoDB connected successfully
