@@ -80,7 +80,9 @@ function initializeSocket(server) {
 
     socket.on("newRideRequest", (data) => {
       const { userId, pickupLocation } = data;
-    console.log("New ride request:", data);
+    console.log("New ride request:", data['pickupLocation   ']);
+    console.log("New ride request pickupLocation:", pickupLocation);
+    console.log("New ride request userid:", userId);
 
     // Destructure the pickupLocation array directly
     const lat = pickupLocation[0];  // latitude
@@ -92,12 +94,12 @@ function initializeSocket(server) {
   
       // Find nearby drivers using MongoDB geospatial queries (example)
       Driver.find({
-        location: {
-          $near: {
-            $geometry: { type: "Point",coordinates: [lon, lat], },
-            $maxDistance: 8000, // Example 5 km radius
-          },
-        },
+        // location: {
+        //   $near: {
+        //     $geometry: { type: "Point",coordinates: [lon, lat], },
+        //     $maxDistance: 8000, // Example 8 km radius
+        //   },
+        // },
         isActive: true,
       })
         .then((nearbyDrivers) => {
