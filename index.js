@@ -65,12 +65,14 @@ const driverRoutes = require('./Routes/Driver/driver.routes.js');
 const adminRoutes = require('./Routes/admin.routes.js');
 const settingsRoutes = require('./Routes/admin.routes.js');
 const couponRoutes = require('./Routes/coupon.routes.js');
+const rideRoutes = require('./Routes/ride.routes.js');
 app.use('/users', userRoutes);
 app.use('/driver',driverRoutes);
 app.use('/admin', adminRoutes);
 app.use('/settings', settingsRoutes);
 app.use('/coupons', couponRoutes);
 app.use('/address', addressRoutes);
+app.use('/rides', rideRoutes);
 app.get('/', (req, res) => {
     logger.info('GET / - Welcome route accessed');
     res.send('Welcome to Cerca API!');

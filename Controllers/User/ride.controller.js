@@ -2,8 +2,7 @@ import Ride from '../../Models/Driver/ride.model.js';
 import Settings from '../../Models/Admin/settings.modal.js';
 import logger from '../../utils/logger.js';
 import crypto from 'crypto';
-import { initializeSocket } from '../../socket.js';
-import { getSocketIO } from '../../utils/socket.js';
+
 /**
  * @desc    Create a new ride
  * @route   POST /rides
@@ -54,7 +53,6 @@ export const createRide = async (req, res) => {
         // Create a new ride
         const ride = new Ride(rideData);
         await ride.save();
-        getSocketIO().to('drivers').emit('rideCreated', ride); // Emit event to notify clients
         logger.info(`Ride created successfully with ID: ${ride._id}`);
         res.status(201).json({
             ride,
@@ -113,7 +111,7 @@ export const getAllRides = async (req, res) => {
  */
 export const getRideById = async (req, res) => {
     try {
-        const ride = await Ride.findById(req.params.id);
+        const ride = await Ride.findById(req.params.id).populate('driver rider');
         if (!ride) {
             return res.status(404).json({ message: 'Ride not found' });
         }
@@ -221,9 +219,9 @@ export const searchRide = async (req, res) => {
         });
 
         // Notify nearby drivers (via Socket.IO)
-        if (nearbyDrivers.length > 0) {
-           getSocketIO().emit('newRideRequest', { userId: req.params.id, location: pickupLocation });
-        }
+        // if (nearbyDrivers.length > 0) {
+        //    getSocketIO().emit('newRideRequest', { userId: req.params.id, location: pickupLocation });
+        // }
 
         res.status(200).json({ nearbyDrivers });
     } catch (error) {
@@ -231,3 +229,7 @@ export const searchRide = async (req, res) => {
         res.status(500).json({ message: 'Error fetching nearby drivers' });
     }
 };
+
+
+
+  
