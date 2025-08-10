@@ -12,17 +12,7 @@ const logger = createLogger({
     ),
     transports: [
         new transports.Console(), // Log to the console with colors
-        new transports.File({
-            filename: 'logs/app.log',
-            format: format.combine(
-                format.uncolorize(), // Remove colors for file logs
-                format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-                format.printf(({ timestamp, level, message, ...meta }) => {
-                    const metaString = Object.keys(meta).length ? ` | Meta: ${JSON.stringify(meta)}` : '';
-                    return `${timestamp} [${level.toUpperCase()}]: ${message}${metaString}`;
-                })
-            ),
-        }), // Log to a file
+        // Log to a file
     ],
 });
 
