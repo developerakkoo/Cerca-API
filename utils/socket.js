@@ -166,6 +166,7 @@ function initializeSocket(server) {
         // TODO: verify OTP here if you want (fetch ride, compare startOtp)
         const startedRide = await startRide(rideId);
 
+        logger.info('Ride started:', startedRide._id);
         if (startedRide.userSocketId) io.to(startedRide.userSocketId).emit('rideStarted', startedRide);
         if (startedRide.driverSocketId) io.to(startedRide.driverSocketId).emit('rideStarted', startedRide);
         io.emit('rideStarted', startedRide); // optional
@@ -204,6 +205,7 @@ function initializeSocket(server) {
         if (!rideId) return;
 
         const completedRide = await completeRide(rideId, fare);
+        logger.info('Ride completed:', completedRide._id);
         if (completedRide.userSocketId) io.to(completedRide.userSocketId).emit('rideCompleted', completedRide);
         if (completedRide.driverSocketId) io.to(completedRide.driverSocketId).emit('rideCompleted', completedRide);
         io.emit('rideCompleted', completedRide); // optional
