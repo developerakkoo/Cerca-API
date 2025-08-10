@@ -1,4 +1,9 @@
 const mongoose = require('mongoose');
+const { randomInt } = require('crypto');
+
+// cryptographically-strong 4-digit OTP
+const genOtp = () => String(randomInt(1000, 10000));
+
 
 const rideSchema = new mongoose.Schema({
     rider: {
@@ -10,6 +15,13 @@ const rideSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Driver',
         required: false,
+    },
+
+    pickupAddress:{
+        type:String
+    },
+    dropoffAddress:{
+        type:String
     },
     pickupLocation: {
         type: {
@@ -57,6 +69,12 @@ const rideSchema = new mongoose.Schema({
         enum: ['normal', 'whole_day', 'custom'],
         default: 'normal',
     },
+
+    cancelledBy: {
+        type: String,
+        enum: ['rider', 'driver', 'system'],
+        default: null, // Null means not cancelled
+    },
     customSchedule: {
         startDate: {
             type: Date,
@@ -74,20 +92,28 @@ const rideSchema = new mongoose.Schema({
     startOtp: {
         type: String,
         required: false, // OTP for starting the ride
+        default: genOtp, // Generate OTP when ride is created
     },
     stopOtp: {
         type: String,
         required: false, // OTP for stopping the ride
+        default: genOtp, // Generate OTP when ride is created
     },
-    createdAt: {
-        type: Date,
-        default: Date.now,
+  
+    paymentMethod: {
+        type: String,
+        enum: ['CASH', 'RAZORPAY', 'WALLET'],
+        default: 'CASH',
     },
-    updatedAt: {
-        type: Date,
-        default: Date.now,
-    },
+},{
+    timestamps:true
 });
+
+// Helpful indexes (adjust to your needs)
+rideSchema.index({ status: 1, createdAt: -1 });
+rideSchema.index({ 'pickupLocation': '2dsphere' });
+rideSchema.index({ 'dropoffLocation': '2dsphere' });
+
 
 // Update the `updatedAt` field before saving
 rideSchema.pre('save', function (next) {

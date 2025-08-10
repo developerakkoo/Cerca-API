@@ -865,6 +865,7 @@ Use mongoose.model(name, schema) | Meta: {"stack":"MissingSchemaError: Schema ha
 2025-08-07 18:19:11 [INFO]: MongoDB connected successfully
 2025-08-07 18:21:24 [INFO]: Server is running on http://localhost:3000
 2025-08-07 18:21:25 [INFO]: MongoDB connected successfully
+<<<<<<< HEAD
 2025-08-07 18:08:06 [INFO]: Server is running on http://localhost:3000
 2025-08-07 18:08:07 [INFO]: MongoDB connected successfully
 2025-08-07 18:10:35 [INFO]: GET / - Welcome route accessed
@@ -904,3 +905,321 @@ Use mongoose.model(name, schema) | Meta: {"stack":"MissingSchemaError: Schema ha
 2025-08-08 15:58:02 [INFO]: MongoDB connected successfully
 2025-08-09 10:21:56 [INFO]: Server is running on http://localhost:3000
 2025-08-09 10:21:57 [INFO]: MongoDB connected successfully
+=======
+2025-08-09 15:58:51 [INFO]: Server is running on http://localhost:3000
+2025-08-09 15:58:52 [INFO]: MongoDB connected successfully
+2025-08-09 15:59:05 [INFO]: GET / - Welcome route accessed
+2025-08-09 16:01:02 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-09 16:01:06 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-09 16:13:42 [INFO]: Server is running on http://localhost:3000
+2025-08-09 16:13:42 [INFO]: MongoDB connected successfully
+2025-08-09 16:13:43 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-09 16:13:46 [INFO]: Server is running on http://localhost:3000
+2025-08-09 16:13:46 [INFO]: MongoDB connected successfully
+2025-08-09 16:13:46 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-09 16:13:50 [INFO]: Server is running on http://localhost:3000
+2025-08-09 16:13:51 [INFO]: MongoDB connected successfully
+2025-08-09 16:13:51 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-09 16:16:28 [INFO]: User logged in: 8007477149
+2025-08-09 16:19:30 [INFO]: User logged in: 8007477149
+2025-08-09 16:20:50 [INFO]: User logged in: 8007477149
+2025-08-09 16:42:14 [INFO]: Server is running on http://localhost:3000
+2025-08-09 16:42:14 [INFO]: MongoDB connected successfully
+2025-08-09 16:42:15 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-09 16:45:09 [INFO]: GET / - Welcome route accessed
+2025-08-09 18:06:03 [INFO]: Server is running on http://localhost:3000
+2025-08-09 18:06:04 [INFO]: MongoDB connected successfully
+2025-08-09 18:06:04 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-09 18:06:09 [INFO]: Server is running on http://localhost:3000
+2025-08-09 18:06:10 [INFO]: MongoDB connected successfully
+2025-08-09 18:06:10 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-09 18:20:44 [INFO]: Server is running on http://localhost:3000
+2025-08-09 18:20:45 [INFO]: MongoDB connected successfully
+2025-08-09 18:20:45 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-09 18:21:40 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-09 18:21:44 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 13:45:56 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:45:57 [INFO]: MongoDB connected successfully
+2025-08-10 13:47:17 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:47:17 [INFO]: MongoDB connected successfully
+2025-08-10 13:48:14 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:48:14 [INFO]: MongoDB connected successfully
+2025-08-10 13:48:20 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:48:21 [INFO]: MongoDB connected successfully
+2025-08-10 13:48:25 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:48:25 [INFO]: MongoDB connected successfully
+2025-08-10 13:48:31 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:48:31 [INFO]: MongoDB connected successfully
+2025-08-10 13:48:35 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:48:36 [INFO]: MongoDB connected successfully
+2025-08-10 13:48:42 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:48:42 [INFO]: MongoDB connected successfully
+2025-08-10 13:48:48 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:48:49 [INFO]: MongoDB connected successfully
+2025-08-10 13:49:06 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:49:47 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:49:47 [INFO]: MongoDB connected successfully
+2025-08-10 13:49:51 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:50:02 [INFO]: MongoDB connected successfully
+2025-08-10 13:54:11 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:54:26 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:54:27 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:54:35 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:54:41 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:54:47 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:55:08 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:55:09 [INFO]: MongoDB connected successfully
+2025-08-10 13:55:17 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:55:23 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:55:24 [INFO]: MongoDB connected successfully
+2025-08-10 13:55:29 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:55:40 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:55:41 [INFO]: MongoDB connected successfully
+2025-08-10 13:57:00 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:57:01 [INFO]: MongoDB connected successfully
+2025-08-10 13:57:06 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:57:07 [INFO]: MongoDB connected successfully
+2025-08-10 13:57:09 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:57:09 [INFO]: MongoDB connected successfully
+2025-08-10 13:57:35 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:57:36 [INFO]: MongoDB connected successfully
+2025-08-10 13:57:38 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:57:39 [INFO]: MongoDB connected successfully
+2025-08-10 13:58:00 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:58:00 [INFO]: MongoDB connected successfully
+2025-08-10 13:58:05 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:58:05 [INFO]: MongoDB connected successfully
+2025-08-10 13:58:26 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:58:26 [INFO]: MongoDB connected successfully
+2025-08-10 13:58:38 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:58:39 [INFO]: MongoDB connected successfully
+2025-08-10 13:58:42 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:58:43 [INFO]: MongoDB connected successfully
+2025-08-10 13:58:52 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:58:52 [INFO]: MongoDB connected successfully
+2025-08-10 13:58:54 [INFO]: Server is running on http://localhost:3000
+2025-08-10 13:58:54 [INFO]: MongoDB connected successfully
+2025-08-10 13:59:59 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:00:54 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:00:54 [INFO]: MongoDB connected successfully
+2025-08-10 14:01:07 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:01:08 [INFO]: MongoDB connected successfully
+2025-08-10 14:01:10 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:01:10 [INFO]: MongoDB connected successfully
+2025-08-10 14:01:23 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:01:26 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:01:26 [INFO]: MongoDB connected successfully
+2025-08-10 14:01:29 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:01:30 [INFO]: MongoDB connected successfully
+2025-08-10 14:04:12 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:04:12 [INFO]: MongoDB connected successfully
+2025-08-10 14:04:15 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:04:16 [INFO]: MongoDB connected successfully
+2025-08-10 14:04:29 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:04:30 [INFO]: MongoDB connected successfully
+2025-08-10 14:04:33 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:04:40 [INFO]: MongoDB connected successfully
+2025-08-10 14:05:03 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:05:03 [INFO]: MongoDB connected successfully
+2025-08-10 14:05:10 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:05:16 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:05:20 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:05:40 [ERROR]: Error connecting to MongoDB: Server selection timed out after 20000 ms | Meta: {"errorLabelSet":{},"reason":{"type":"ReplicaSetNoPrimary","servers":{"ac-sndzu4u-shard-00-02.uo0vjhs.mongodb.net:27017":{"address":"ac-sndzu4u-shard-00-02.uo0vjhs.mongodb.net:27017","type":"RSSecondary","hosts":["ac-sndzu4u-shard-00-00.uo0vjhs.mongodb.net:27017","ac-sndzu4u-shard-00-01.uo0vjhs.mongodb.net:27017","ac-sndzu4u-shard-00-02.uo0vjhs.mongodb.net:27017"],"passives":[],"arbiters":[],"tags":{"diskState":"READY","nodeType":"ELECTABLE","availabilityZone":"aps1-az2","workloadType":"OPERATIONAL","region":"AP_SOUTH_1","provider":"AWS"},"minWireVersion":0,"maxWireVersion":25,"roundTripTime":27,"minRoundTripTime":0,"lastUpdateTime":1257396,"lastWriteDate":{"$date":"2025-08-10T08:35:35Z"},"error":null,"topologyVersion":{"processId":{"$oid":"68926b65fa3cdde21f192060"},"counter":3},"setName":"atlas-12k0tf-shard-0","setVersion":223,"electionId":null,"logicalSessionTimeoutMinutes":30,"maxMessageSizeBytes":48000000,"maxWriteBatchSize":100000,"maxBsonObjectSize":16777216,"primary":"ac-sndzu4u-shard-00-01.uo0vjhs.mongodb.net:27017","me":"ac-sndzu4u-shard-00-02.uo0vjhs.mongodb.net:27017","$clusterTime":{"clusterTime":{"$timestamp":{"t":1754814935,"i":31}},"signature":{"hash":{"0":145,"1":138,"2":218,"3":199,"4":236,"5":254,"6":186,"7":86,"8":116,"9":198,"10":246,"11":230,"12":235,"13":67,"14":81,"15":143,"16":136,"17":157,"18":214,"19":79},"keyId":7493781955066986000}},"iscryptd":false},"ac-sndzu4u-shard-00-00.uo0vjhs.mongodb.net:27017":{"address":"ac-sndzu4u-shard-00-00.uo0vjhs.mongodb.net:27017","type":"Unknown","hosts":[],"passives":[],"arbiters":[],"tags":{},"minWireVersion":0,"maxWireVersion":0,"roundTripTime":-1,"minRoundTripTime":0,"lastUpdateTime":1242200,"lastWriteDate":0,"error":null,"topologyVersion":null,"setName":null,"setVersion":null,"electionId":null,"logicalSessionTimeoutMinutes":null,"maxMessageSizeBytes":null,"maxWriteBatchSize":null,"maxBsonObjectSize":null,"primary":null,"me":null,"$clusterTime":null,"iscryptd":false},"ac-sndzu4u-shard-00-01.uo0vjhs.mongodb.net:27017":{"address":"ac-sndzu4u-shard-00-01.uo0vjhs.mongodb.net:27017","type":"Unknown","hosts":[],"passives":[],"arbiters":[],"tags":{},"minWireVersion":0,"maxWireVersion":0,"roundTripTime":-1,"minRoundTripTime":0,"lastUpdateTime":1242200,"lastWriteDate":0,"error":null,"topologyVersion":null,"setName":null,"setVersion":null,"electionId":null,"logicalSessionTimeoutMinutes":null,"maxMessageSizeBytes":null,"maxWriteBatchSize":null,"maxBsonObjectSize":null,"primary":null,"me":null,"$clusterTime":null,"iscryptd":false}},"stale":false,"compatible":true,"heartbeatFrequencyMS":10000,"localThresholdMS":15,"setName":"atlas-12k0tf-shard-0","maxElectionId":null,"maxSetVersion":null,"commonWireVersion":0,"logicalSessionTimeoutMinutes":30},"stack":"MongooseServerSelectionError: Server selection timed out after 20000 ms\n    at _handleConnectionErrors (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/connection.js:1165:11)\n    at NativeConnection.openUri (/home/script/Projects/Backend/Cerca-API/node_modules/mongoose/lib/connection.js:1096:11)\n    at async connectDB (/home/script/Projects/Backend/Cerca-API/db.js:8:9)"}
+2025-08-10 14:05:57 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:05:57 [INFO]: MongoDB connected successfully
+2025-08-10 14:06:41 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:06:42 [INFO]: MongoDB connected successfully
+2025-08-10 14:06:48 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:06:52 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:06:58 [INFO]: MongoDB connected successfully
+2025-08-10 14:07:07 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:07:17 [INFO]: MongoDB connected successfully
+2025-08-10 14:08:02 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:08:02 [INFO]: MongoDB connected successfully
+2025-08-10 14:08:19 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:08:19 [INFO]: MongoDB connected successfully
+2025-08-10 14:08:36 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:08:36 [INFO]: MongoDB connected successfully
+2025-08-10 14:08:40 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:08:41 [INFO]: MongoDB connected successfully
+2025-08-10 14:08:42 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:08:43 [INFO]: MongoDB connected successfully
+2025-08-10 14:08:47 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:08:47 [INFO]: MongoDB connected successfully
+2025-08-10 14:08:49 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:08:50 [INFO]: MongoDB connected successfully
+2025-08-10 14:09:48 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:09:49 [INFO]: MongoDB connected successfully
+2025-08-10 14:09:52 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:09:52 [INFO]: MongoDB connected successfully
+2025-08-10 14:10:14 [INFO]: Server is running on http://localhost:3000
+2025-08-10 14:10:24 [INFO]: MongoDB connected successfully
+2025-08-10 15:03:59 [INFO]: Driver logged in: akshay@test.com
+2025-08-10 15:06:41 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:06:44 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:06:49 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:07:11 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:07:27 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:07:27 [INFO]: MongoDB connected successfully
+2025-08-10 15:07:31 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:07:32 [INFO]: MongoDB connected successfully
+2025-08-10 15:07:33 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:07:34 [INFO]: MongoDB connected successfully
+2025-08-10 15:07:36 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:07:36 [INFO]: MongoDB connected successfully
+2025-08-10 15:09:01 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:09:07 [INFO]: MongoDB connected successfully
+2025-08-10 15:09:23 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:09:28 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:09:50 [INFO]: MongoDB connected successfully
+2025-08-10 15:10:07 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:10:08 [INFO]: MongoDB connected successfully
+2025-08-10 15:11:35 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:11:38 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:12:17 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:12:28 [INFO]: MongoDB connected successfully
+2025-08-10 15:13:08 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:13:10 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:13:23 [INFO]: MongoDB connected successfully
+2025-08-10 15:13:26 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:13:41 [INFO]: MongoDB connected successfully
+2025-08-10 15:19:52 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:20:04 [INFO]: MongoDB connected successfully
+2025-08-10 15:20:31 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:20:31 [INFO]: MongoDB connected successfully
+2025-08-10 15:27:46 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:27:46 [INFO]: MongoDB connected successfully
+2025-08-10 15:27:48 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:27:49 [INFO]: MongoDB connected successfully
+2025-08-10 15:30:10 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:30:11 [INFO]: MongoDB connected successfully
+2025-08-10 15:30:13 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:30:13 [INFO]: MongoDB connected successfully
+2025-08-10 15:30:16 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:30:16 [INFO]: MongoDB connected successfully
+2025-08-10 15:31:08 [INFO]: newRideRequest received: | Meta: {"rider":"6821d192e6d58f64e554e596","pickupLocation":{"type":"Point","coordinates":[73.7844345,18.6054902]},"dropoffLocation":{"type":"Point","coordinates":[73.7177969,18.5962125]},"status":"requested","vehicleType":"small","pickupAddress":"JQ4M+8FV, Kalewadi - Rahatani Rd, Madhuban Colony, Rahatani, Pune, Pimpri-Chinchwad, Maharashtra 411017, India","dropoffAddress":"HPW9+F4M, Hinjawadi Phase II, Hinjawadi Rajiv Gandhi Infotech Park, Hinjawadi, Pimpri-Chinchwad, Maharashtra 411057, India","paymentMethod":"cash","totalAmount":299,"userSocketId":"hjSRu-qq_xpnHZrEAAAD"}
+2025-08-10 15:33:41 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 15:33:56 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 15:35:35 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:35:40 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:35:46 [INFO]: MongoDB connected successfully
+2025-08-10 15:35:46 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 15:35:46 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 15:40:44 [INFO]: newRideRequest received: | Meta: {"pickupLocation":{"type":"Point","coordinates":[73.7844345,18.6054902]},"dropoffLocation":{"type":"Point","coordinates":[73.7177969,18.5962125]},"status":"requested","vehicleType":"small","pickupAddress":"JQ4M+8FV, Kalewadi - Rahatani Rd, Madhuban Colony, Rahatani, Pune, Pimpri-Chinchwad, Maharashtra 411017, India","dropoffAddress":"HPW9+F4M, Hinjawadi Phase II, Hinjawadi Rajiv Gandhi Infotech Park, Hinjawadi, Pimpri-Chinchwad, Maharashtra 411057, India","paymentMethod":"cash","totalAmount":299,"userSocketId":"5bs9zzSqgsEJK2w3AAAF","riderId":"6821d192e6d58f64e554e596"}
+2025-08-10 15:53:19 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:53:26 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:53:28 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:53:32 [INFO]: MongoDB connected successfully
+2025-08-10 15:53:35 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:53:35 [INFO]: MongoDB connected successfully
+2025-08-10 15:54:03 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:54:09 [INFO]: MongoDB connected successfully
+2025-08-10 15:54:15 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:54:18 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:54:20 [INFO]: MongoDB connected successfully
+2025-08-10 15:54:23 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:54:23 [INFO]: MongoDB connected successfully
+2025-08-10 15:54:34 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:54:35 [INFO]: MongoDB connected successfully
+2025-08-10 15:54:53 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:54:54 [INFO]: MongoDB connected successfully
+2025-08-10 15:54:57 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:54:57 [INFO]: MongoDB connected successfully
+2025-08-10 15:55:04 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:55:05 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:55:05 [INFO]: MongoDB connected successfully
+2025-08-10 15:55:08 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:55:08 [INFO]: MongoDB connected successfully
+2025-08-10 15:55:10 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:55:11 [INFO]: MongoDB connected successfully
+2025-08-10 15:55:13 [INFO]: Server is running on http://localhost:3000
+2025-08-10 15:55:14 [INFO]: MongoDB connected successfully
+2025-08-10 15:56:11 [INFO]: newRideRequest received: | Meta: {"pickupLocation":{"type":"Point","coordinates":[73.71509,18.6231231]},"dropoffLocation":{"type":"Point","coordinates":[73.7177969,18.5962125]},"status":"requested","vehicleType":"small","pickupAddress":"R4, life republic, Tathawade, Marunji, Pimpri-Chinchwad, Maharashtra 411057, India","dropoffAddress":"HPW9+F4M, Hinjawadi Phase II, Hinjawadi Rajiv Gandhi Infotech Park, Hinjawadi, Pimpri-Chinchwad, Maharashtra 411057, India","paymentMethod":"cash","totalAmount":299,"userSocketId":"wUEwrGQJFdW9gy8IAAAD","riderId":"6821d192e6d58f64e554e596"}
+2025-08-10 15:57:59 [INFO]: newRideRequest received: | Meta: {"pickupLocation":{"type":"Point","coordinates":[73.7844345,18.6054902]},"dropoffLocation":{"type":"Point","coordinates":[73.7177969,18.5962125]},"status":"requested","vehicleType":"small","pickupAddress":"JQ4M+8FV, Kalewadi - Rahatani Rd, Madhuban Colony, Rahatani, Pune, Pimpri-Chinchwad, Maharashtra 411017, India","dropoffAddress":"HPW9+F4M, Hinjawadi Phase II, Hinjawadi Rajiv Gandhi Infotech Park, Hinjawadi, Pimpri-Chinchwad, Maharashtra 411057, India","paymentMethod":"cash","totalAmount":299,"userSocketId":"lN6s3zj74iElh0KSAAAH","riderId":"6821d192e6d58f64e554e596"}
+2025-08-10 15:59:27 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 15:59:34 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 15:59:54 [INFO]: newRideRequest received: | Meta: {"pickupLocation":{"type":"Point","coordinates":[73.7844345,18.6054902]},"dropoffLocation":{"type":"Point","coordinates":[73.7177969,18.5962125]},"status":"requested","vehicleType":"small","pickupAddress":"JQ4M+8FV, Kalewadi - Rahatani Rd, Madhuban Colony, Rahatani, Pune, Pimpri-Chinchwad, Maharashtra 411017, India","dropoffAddress":"HPW9+F4M, Hinjawadi Phase II, Hinjawadi Rajiv Gandhi Infotech Park, Hinjawadi, Pimpri-Chinchwad, Maharashtra 411057, India","paymentMethod":"cash","totalAmount":299,"userSocketId":"lN6s3zj74iElh0KSAAAH","riderId":"6821d192e6d58f64e554e596"}
+2025-08-10 16:00:51 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 16:00:54 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 16:01:06 [INFO]: newRideRequest received: | Meta: {"pickupLocation":{"type":"Point","coordinates":[73.7844345,18.6054902]},"dropoffLocation":{"type":"Point","coordinates":[73.7177969,18.5962125]},"status":"requested","vehicleType":"small","pickupAddress":"JQ4M+8FV, Kalewadi - Rahatani Rd, Madhuban Colony, Rahatani, Pune, Pimpri-Chinchwad, Maharashtra 411017, India","dropoffAddress":"HPW9+F4M, Hinjawadi Phase II, Hinjawadi Rajiv Gandhi Infotech Park, Hinjawadi, Pimpri-Chinchwad, Maharashtra 411057, India","paymentMethod":"cash","totalAmount":299,"userSocketId":"lN6s3zj74iElh0KSAAAH","riderId":"6821d192e6d58f64e554e596"}
+2025-08-10 16:04:36 [INFO]: Server is running on http://localhost:3000
+2025-08-10 16:04:36 [INFO]: MongoDB connected successfully
+2025-08-10 16:04:40 [INFO]: Server is running on http://localhost:3000
+2025-08-10 16:04:40 [INFO]: MongoDB connected successfully
+2025-08-10 16:04:47 [INFO]: Server is running on http://localhost:3000
+2025-08-10 16:04:47 [INFO]: MongoDB connected successfully
+2025-08-10 16:04:51 [INFO]: Server is running on http://localhost:3000
+2025-08-10 16:04:52 [INFO]: MongoDB connected successfully
+2025-08-10 16:05:21 [INFO]: Server is running on http://localhost:3000
+2025-08-10 16:05:35 [INFO]: Server is running on http://localhost:3000
+2025-08-10 16:05:35 [INFO]: MongoDB connected successfully
+2025-08-10 16:05:44 [INFO]: Server is running on http://localhost:3000
+2025-08-10 16:05:44 [INFO]: MongoDB connected successfully
+2025-08-10 16:06:01 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 16:06:05 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 16:06:20 [INFO]: newRideRequest received: | Meta: {"pickupLocation":{"type":"Point","coordinates":[73.7844345,18.6054902]},"dropoffLocation":{"type":"Point","coordinates":[73.7177969,18.5962125]},"status":"requested","vehicleType":"small","pickupAddress":"JQ4M+8FV, Kalewadi - Rahatani Rd, Madhuban Colony, Rahatani, Pune, Pimpri-Chinchwad, Maharashtra 411017, India","dropoffAddress":"HPW9+F4M, Hinjawadi Phase II, Hinjawadi Rajiv Gandhi Infotech Park, Hinjawadi, Pimpri-Chinchwad, Maharashtra 411057, India","paymentMethod":"cash","totalAmount":299,"userSocketId":"cHW3eC46akWKww-WAAAB","riderId":"6821d192e6d58f64e554e596"}
+2025-08-10 16:06:51 [INFO]: Server is running on http://localhost:3000
+2025-08-10 16:06:51 [INFO]: MongoDB connected successfully
+2025-08-10 16:06:52 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 16:07:19 [INFO]: newRideRequest received: | Meta: {"pickupLocation":{"type":"Point","coordinates":[73.7844345,18.6054902]},"dropoffLocation":{"type":"Point","coordinates":[73.7177969,18.5962125]},"status":"requested","vehicleType":"small","pickupAddress":"JQ4M+8FV, Kalewadi - Rahatani Rd, Madhuban Colony, Rahatani, Pune, Pimpri-Chinchwad, Maharashtra 411017, India","dropoffAddress":"HPW9+F4M, Hinjawadi Phase II, Hinjawadi Rajiv Gandhi Infotech Park, Hinjawadi, Pimpri-Chinchwad, Maharashtra 411057, India","paymentMethod":"cash","totalAmount":299,"userSocketId":"ZPPbf7uecL6CiIQSAAAC","riderId":"6821d192e6d58f64e554e596"}
+2025-08-10 16:07:56 [INFO]: Server is running on http://localhost:3000
+2025-08-10 16:07:56 [INFO]: MongoDB connected successfully
+2025-08-10 16:07:56 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 16:08:10 [INFO]: newRideRequest received: | Meta: {"pickupLocation":{"type":"Point","coordinates":[73.7844345,18.6054902]},"dropoffLocation":{"type":"Point","coordinates":[73.7177969,18.5962125]},"status":"requested","vehicleType":"small","pickupAddress":"JQ4M+8FV, Kalewadi - Rahatani Rd, Madhuban Colony, Rahatani, Pune, Pimpri-Chinchwad, Maharashtra 411017, India","dropoffAddress":"HPW9+F4M, Hinjawadi Phase II, Hinjawadi Rajiv Gandhi Infotech Park, Hinjawadi, Pimpri-Chinchwad, Maharashtra 411057, India","paymentMethod":"cash","totalAmount":299,"userSocketId":"fAa5SkdWd6ivzo-mAAAC","riderId":"6821d192e6d58f64e554e596"}
+2025-08-10 16:17:01 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 16:17:05 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 16:17:19 [INFO]: newRideRequest received: | Meta: {"pickupLocation":{"type":"Point","coordinates":[73.7844345,18.6054902]},"dropoffLocation":{"type":"Point","coordinates":[73.7177969,18.5962125]},"status":"requested","vehicleType":"small","pickupAddress":"JQ4M+8FV, Kalewadi - Rahatani Rd, Madhuban Colony, Rahatani, Pune, Pimpri-Chinchwad, Maharashtra 411017, India","dropoffAddress":"HPW9+F4M, Hinjawadi Phase II, Hinjawadi Rajiv Gandhi Infotech Park, Hinjawadi, Pimpri-Chinchwad, Maharashtra 411057, India","paymentMethod":"cash","totalAmount":405.5,"distanceInKm":7.1,"userSocketId":"0Wjdzf2zt0xtoRZuAAAN","riderId":"6821d192e6d58f64e554e596"}
+2025-08-10 16:23:09 [INFO]: Server is running on http://localhost:3000
+2025-08-10 16:23:10 [INFO]: MongoDB connected successfully
+2025-08-10 16:23:12 [INFO]: Server is running on http://localhost:3000
+2025-08-10 16:23:12 [INFO]: MongoDB connected successfully
+2025-08-10 16:23:17 [INFO]: Server is running on http://localhost:3000
+2025-08-10 16:23:17 [INFO]: MongoDB connected successfully
+2025-08-10 16:25:02 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 16:25:06 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 16:25:14 [INFO]: newRideRequest received: | Meta: {"pickupLocation":{"type":"Point","coordinates":[73.7844345,18.6054902]},"dropoffLocation":{"type":"Point","coordinates":[73.7177969,18.5962125]},"status":"requested","vehicleType":"medium","pickupAddress":"JQ4M+8FV, Kalewadi - Rahatani Rd, Madhuban Colony, Rahatani, Pune, Pimpri-Chinchwad, Maharashtra 411017, India","dropoffAddress":"HPW9+F4M, Hinjawadi Phase II, Hinjawadi Rajiv Gandhi Infotech Park, Hinjawadi, Pimpri-Chinchwad, Maharashtra 411057, India","paymentMethod":"cash","totalAmount":676.5,"distanceInKm":7.1,"userSocketId":"7LNzm8EuMdollgyfAAAD","riderId":"6821d192e6d58f64e554e596","fare":676.5,"pickup":"JQ4M+8FV, Kalewadi - Rahatani Rd, Madhuban Colony, Rahatani, Pune, Pimpri-Chinchwad, Maharashtra 411017, India","drop":"HPW9+F4M, Hinjawadi Phase II, Hinjawadi Rajiv Gandhi Infotech Park, Hinjawadi, Pimpri-Chinchwad, Maharashtra 411057, India"}
+2025-08-10 16:30:59 [INFO]: Server is running on http://localhost:3000
+2025-08-10 16:31:00 [INFO]: MongoDB connected successfully
+2025-08-10 16:31:09 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 16:31:13 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 16:31:33 [INFO]: newRideRequest received: | Meta: {"pickupLocation":{"type":"Point","coordinates":[73.7844345,18.6054902]},"dropoffLocation":{"type":"Point","coordinates":[73.7177969,18.5962125]},"status":"requested","vehicleType":"large","pickupAddress":"JQ4M+8FV, Kalewadi - Rahatani Rd, Madhuban Colony, Rahatani, Pune, Pimpri-Chinchwad, Maharashtra 411017, India","dropoffAddress":"HPW9+F4M, Hinjawadi Phase II, Hinjawadi Rajiv Gandhi Infotech Park, Hinjawadi, Pimpri-Chinchwad, Maharashtra 411057, India","paymentMethod":"cash","totalAmount":947.5,"distanceInKm":7.1,"userSocketId":"PdAn9yYsZsxvdGpzAAAB","riderId":"6821d192e6d58f64e554e596","fare":947.5,"pickup":"JQ4M+8FV, Kalewadi - Rahatani Rd, Madhuban Colony, Rahatani, Pune, Pimpri-Chinchwad, Maharashtra 411017, India","drop":"HPW9+F4M, Hinjawadi Phase II, Hinjawadi Rajiv Gandhi Infotech Park, Hinjawadi, Pimpri-Chinchwad, Maharashtra 411057, India"}
+2025-08-10 16:34:06 [INFO]: newRideRequest received: | Meta: {"pickupLocation":{"type":"Point","coordinates":[73.7844345,18.6054902]},"dropoffLocation":{"type":"Point","coordinates":[73.7177969,18.5962125]},"status":"requested","vehicleType":"small","pickupAddress":"JQ4M+8FV, Kalewadi - Rahatani Rd, Madhuban Colony, Rahatani, Pune, Pimpri-Chinchwad, Maharashtra 411017, India","dropoffAddress":"HPW9+F4M, Hinjawadi Phase II, Hinjawadi Rajiv Gandhi Infotech Park, Hinjawadi, Pimpri-Chinchwad, Maharashtra 411057, India","paymentMethod":"CASH","totalAmount":405.5,"distanceInKm":7.1,"userSocketId":"_mlkVVN5TZvjUnUkAAAH","riderId":"6821d192e6d58f64e554e596","fare":405.5,"pickup":"JQ4M+8FV, Kalewadi - Rahatani Rd, Madhuban Colony, Rahatani, Pune, Pimpri-Chinchwad, Maharashtra 411017, India","drop":"HPW9+F4M, Hinjawadi Phase II, Hinjawadi Rajiv Gandhi Infotech Park, Hinjawadi, Pimpri-Chinchwad, Maharashtra 411057, India"}
+2025-08-10 16:35:34 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 16:35:39 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 16:35:55 [INFO]: newRideRequest received: | Meta: {"pickupLocation":{"type":"Point","coordinates":[73.7844345,18.6054902]},"dropoffLocation":{"type":"Point","coordinates":[73.7177969,18.5962125]},"status":"requested","vehicleType":"medium","pickupAddress":"JQ4M+8FV, Kalewadi - Rahatani Rd, Madhuban Colony, Rahatani, Pune, Pimpri-Chinchwad, Maharashtra 411017, India","dropoffAddress":"HPW9+F4M, Hinjawadi Phase II, Hinjawadi Rajiv Gandhi Infotech Park, Hinjawadi, Pimpri-Chinchwad, Maharashtra 411057, India","paymentMethod":"CASH","totalAmount":676.5,"distanceInKm":7.1,"userSocketId":"_mlkVVN5TZvjUnUkAAAH","riderId":"6821d192e6d58f64e554e596","fare":676.5,"pickup":"JQ4M+8FV, Kalewadi - Rahatani Rd, Madhuban Colony, Rahatani, Pune, Pimpri-Chinchwad, Maharashtra 411017, India","drop":"HPW9+F4M, Hinjawadi Phase II, Hinjawadi Rajiv Gandhi Infotech Park, Hinjawadi, Pimpri-Chinchwad, Maharashtra 411057, India"}
+2025-08-10 16:51:18 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 16:51:22 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 16:55:55 [INFO]: newRideRequest received: | Meta: {"pickupLocation":{"type":"Point","coordinates":[73.7844345,18.6054902]},"dropoffLocation":{"type":"Point","coordinates":[73.7177969,18.5962125]},"status":"requested","vehicleType":"medium","pickupAddress":"JQ4M+8FV, Kalewadi - Rahatani Rd, Madhuban Colony, Rahatani, Pune, Pimpri-Chinchwad, Maharashtra 411017, India","dropoffAddress":"HPW9+F4M, Hinjawadi Phase II, Hinjawadi Rajiv Gandhi Infotech Park, Hinjawadi, Pimpri-Chinchwad, Maharashtra 411057, India","paymentMethod":"CASH","totalAmount":676.5,"distanceInKm":7.1,"userSocketId":"_mlkVVN5TZvjUnUkAAAH","riderId":"6821d192e6d58f64e554e596","fare":676.5,"pickup":"JQ4M+8FV, Kalewadi - Rahatani Rd, Madhuban Colony, Rahatani, Pune, Pimpri-Chinchwad, Maharashtra 411017, India","drop":"HPW9+F4M, Hinjawadi Phase II, Hinjawadi Rajiv Gandhi Infotech Park, Hinjawadi, Pimpri-Chinchwad, Maharashtra 411057, India"}
+2025-08-10 17:07:23 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 17:41:00 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 17:45:19 [INFO]: Server is running on http://localhost:3000
+2025-08-10 17:45:19 [INFO]: MongoDB connected successfully
+2025-08-10 17:45:19 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 17:46:00 [INFO]: Server is running on http://localhost:3000
+2025-08-10 17:46:00 [INFO]: MongoDB connected successfully
+2025-08-10 17:46:02 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 17:46:03 [INFO]: Server is running on http://localhost:3000
+2025-08-10 17:46:03 [INFO]: MongoDB connected successfully
+2025-08-10 17:46:03 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 17:47:46 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 17:57:41 [INFO]: Server is running on http://localhost:3000
+2025-08-10 17:57:48 [INFO]: Server is running on http://localhost:3000
+2025-08-10 17:57:49 [INFO]: MongoDB connected successfully
+2025-08-10 18:04:46 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 18:04:49 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 18:26:19 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 18:34:03 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 18:38:32 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 18:38:35 [INFO]: Driver updated successfully: akshay@test.com
+2025-08-10 18:38:47 [INFO]: newRideRequest received: | Meta: {"pickupLocation":{"type":"Point","coordinates":[73.7844345,18.6054902]},"dropoffLocation":{"type":"Point","coordinates":[73.7177969,18.5962125]},"status":"requested","vehicleType":"small","pickupAddress":"JQ4M+8FV, Kalewadi - Rahatani Rd, Madhuban Colony, Rahatani, Pune, Pimpri-Chinchwad, Maharashtra 411017, India","dropoffAddress":"HPW9+F4M, Hinjawadi Phase II, Hinjawadi Rajiv Gandhi Infotech Park, Hinjawadi, Pimpri-Chinchwad, Maharashtra 411057, India","paymentMethod":"CASH","totalAmount":405.5,"distanceInKm":7.1,"userSocketId":"H0IK7-2uu3y1_HlHAAAT","riderId":"6821d192e6d58f64e554e596","fare":405.5,"pickup":"JQ4M+8FV, Kalewadi - Rahatani Rd, Madhuban Colony, Rahatani, Pune, Pimpri-Chinchwad, Maharashtra 411017, India","drop":"HPW9+F4M, Hinjawadi Phase II, Hinjawadi Rajiv Gandhi Infotech Park, Hinjawadi, Pimpri-Chinchwad, Maharashtra 411057, India"}
+2025-08-10 18:38:53 [INFO]: rideAccepted received: | Meta: {"rideId":"689899df8ead60ab7fe3290b","driverId":"681dc62aa10f062e34128b84"}
+2025-08-10 18:38:54 [INFO]: Driver updated successfully: akshay@test.com
+>>>>>>> f401152 (Added Ride Accepteance Flow)
+2025-08-10 19:15:18 [INFO]: Server is running on http://localhost:3000
+2025-08-10 19:15:28 [INFO]: Server is running on http://localhost:3000
+2025-08-10 19:15:30 [INFO]: MongoDB connected successfully
+2025-08-10 19:15:50 [INFO]: Server is running on http://localhost:3000
+2025-08-10 19:15:55 [INFO]: MongoDB connected successfully
+2025-08-10 19:16:26 [INFO]: Server is running on http://localhost:3000
+2025-08-10 19:16:37 [INFO]: Server is running on http://localhost:3000
+2025-08-10 19:16:43 [INFO]: MongoDB connected successfully

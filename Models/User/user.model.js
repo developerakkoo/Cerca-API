@@ -83,6 +83,10 @@ const userSchema = new Schema(
       enum: ['CASH', 'CARD', 'WALLET'],
       default: 'CASH',
     },
+    socketId:{
+      type: String, // Socket ID for real-time notifications
+
+    },
 
     // Audit & soft-delete
     lastLogin: Date,
@@ -98,15 +102,5 @@ const userSchema = new Schema(
   }
 );
 
-
-
-// Virtuals
-userSchema.virtual('firstName').get(function () {
-  return this.fullName.split(' ')[0];
-});
-userSchema.virtual('lastName').get(function () {
-  const parts = this.fullName.split(' ');
-  return parts.length > 1 ? parts.slice(1).join(' ') : '';
-});
 
 module.exports = model('User', userSchema);

@@ -175,6 +175,8 @@ export const loginUserByMobile = async (req, res) => {
             return res.status(200).json({
                 message: 'Login successful',
                 token,
+                userId: user._id,
+                phoneNumber: user.phoneNumber,
                 isNewUser: false,
             });
         } else {

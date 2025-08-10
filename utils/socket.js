@@ -9,6 +9,8 @@ const {
 let io; // Declare a variable to hold the Socket.IO instance
 let riders = [];
 let drivers = [];
+let socketToUser = new Map(); // Maps socket ID to user ID
+let socketToDriver = new Map(); // Maps socket ID to driver ID
 // Function to initialize Socket.IO
 function initializeSocket(server) {
   io = new Server(server, {
@@ -22,147 +24,254 @@ function initializeSocket(server) {
 
     //All Code For Rider and Driver Connection
 
-    // Handle events from the client
-    socket.on("riderConnect", (data) => {
-      console.log("Rider connected:", data);
-      // Add the rider to the list of connected riders
-      riders.push(data);
-      // Broadcast the message to all connected clients
-      io.emit("riderConnect", data);
-    });
-
-    //Handler for driver connection
-    socket.on("driverConnect", (data) => {
-      console.log("Driver connected:", data);
-      // Add the driver to the list of connected drivers
-      // drivers.push(data);
-      updateDriverStatus(data.driverId, true, socket.id) // Update driver status to active
-        .then((updatedDriver) => {
-          console.log("Driver status updated:", updatedDriver);
-          io.emit("driverConnected", updatedDriver); // Emit the updated driver status to all clients
-        })
-        .catch((error) => {
-          console.error("Error updating driver status:", error);
-        });
-
-      // Broadcast the message to all connected clients
-      io.emit("driverConnect", data);
-    });
-
-    socket.on("driverDisconnect", (data) => {
-      console.log("Driver disconnected:", data);
-      // Remove the driver from the list of connected drivers
-      updateDriverStatus(data.driverId, false, "") // Update driver status to inactive
-        .then((updatedDriver) => {
-          console.log("Driver status updated:", updatedDriver);
-        })
-        .catch((error) => {
-          console.error("Error updating driver status:", error);
-        });
-      // drivers = drivers.filter((driver) => driver.id !== data.id);
-      // Broadcast the message to all connected clients
-      io.emit("driverDisconnect", data);
-    });
-
-    socket.on("driverLocationUpdate", (data) => {
-      console.log("Driver location update:", data);
-      // Update the driver's location in the database
-      updateDriverLocation(data.driverId, data.location) // Update driver status to active
-        .then((updatedDriver) => {
-          console.log("Driver location updated:", updatedDriver);
-        })
-        .catch((error) => {
-          console.error("Error updating driver location:", error);
-        });
-      // Broadcast the updated location to all connected riders
-      io.emit("driverLocationUpdate", data);
-    });
-
-    socket.on("newRideRequest", (data) => {
-      const { userId, pickupLocation } = data;
-    console.log("New ride request:", data['pickupLocation   ']);
-    console.log("New ride request pickupLocation:", pickupLocation);
-    console.log("New ride request userid:", userId);
-
-    // Destructure the pickupLocation array directly
-    const lat = pickupLocation[0];  // latitude
-    const lon = pickupLocation[1];  // longitude
-
-    console.log("Lat:- " + lat);  // Should print latitude
-    console.log("Lon:- " + lon);  // Should print longitude
-
+         // ---------------------------
+    // Rider connects
+    // ---------------------------
+    socket.on('riderConnect', async (data) => {
+        try {
+          const { userId } = data || {};
+          if (!userId) return;
   
-      // Find nearby drivers using MongoDB geospatial queries (example)
-      Driver.find({
-        // location: {
-        //   $near: {
-        //     $geometry: { type: "Point",coordinates: [lon, lat], },
-        //     $maxDistance: 8000, // Example 8 km radius
-        //   },
-        // },
-        isActive: true,
-      })
-        .then((nearbyDrivers) => {
-            console.log("Nearby Drivers...");
-            
-            console.log(nearbyDrivers);
-            
-          // Notify all nearby drivers
-          nearbyDrivers.forEach((driver) => {
-            io.to(driver.socketId).emit("newRideRequest", data);
-          });
-        })
-        .catch((err) => {
-          console.error("Error finding nearby drivers:", err);
-        });
-    });
-    socket.on("rideAccepted", (data) => {
-      console.log("Ride accepted:", data);
-      // Broadcast the ride acceptance to all connected riders
-      io.to("driver").emit("rideAccepted", data);
-    });
-    socket.on("rideCompleted", (data) => {
-      console.log("Ride completed:", data);
-      // Broadcast the ride completion to all connected riders
-      io.emit("rideCompleted", data);
-    });
-    socket.on("rideCancelled", (data) => {
-      console.log("Ride cancelled:", data);
-      // Broadcast the ride cancellation to all connected riders
-      io.emit("rideCancelled", data);
-    });
-    socket.on("rideStarted", (data) => {
-      console.log("Ride started:", data);
-      // Broadcast the ride start to all connected riders
-      io.emit("rideStarted", data);
-    });
-    socket.on("rideInProgress", (data) => {
-      console.log("Ride in progress:", data);
-      // Broadcast the ride in progress to all connected riders
-      io.emit("rideInProgress", data);
-    });
-    socket.on("rideLocationUpdate", (data) => {
-      console.log("Ride location update:", data);
-      // Broadcast the ride location update to all connected riders
-      io.emit("rideLocationUpdate", data);
-    });
-    socket.on("rideRating", (data) => {
-      console.log("Ride rating:", data);
-      // Broadcast the ride rating to all connected riders
-      io.emit("rideRating", data);
-    });
-    socket.on("riderDisconnect", (data) => {
-      console.log("Rider disconnected:", data);
-      // Remove the rider from the list of connected riders
-      riders = riders.filter((rider) => rider.id !== data.id);
-      // Broadcast the message to all connected clients
-      io.emit("riderDisconnect", data);
+          await setUserSocket(userId, socket.id);
+            socketToUser.set(socket.id, String(userId));
+          socket.join('rider'); // optional global room for riders
+  
+          console.log('Rider online:', userId, socket.id);
+          io.emit('riderConnect', { userId });
+        } catch (err) {
+          console.error('riderConnect error', err);
+          socket.emit('errorEvent', { message: 'Failed to register rider socket' });
+        }
+      });
+  
+      // ---------------------------
+      // Driver connects
+      // ---------------------------
+      socket.on('driverConnect', async (data) => {
+        try {
+          const { driverId } = data || {};
+          if (!driverId) return;
+  
+          const driver = await setDriverSocket(driverId, socket.id);
+          socketToDriver.set(socket.id, String(driverId)); // Store the socket ID to driver ID mapping
+          socket.join('driver'); // global room for drivers
+  
+          console.log('Driver online:', driverId, socket.id);
+          if (driver) io.emit('driverConnected', driver);
+          io.emit('driverConnect', { driverId });
+        } catch (err) {
+          console.error('driverConnect error', err);
+          socket.emit('errorEvent', { message: 'Failed to register driver socket' });
+        }
+      });
+  
+      // ---------------------------
+      // Driver explicitly disconnects (optional)
+      // ---------------------------
+      socket.on('driverDisconnect', async (data) => {
+        try {
+          const { driverId } = data || {};
+          if (!driverId) return;
+  
+          await clearDriverSocket(driverId, socket.id);     // pass socket.id to avoid race wiping a newer session
+          await updateDriverStatus(driverId, false, '');    // clear isActive/socketId if you track those
+          io.emit('driverDisconnect', { driverId });
+        } catch (err) {
+          console.error('driverDisconnect error', err);
+        }
+      });
+
+        socket.on('driverLocationUpdate', (data) => {
+            // console.log('Driver location update:', data);
+            // Update the driver's location in the database
+            updateDriverLocation(data.driverId, data.location) // Update driver status to active
+                .then((updatedDriver) => {
+                    console.log('Driver location updated:');
+                    // Broadcast the updated location to all connected riders
+                    io.emit('driverLocationUpdate', data);
+                })
+                .catch((error) => {
+                    console.error('Error updating driver location:', error);
+                });
+        }   );
+
+
+        // ---------------------------
+    // Create new ride
+    // ---------------------------
+    socket.on('newRideRequest', async (data) => {
+        try {
+            logger.info('newRideRequest received:', data);
+          // Expect: { riderId, userSocketId, pickupLocation:{longitude,latitude}, dropoffLocation:{longitude,latitude}, fare?, distanceInKm?, rideType? }
+          const ride = await createRide(data);
+  // Populate rider before returning
+  const populatedRide = await Ride.findById(ride._id)
+  .populate('rider', 'name phone email') // select only the needed fields
+  .exec();
+          // Notify all drivers (or add a nearby-driver filter later)
+          io.to('driver').emit('newRideRequest', populatedRide);
+  
+          // Ack to the rider who requested
+          if (populatedRide.userSocketId) io.to(populatedRide.userSocketId).emit('rideRequested', populatedRide);
+        } catch (err) {
+          console.error('newRideRequest error', err);
+          socket.emit('rideError', { message: 'Failed to create ride' });
+        }
+      });
+
+
+        // ---------------------------
+    // Driver accepts a ride
+    // ---------------------------
+    socket.on('rideAccepted', async (data) => {
+      try {
+        logger.info('rideAccepted received:', data);
+        const { rideId, driverId } = data || {};
+        if (!rideId || !driverId) return;
+
+        // also store the accepting driver's socketId on the ride for targeted emits
+        const assignedRide = await assignDriverToRide(rideId, driverId, socket.id);
+
+        // Notify only the parties
+        if (assignedRide.userSocketId) io.to(assignedRide.userSocketId).emit('rideAccepted', assignedRide);
+        if (assignedRide.driverSocketId) io.to(assignedRide.driverSocketId).emit('rideAssigned', assignedRide);
+
+        // Optional: broadcast for dashboards/ops
+        io.emit('rideAccepted', assignedRide);
+      } catch (err) {
+        console.error('rideAccepted error', err);
+        socket.emit('rideError', { message: 'Failed to accept ride' });
+      }
     });
 
-    socket.on("disconnect", () => {
-      console.log("A user disconnected:", socket.id);
+    // ---------------------------
+    // Start ride (verify OTP first on your side)
+    // ---------------------------
+    socket.on('rideStarted', async (data) => {
+      try {
+        const { rideId /* , providedOtp */ } = data || {};
+        if (!rideId) return;
+
+        // TODO: verify OTP here if you want (fetch ride, compare startOtp)
+        const startedRide = await startRide(rideId);
+
+        if (startedRide.userSocketId) io.to(startedRide.userSocketId).emit('rideStarted', startedRide);
+        if (startedRide.driverSocketId) io.to(startedRide.driverSocketId).emit('rideStarted', startedRide);
+        io.emit('rideStarted', startedRide); // optional
+      } catch (err) {
+        console.error('rideStarted error', err);
+        socket.emit('rideError', { message: 'Failed to start ride' });
+      }
     });
-  });
+
+    // ---------------------------
+    // Live ride updates (optional persistence)
+    // ---------------------------
+    socket.on('rideInProgress', (data) => {
+      try {
+        io.emit('rideInProgress', data);
+      } catch (err) {
+        console.error('rideInProgress error', err);
+      }
+    });
+
+    socket.on('rideLocationUpdate', (data) => {
+      try {
+        io.emit('rideLocationUpdate', data);
+      } catch (err) {
+        console.error('rideLocationUpdate error', err);
+      }
+    });
+
+    // ---------------------------
+    // Complete ride
+    // ---------------------------
+    socket.on('rideCompleted', async (data) => {
+      try {
+        // Expect: { rideId, fare }
+        const { rideId, fare } = data || {};
+        if (!rideId) return;
+
+        const completedRide = await completeRide(rideId, fare);
+        if (completedRide.userSocketId) io.to(completedRide.userSocketId).emit('rideCompleted', completedRide);
+        if (completedRide.driverSocketId) io.to(completedRide.driverSocketId).emit('rideCompleted', completedRide);
+        io.emit('rideCompleted', completedRide); // optional
+      } catch (err) {
+        console.error('rideCompleted error', err);
+        socket.emit('rideError', { message: 'Failed to complete ride' });
+      }
+    });
+
+    // ---------------------------
+    // Cancel ride (by rider or driver)
+    // ---------------------------
+    socket.on('rideCancelled', async (data) => {
+      try {
+        // Expect: { rideId, cancelledBy: 'rider' | 'driver' }
+        const { rideId, cancelledBy } = data || {};
+        if (!rideId) return;
+
+        const cancelledRide = await cancelRide(rideId, cancelledBy);
+        if (cancelledRide.userSocketId) io.to(cancelledRide.userSocketId).emit('rideCancelled', cancelledRide);
+        if (cancelledRide.driverSocketId) io.to(cancelledRide.driverSocketId).emit('rideCancelled', cancelledRide);
+        io.emit('rideCancelled', cancelledRide); // optional
+      } catch (err) {
+        console.error('rideCancelled error', err);
+        socket.emit('rideError', { message: 'Failed to cancel ride' });
+      }
+    });
+
+    // ---------------------------
+    // Ratings (stub)
+    // ---------------------------
+    socket.on('rideRating', (data) => {
+      try {
+        io.emit('rideRating', data);
+      } catch (err) {
+        console.error('rideRating error', err);
+      }
+    });
+
+    
+        socket.on('riderDisconnect', async (data) => {
+            console.log('Rider disconnected:', data);
+            // Remove the rider from the list of connected riders
+            // Remove the rider's socket ID from the map
+            await clearUserSocket(data.userId, socket.id); // pass socket.id to
+            socketToUser.delete(socket.id); // corrected to use socket.id
+
+            // Clear the rider's socket ID in the database
+            let user = await clearUserSocket(data.userId, socket.id); // pass socket.id to
+            // Broadcast the message to all connected clients
+            io.emit('riderDisconnect', data);
+        });
+
+       
+
+        socket.on('disconnect', async () => {
+            try {
+                const userId = socketToUser.get(socket.id);
+                const driverId = socketToDriver.get(socket.id);
+        
+                if (userId) {
+                  await clearUserSocket(userId, socket.id);   // only clear if same socket
+                socketToUser.delete(socket.id);
+                  io.emit('riderDisconnect', { userId });
+                }
+        
+                if (driverId) {
+                  await clearDriverSocket(driverId, socket.id); // only clear if same socket
+                  await updateDriverStatus(driverId, false, '');
+                  socketToDriver.delete(socket.id);
+                  io.emit('driverDisconnect', { driverId });
+                }
+              } catch (err) {
+                console.error('disconnect cleanup error', err);
+              }
+        
+              console.log('Disconnected:', socket.id);
+        });
+    });
 }
 
 // Function to get the Socket.IO instance
