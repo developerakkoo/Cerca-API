@@ -46,6 +46,37 @@ const driverSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+    rating: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 5,
+    },
+    totalRatings: {
+        type: Number,
+        default: 0,
+    },
+    totalEarnings: {
+        type: Number,
+        default: 0,
+    },
+    vehicleInfo: {
+        make: String,
+        model: String,
+        year: Number,
+        color: String,
+        licensePlate: String,
+        vehicleType: {
+            type: String,
+            enum: ['sedan', 'suv', 'hatchback', 'auto'],
+            default: 'sedan',
+        },
+    },
+    isOnline: {
+        type: Boolean,
+        default: false,
+    },
+    lastSeen: Date,
     documents: {
         type: [String], // Array of document URLs or file paths
         required: true,

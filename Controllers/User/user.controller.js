@@ -216,13 +216,14 @@ export const getUserWallet = async (req, res) => {
 };
 
 /**
- * @desc    Update the wallet balance of a user by ID
+ * @desc    Update the wallet balance of a user by ID and type add or deduct
  * @route   PUT /users/:id/wallet
  */
 export const updateUserWallet = async (req, res) => {
     try {
-        const { amount } = req.body;
-        if (typeof amount !== 'number' || amount < 0) {
+        const { amount, type } = req.body; // type = 'add' or 'deduct'
+
+        if (typeof amount !== 'number' || amount <= 0) {
             return res.status(400).json({ message: 'Invalid wallet amount' });
         }
 
@@ -231,10 +232,23 @@ export const updateUserWallet = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        user.walletBalance = amount;
+        if (type === 'deduct') {
+            if (user.walletBalance < amount) {
+                return res.status(400).json({ message: 'Insufficient wallet balance' });
+            }
+            user.walletBalance -= amount;
+        } else if (type === 'add') {
+            user.walletBalance += amount;
+        } else {
+            return res.status(400).json({ message: 'Invalid transaction type' });
+        }
+
         await user.save();
 
-        res.status(200).json({ message: 'Wallet balance updated successfully', walletBalance: user.walletBalance });
+        res.status(200).json({
+            message: `Wallet ${type === 'add' ? 'credited' : 'debited'} successfully`,
+            walletBalance: user.walletBalance,
+        });
     } catch (error) {
         logger.error('Error updating wallet balance:', error);
         res.status(500).json({ message: 'Error updating wallet balance', error });

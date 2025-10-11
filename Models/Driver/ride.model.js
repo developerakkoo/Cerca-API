@@ -105,6 +105,56 @@ const rideSchema = new mongoose.Schema({
         enum: ['CASH', 'RAZORPAY', 'WALLET'],
         default: 'CASH',
     },
+    
+    actualStartTime: Date,
+    actualEndTime: Date,
+    estimatedDuration: Number, // in minutes
+    actualDuration: Number, // in minutes
+    estimatedArrivalTime: Date,
+    driverArrivedAt: Date,
+    
+    riderRating: {
+        type: Number,
+        min: 1,
+        max: 5,
+    },
+    driverRating: {
+        type: Number,
+        min: 1,
+        max: 5,
+    },
+    
+    tips: {
+        type: Number,
+        default: 0,
+    },
+    
+    discount: {
+        type: Number,
+        default: 0,
+    },
+    
+    promoCode: {
+        type: String,
+    },
+    
+    cancellationReason: {
+        type: String,
+        maxlength: 500,
+    },
+    
+    cancellationFee: {
+        type: Number,
+        default: 0,
+    },
+    
+    paymentStatus: {
+        type: String,
+        enum: ['pending', 'completed', 'failed', 'refunded'],
+        default: 'pending',
+    },
+    
+    transactionId: String,
 },{
     timestamps:true
 });

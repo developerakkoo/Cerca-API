@@ -11,6 +11,12 @@ const {
     updateDriverDocuments,
     getAllRidesOfDriver,
     updateDriverLocation,
+    updateDriverOnlineStatus,
+    updateDriverVehicle,
+    getDriverEarnings,
+    getDriverStats,
+    getNearbyDrivers,
+    updateDriverBusyStatus,
 } = require('../../Controllers/Driver/driver.controller.js');
 
 const router = express.Router();
@@ -46,5 +52,24 @@ router.get('/:id/rides', getAllRidesOfDriver);
 
 // Route to update a driver's location
 router.patch('/:id/location', updateDriverLocation);
+
+// Route to update driver online/offline status
+router.patch('/:id/online-status', updateDriverOnlineStatus);
+
+// Route to update driver vehicle information
+router.patch('/:id/vehicle', updateDriverVehicle);
+
+// Route to update driver busy status
+router.patch('/:id/busy-status', updateDriverBusyStatus);
+
+// Route to get driver earnings
+router.get('/:id/earnings', getDriverEarnings);
+
+// Route to get driver statistics
+router.get('/:id/stats', getDriverStats);
+
+// Route to get nearby drivers
+// Query params: longitude, latitude, maxDistance (optional, default 10000 meters)
+router.get('/nearby', getNearbyDrivers);
 
 module.exports = router;
