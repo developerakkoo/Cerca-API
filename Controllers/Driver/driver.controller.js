@@ -271,17 +271,44 @@ const updateDriverIsReadyForRides = async (req, res) => {
  */
 const getAllRidesOfDriver = async (req, res) => {
     try {
-        const driver = await Driver.findById(req.params.id).populate('rides.rideId');
-
+        // Check if driver exists
+        const driver = await Driver.findById(req.params.id);
         if (!driver) {
             return res.status(404).json({ message: 'Driver not found' });
         }
 
-        if(driver.rides.length === 0) {
-            res.status(200).json({ message: 'No rides found for this driver', rides: [] });
-            return;
+        // Query Ride model directly for all rides with this driver
+        const rides = await Ride.find({ driver: req.params.id })
+            .populate('rider', 'fullName email phoneNumber profilePic')
+            .sort({ createdAt: -1 }); // Most recent first
+
+        if(rides.length === 0) {
+            return res.status(200).json({ message: 'No rides found for this driver', rides: [] });
         }
-        res.status(200).json({ rides: driver.rides });
+        
+        // Sort rides by status priority: active statuses first, then completed/cancelled
+        // Status priority: in_progress > accepted > requested > completed > cancelled
+        const statusPriority = {
+            'in_progress': 1,
+            'accepted': 2,
+            'requested': 3,
+            'completed': 4,
+            'cancelled': 5
+        };
+        
+        const sortedRides = rides.sort((a, b) => {
+            const priorityA = statusPriority[a.status] || 99;
+            const priorityB = statusPriority[b.status] || 99;
+            
+            // If same status, sort by most recent first
+            if (priorityA === priorityB) {
+                return new Date(b.createdAt) - new Date(a.createdAt);
+            }
+            
+            return priorityA - priorityB;
+        });
+        
+        res.status(200).json({ rides: sortedRides });
     } catch (error) {
         logger.error('Error fetching rides of driver:', error);
         res.status(500).json({ message: 'Error fetching rides of driver', error });

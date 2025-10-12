@@ -402,7 +402,43 @@ socket.on('driverConnected', (driver) => {
 
 ---
 
-### 2. Update Location (Continuous)
+### 2. Toggle Driver Status (ON/OFF for Accepting Rides)
+
+**Emit (when driver toggles status):**
+```javascript
+// When driver clicks toggle switch
+socket.emit('driverToggleStatus', {
+  driverId: 'DRIVER_ID',
+  isActive: true // true = ON (accepting rides), false = OFF
+});
+```
+
+**Listen (confirmation):**
+```javascript
+socket.on('driverStatusUpdate', (data) => {
+  console.log('Status updated:', data);
+  // data = {
+  //   driverId: 'DRIVER_ID',
+  //   isOnline: true,
+  //   isActive: true,
+  //   isBusy: false,
+  //   message: 'You are now accepting ride requests'
+  // }
+  
+  // Update UI
+  setIsActive(data.isActive);
+  showToast(data.message);
+});
+```
+
+**Important Notes:**
+- Driver will ONLY receive ride requests when `isActive = true`, `isOnline = true`, and `isBusy = false`
+- Socket connection (`isOnline`) is separate from ride acceptance status (`isActive`)
+- When toggle is OFF, driver will NOT receive any ride notifications (even in background)
+
+---
+
+### 3. Update Location (Continuous)
 
 **Emit (every 5-10 seconds while online):**
 ```javascript
@@ -423,7 +459,7 @@ setInterval(() => {
 
 ---
 
-### 3. Receive New Ride Requests
+### 4. Receive New Ride Requests
 
 **Listen:**
 ```javascript
@@ -443,7 +479,7 @@ socket.on('newRideRequest', (ride) => {
 
 ---
 
-### 4. Accept Ride
+### 5. Accept Ride
 
 **Emit:**
 ```javascript
@@ -473,7 +509,7 @@ socket.on('rideError', (error) => {
 
 ---
 
-### 5. Arrived at Pickup
+### 6. Arrived at Pickup
 
 **Emit:**
 ```javascript
@@ -489,7 +525,7 @@ socket.emit('driverArrived', {
 
 ---
 
-### 6. Verify Start OTP
+### 7. Verify Start OTP
 
 **Emit:**
 ```javascript
@@ -514,7 +550,7 @@ socket.on('otpVerificationFailed', (error) => {
 
 ---
 
-### 7. Start Ride
+### 8. Start Ride
 
 **Emit:**
 ```javascript
@@ -538,7 +574,7 @@ socket.on('rideStarted', (ride) => {
 
 ---
 
-### 8. Send Location Updates During Ride
+### 9. Send Location Updates During Ride
 
 **Emit (every 3-5 seconds):**
 ```javascript
@@ -555,7 +591,7 @@ socket.emit('rideLocationUpdate', {
 
 ---
 
-### 9. Verify Stop OTP
+### 10. Verify Stop OTP
 
 **Emit:**
 ```javascript
@@ -579,7 +615,7 @@ socket.on('otpVerificationFailed', (error) => {
 
 ---
 
-### 10. Complete Ride
+### 11. Complete Ride
 
 **Emit:**
 ```javascript
@@ -605,7 +641,7 @@ socket.on('rideCompleted', (ride) => {
 
 ---
 
-### 11. Submit Rating for Rider
+### 12. Submit Rating for Rider
 
 **Emit:**
 ```javascript
@@ -623,7 +659,7 @@ socket.emit('submitRating', {
 
 ---
 
-### 12. Cancel Ride
+### 13. Cancel Ride
 
 **Emit:**
 ```javascript
@@ -636,7 +672,7 @@ socket.emit('rideCancelled', {
 
 ---
 
-### 13. Send Message to Rider
+### 14. Send Message to Rider
 
 **Emit:**
 ```javascript
@@ -660,7 +696,7 @@ socket.on('receiveMessage', (message) => {
 
 ---
 
-### 14. Emergency Alert
+### 15. Emergency Alert
 
 **Emit:**
 ```javascript
@@ -679,7 +715,7 @@ socket.emit('emergencyAlert', {
 
 ---
 
-### 15. Go Offline
+### 16. Go Offline
 
 **Emit:**
 ```javascript

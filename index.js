@@ -67,7 +67,7 @@ const settingsRoutes = require('./Routes/admin.routes.js');
 const couponRoutes = require('./Routes/coupon.routes.js');
 const rideRoutes = require('./Routes/ride.routes.js');
 app.use('/users', userRoutes);
-app.use('/driver',driverRoutes);
+app.use('/drivers',driverRoutes);
 app.use('/admin', adminRoutes);
 app.use('/settings', settingsRoutes);
 app.use('/coupons', couponRoutes);

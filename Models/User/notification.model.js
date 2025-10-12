@@ -33,7 +33,7 @@ const notificationSchema = new mongoose.Schema({
         default: false,
     },
     data: {
-        type: mongoose.Schema.Mixed, // Additional data
+        type: mongoose.Schema.Types.Mixed, // Additional data
     },
     createdAt: {
         type: Date,

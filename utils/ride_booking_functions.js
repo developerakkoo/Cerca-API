@@ -38,10 +38,46 @@ const updateDriverStatus = async (driverId, status,socketId) => {
 
 const updateDriverLocation = async (driverId, location) => {
     try {
-        const driver = await Driver.findByIdAndUpdate(driverId, { location: { type: 'Point', coordinates: [location.longitude, location.latitude] } }, { new: true });
+        // Extract coordinates - handle both formats
+        let longitude, latitude;
+        
+        if (location.coordinates && Array.isArray(location.coordinates)) {
+            [longitude, latitude] = location.coordinates;
+        } else if (location.longitude !== undefined && location.latitude !== undefined) {
+            longitude = location.longitude;
+            latitude = location.latitude;
+        } else {
+            throw new Error('Invalid location format. Provide either coordinates array or longitude/latitude');
+        }
+        
+        // Validate coordinates are valid numbers
+        longitude = parseFloat(longitude);
+        latitude = parseFloat(latitude);
+        
+        if (isNaN(longitude) || isNaN(latitude)) {
+            throw new Error('Invalid coordinates. Longitude and latitude must be valid numbers');
+        }
+        
+        // Validate range
+        if (longitude < -180 || longitude > 180 || latitude < -90 || latitude > 90) {
+            throw new Error('Coordinates out of range. Longitude: -180 to 180, Latitude: -90 to 90');
+        }
+        
+        const driver = await Driver.findByIdAndUpdate(
+            driverId, 
+            { 
+                location: { 
+                    type: 'Point', 
+                    coordinates: [longitude, latitude] 
+                } 
+            }, 
+            { new: true }
+        );
+        
         if (!driver) {
             throw new Error('Driver not found');
         }
+        
         return driver;
     } catch (error) {
         throw new Error(`Error updating driver location: ${error.message}`);
@@ -72,30 +108,85 @@ const createRide = async (rideData) => {
     
         const pickupLngLat  = toLngLat(rideData.pickupLocation);
         const dropoffLngLat = toLngLat(rideData.dropoffLocation);
+        
+        // Calculate distance using Haversine formula
+        const distance = calculateHaversineDistance(
+            pickupLngLat[1], pickupLngLat[0],  // lat, lng
+            dropoffLngLat[1], dropoffLngLat[0]
+        );
+        
+        // Fetch admin settings for fare calculation
+        const Settings = require('../Models/Admin/settings.modal.js');
+        const settings = await Settings.findOne();
+        
+        if (!settings) {
+            throw new Error('Admin settings not found. Please configure pricing.');
+        }
+        
+        const { perKmRate, minimumFare } = settings.pricingConfigurations;
+        
+        // Find the service
+        const selectedService = rideData.service;
+        const service = settings.services.find(s => s.name === selectedService);
+        
+        if (!service) {
+            throw new Error(`Invalid service: ${selectedService}. Available services: ${settings.services.map(s => s.name).join(', ')}`);
+        }
+        
+        // Calculate fare: base price + (distance * per km rate)
+        let fare = service.price + (distance * perKmRate);
+        fare = Math.max(fare, minimumFare); // Ensure minimum fare
+        fare = Math.round(fare * 100) / 100; // Round to 2 decimal places
     
+        const rideDoc = {
+            rider: riderId,
+            pickupLocation: { type: 'Point', coordinates: pickupLngLat },
+            dropoffLocation: { type: 'Point', coordinates: dropoffLngLat },
+            fare: fare,
+            distanceInKm: Math.round(distance * 100) / 100, // Round to 2 decimal places
+            rideType: rideData.rideType || 'normal',
+            userSocketId: rideData.userSocketId,
+            status: 'requested',
+            paymentMethod: rideData.paymentMethod || 'CASH',
+            pickupAddress: rideData.pickupAddress,
+            dropoffAddress: rideData.dropoffAddress,
+            service: service.name,
+            // startOtp & stopOtp come from schema defaults
+        };
   
-      const rideDoc = {
-        rider: rideData.riderId,
-        pickupLocation: { type: 'Point', coordinates: pickupLngLat },
-        dropoffLocation: { type: 'Point', coordinates: dropoffLngLat },
-        fare: rideData.fare ?? 0,
-        distanceInKm: rideData.distanceInKm ?? 0,
-        rideType: rideData.rideType || 'normal',
-        userSocketId: rideData.userSocketId,
-        status: 'requested',
-        paymentMethod: rideData.paymentMethod || 'CASH',
-        pickupAddress: rideData.pickupAddress,
-        dropoffAddress: rideData.dropoffAddress,
-        // startOtp & stopOtp come from schema defaults
-      };
-  
-      // Single insert; returns the created document including generated OTPs
-      const ride = await Ride.create(rideDoc);
-      return ride;
+        // Single insert; returns the created document including generated OTPs
+        const ride = await Ride.create(rideDoc);
+        return ride;
     } catch (error) {
-      throw new Error(`Error creating ride: ${error.message}`);
+        throw new Error(`Error creating ride: ${error.message}`);
     }
-  };
+};
+
+/**
+ * Calculate distance between two coordinates using Haversine formula
+ * @param {number} lat1 - Latitude of first point
+ * @param {number} lon1 - Longitude of first point
+ * @param {number} lat2 - Latitude of second point
+ * @param {number} lon2 - Longitude of second point
+ * @returns {number} - Distance in kilometers
+ */
+const calculateHaversineDistance = (lat1, lon1, lat2, lon2) => {
+    const toRadians = (degrees) => (degrees * Math.PI) / 180;
+    const R = 6371; // Earth's radius in kilometers
+
+    const dLat = toRadians(lat2 - lat1);
+    const dLon = toRadians(lon2 - lon1);
+
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRadians(lat1)) *
+        Math.cos(toRadians(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+};
   
 
 const assignDriverToRide = async (rideId, driverId, driverSocketId) => {
@@ -103,7 +194,7 @@ const assignDriverToRide = async (rideId, driverId, driverSocketId) => {
         const ride = await Ride.findOneAndUpdate(
             { _id: rideId, status: 'requested', driver: { $exists: false } },
             { $set: { driver: driverId, driverSocketId, status: 'accepted' } },
-          
+            { new: true }
           ).populate('driver rider');
           if (!ride) {
             // Either already accepted by someone else or ride not in requested state
