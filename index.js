@@ -66,6 +66,11 @@ const adminRoutes = require('./Routes/admin.routes.js');
 const settingsRoutes = require('./Routes/admin.routes.js');
 const couponRoutes = require('./Routes/coupon.routes.js');
 const rideRoutes = require('./Routes/ride.routes.js');
+const messageRoutes = require('./Routes/Driver/message.routes.js');
+const ratingRoutes = require('./Routes/Driver/rating.routes.js');
+const notificationRoutes = require('./Routes/User/notification.routes.js');
+const emergencyRoutes = require('./Routes/User/emergency.routes.js');
+
 app.use('/users', userRoutes);
 app.use('/drivers',driverRoutes);
 app.use('/admin', adminRoutes);
@@ -73,6 +78,10 @@ app.use('/settings', settingsRoutes);
 app.use('/coupons', couponRoutes);
 app.use('/address', addressRoutes);
 app.use('/rides', rideRoutes);
+app.use('/messages', messageRoutes);
+app.use('/ratings', ratingRoutes);
+app.use('/notifications', notificationRoutes);
+app.use('/emergencies', emergencyRoutes);
 app.get('/', (req, res) => {
     logger.info('GET / - Welcome route accessed');
     res.send('Welcome to Cerca API!');
