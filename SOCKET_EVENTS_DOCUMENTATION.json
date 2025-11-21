@@ -1,0 +1,965 @@
+{
+  "socketName": "Cerca Socket.IO",
+  "version": "1.0.0",
+  "description": "Complete Socket.IO events documentation for Cerca ride-sharing platform",
+  "connection": {
+    "url": "http://localhost:3000",
+    "cors": {
+      "origin": "*",
+      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    }
+  },
+  "events": {
+    "connection": {
+      "event": "connection",
+      "type": "system",
+      "description": "Socket connection established",
+      "emittedBy": "Server",
+      "receivedBy": "Client",
+      "data": null,
+      "functionality": "Initializes socket connection. Client should immediately emit 'riderConnect' or 'driverConnect' to register."
+    },
+    "riderConnect": {
+      "event": "riderConnect",
+      "type": "client_to_server",
+      "description": "Register rider socket connection",
+      "emittedBy": "Rider App",
+      "receivedBy": "Server",
+      "data": {
+        "required": ["userId"],
+        "schema": {
+          "userId": "string (User MongoDB ObjectId)"
+        }
+      },
+      "responseEvents": [
+        {
+          "event": "riderConnect",
+          "emittedTo": "All clients",
+          "data": {
+            "userId": "string"
+          }
+        },
+        {
+          "event": "errorEvent",
+          "emittedTo": "Sender (if error)",
+          "data": {
+            "message": "Failed to register rider socket"
+          }
+        }
+      ],
+      "functionality": "Registers rider socket connection. Sets user socketId, joins 'rider' room and user-specific room. Updates user isOnline status. Broadcasts rider connection to all clients."
+    },
+    "driverConnect": {
+      "event": "driverConnect",
+      "type": "client_to_server",
+      "description": "Register driver socket connection",
+      "emittedBy": "Driver App",
+      "receivedBy": "Server",
+      "data": {
+        "required": ["driverId"],
+        "schema": {
+          "driverId": "string (Driver MongoDB ObjectId)"
+        }
+      },
+      "responseEvents": [
+        {
+          "event": "driverConnected",
+          "emittedTo": "All clients",
+          "data": "Driver object"
+        },
+        {
+          "event": "driverStatusUpdate",
+          "emittedTo": "Connected driver",
+          "data": {
+            "driverId": "string",
+            "isOnline": "boolean",
+            "isActive": "boolean",
+            "isBusy": "boolean"
+          }
+        },
+        {
+          "event": "errorEvent",
+          "emittedTo": "Sender (if error)",
+          "data": {
+            "message": "Failed to register driver socket"
+          }
+        }
+      ],
+      "functionality": "Registers driver socket connection. Sets driver socketId, updates isOnline to true (but doesn't change isActive), joins 'driver' room and driver-specific room. Broadcasts driver connection and sends status update back to driver."
+    },
+    "driverToggleStatus": {
+      "event": "driverToggleStatus",
+      "type": "client_to_server",
+      "description": "Toggle driver active status (ON/OFF for accepting rides)",
+      "emittedBy": "Driver App",
+      "receivedBy": "Server",
+      "data": {
+        "required": ["driverId", "isActive"],
+        "schema": {
+          "driverId": "string (Driver MongoDB ObjectId)",
+          "isActive": "boolean (true = accepting rides, false = not accepting)"
+        }
+      },
+      "responseEvents": [
+        {
+          "event": "driverStatusUpdate",
+          "emittedTo": "Driver",
+          "data": {
+            "driverId": "string",
+            "isOnline": "boolean",
+            "isActive": "boolean",
+            "isBusy": "boolean",
+            "message": "string (status message)"
+          }
+        },
+        {
+          "event": "driverStatusChanged",
+          "emittedTo": "All clients",
+          "data": {
+            "driverId": "string",
+            "isActive": "boolean",
+            "isOnline": "boolean"
+          }
+        },
+        {
+          "event": "errorEvent",
+          "emittedTo": "Sender (if error)",
+          "data": {
+            "message": "Driver ID is required | isActive must be a boolean value | Driver not found | Failed to update driver status"
+          }
+        }
+      ],
+      "functionality": "Updates driver's isActive status (toggle for accepting rides). This is separate from isOnline. Sends confirmation to driver and broadcasts status change to all clients for monitoring."
+    },
+    "driverLocationUpdate": {
+      "event": "driverLocationUpdate",
+      "type": "client_to_server",
+      "description": "Update driver's current location",
+      "emittedBy": "Driver App",
+      "receivedBy": "Server",
+      "data": {
+        "required": ["driverId", "location"],
+        "optional": ["rideId"],
+        "schema": {
+          "driverId": "string (Driver MongoDB ObjectId)",
+          "location": {
+            "coordinates": ["number (longitude)", "number (latitude)"],
+            "or": {
+              "longitude": "number",
+              "latitude": "number"
+            }
+          },
+          "rideId": "string (Ride MongoDB ObjectId, if ride in progress)"
+        }
+      },
+      "responseEvents": [
+        {
+          "event": "driverLocationUpdate",
+          "emittedTo": "All clients",
+          "data": "Same as input data"
+        },
+        {
+          "event": "driverLocationUpdate",
+          "emittedTo": "Specific rider (if rideId provided)",
+          "data": "Same as input data"
+        },
+        {
+          "event": "errorEvent",
+          "emittedTo": "Sender (if error)",
+          "data": {
+            "message": "Failed to update location"
+          }
+        }
+      ],
+      "functionality": "Updates driver's location in database and broadcasts to all clients. If rideId is provided, also sends location update to the specific rider for real-time tracking during ride."
+    },
+    "driverDisconnect": {
+      "event": "driverDisconnect",
+      "type": "client_to_server",
+      "description": "Explicit driver disconnection",
+      "emittedBy": "Driver App",
+      "receivedBy": "Server",
+      "data": {
+        "required": ["driverId"],
+        "schema": {
+          "driverId": "string (Driver MongoDB ObjectId)"
+        }
+      },
+      "responseEvents": [
+        {
+          "event": "driverDisconnect",
+          "emittedTo": "All clients",
+          "data": {
+            "driverId": "string"
+          }
+        }
+      ],
+      "functionality": "Clears driver socket, updates driver status to offline, sets isOnline to false. Broadcasts disconnection to all clients. Also handled automatically on socket disconnect event."
+    },
+    "riderDisconnect": {
+      "event": "riderDisconnect",
+      "type": "client_to_server",
+      "description": "Explicit rider disconnection",
+      "emittedBy": "Rider App",
+      "receivedBy": "Server",
+      "data": {
+        "required": ["userId"],
+        "schema": {
+          "userId": "string (User MongoDB ObjectId)"
+        }
+      },
+      "responseEvents": [
+        {
+          "event": "riderDisconnect",
+          "emittedTo": "All clients",
+          "data": {
+            "userId": "string"
+          }
+        }
+      ],
+      "functionality": "Clears user socket and broadcasts disconnection. Also handled automatically on socket disconnect event."
+    },
+    "newRideRequest": {
+      "event": "newRideRequest",
+      "type": "client_to_server",
+      "description": "Create a new ride request",
+      "emittedBy": "Rider App",
+      "receivedBy": "Server",
+      "data": {
+        "required": ["rider", "pickupLocation", "dropoffLocation", "service", "pickupAddress", "dropoffAddress"],
+        "optional": ["rideType", "paymentMethod", "userSocketId"],
+        "schema": {
+          "rider": "string (User MongoDB ObjectId) or riderId",
+          "pickupLocation": {
+            "type": "Point",
+            "coordinates": ["number (longitude)", "number (latitude)"],
+            "or": {
+              "longitude": "number",
+              "latitude": "number"
+            }
+          },
+          "dropoffLocation": {
+            "type": "Point",
+            "coordinates": ["number (longitude)", "number (latitude)"],
+            "or": {
+              "longitude": "number",
+              "latitude": "number"
+            }
+          },
+          "pickupAddress": "string",
+          "dropoffAddress": "string",
+          "service": "string (must match service name from admin settings)",
+          "rideType": "string (default: 'normal')",
+          "paymentMethod": "string (default: 'CASH')",
+          "userSocketId": "string"
+        }
+      },
+      "responseEvents": [
+        {
+          "event": "newRideRequest",
+          "emittedTo": "Nearby drivers (within 10km radius) or all drivers if none nearby",
+          "data": "Populated ride object with rider details"
+        },
+        {
+          "event": "rideRequested",
+          "emittedTo": "Rider",
+          "data": "Populated ride object"
+        },
+        {
+          "event": "rideError",
+          "emittedTo": "Sender (if error)",
+          "data": {
+            "message": "Failed to create ride"
+          }
+        }
+      ],
+      "functionality": "Creates a new ride with calculated fare and distance. Generates start and stop OTPs. Finds nearby active drivers within 10km radius and sends ride request to them. If no nearby drivers, broadcasts to all drivers. Sends confirmation to rider. Creates notifications for drivers and rider. Auto-assigns driver if available."
+    },
+    "rideAccepted": {
+      "event": "rideAccepted",
+      "type": "client_to_server",
+      "description": "Driver accepts a ride request",
+      "emittedBy": "Driver App",
+      "receivedBy": "Server",
+      "data": {
+        "required": ["rideId", "driverId"],
+        "schema": {
+          "rideId": "string (Ride MongoDB ObjectId)",
+          "driverId": "string (Driver MongoDB ObjectId)"
+        }
+      },
+      "responseEvents": [
+        {
+          "event": "rideAccepted",
+          "emittedTo": "Rider",
+          "data": "Assigned ride object with populated driver and rider"
+        },
+        {
+          "event": "rideAssigned",
+          "emittedTo": "Driver",
+          "data": "Assigned ride object"
+        },
+        {
+          "event": "rideAccepted",
+          "emittedTo": "All clients",
+          "data": "Assigned ride object"
+        },
+        {
+          "event": "rideError",
+          "emittedTo": "Sender (if error)",
+          "data": {
+            "message": "Error message"
+          }
+        }
+      ],
+      "functionality": "Assigns driver to ride, updates ride status to 'accepted', sets driverSocketId. Notifies rider and driver. Creates notifications for both. Broadcasts to all clients. Only works if ride is in 'requested' status and not already assigned."
+    },
+    "driverArrived": {
+      "event": "driverArrived",
+      "type": "client_to_server",
+      "description": "Driver arrived at pickup location",
+      "emittedBy": "Driver App",
+      "receivedBy": "Server",
+      "data": {
+        "required": ["rideId"],
+        "schema": {
+          "rideId": "string (Ride MongoDB ObjectId)"
+        }
+      },
+      "responseEvents": [
+        {
+          "event": "driverArrived",
+          "emittedTo": "Rider",
+          "data": "Ride object with driverArrivedAt timestamp"
+        },
+        {
+          "event": "rideError",
+          "emittedTo": "Sender (if error)",
+          "data": {
+            "message": "Failed to mark driver arrived"
+          }
+        }
+      ],
+      "functionality": "Marks driver as arrived at pickup location, sets driverArrivedAt timestamp. Notifies rider. Creates notification for rider."
+    },
+    "verifyStartOtp": {
+      "event": "verifyStartOtp",
+      "type": "client_to_server",
+      "description": "Verify start OTP before starting ride",
+      "emittedBy": "Driver App or Rider App",
+      "receivedBy": "Server",
+      "data": {
+        "required": ["rideId", "otp"],
+        "schema": {
+          "rideId": "string (Ride MongoDB ObjectId)",
+          "otp": "string (4-digit OTP)"
+        }
+      },
+      "responseEvents": [
+        {
+          "event": "otpVerified",
+          "emittedTo": "Sender (if success)",
+          "data": {
+            "success": true,
+            "ride": "Ride object"
+          }
+        },
+        {
+          "event": "otpVerificationFailed",
+          "emittedTo": "Sender (if failed)",
+          "data": {
+            "message": "Ride ID and OTP required | Error message"
+          }
+        }
+      ],
+      "functionality": "Verifies the start OTP for a ride. OTP must match the ride's startOtp and ride must be in 'accepted' status. Returns success or failure."
+    },
+    "rideStarted": {
+      "event": "rideStarted",
+      "type": "client_to_server",
+      "description": "Start a ride (with optional OTP verification)",
+      "emittedBy": "Driver App",
+      "receivedBy": "Server",
+      "data": {
+        "required": ["rideId"],
+        "optional": ["otp"],
+        "schema": {
+          "rideId": "string (Ride MongoDB ObjectId)",
+          "otp": "string (4-digit OTP, optional but recommended)"
+        }
+      },
+      "responseEvents": [
+        {
+          "event": "rideStarted",
+          "emittedTo": "Rider",
+          "data": "Started ride object"
+        },
+        {
+          "event": "rideStarted",
+          "emittedTo": "Driver",
+          "data": "Started ride object"
+        },
+        {
+          "event": "rideStarted",
+          "emittedTo": "All clients",
+          "data": "Started ride object"
+        },
+        {
+          "event": "rideError",
+          "emittedTo": "Sender (if error)",
+          "data": {
+            "message": "Invalid OTP | Failed to start ride"
+          }
+        }
+      ],
+      "functionality": "Starts a ride, updates status to 'in_progress', sets actualStartTime, updates driver isBusy to true. If OTP provided, verifies it first. Notifies rider and driver. Creates notifications for both. Broadcasts to all clients."
+    },
+    "rideInProgress": {
+      "event": "rideInProgress",
+      "type": "client_to_server",
+      "description": "Update ride in progress status",
+      "emittedBy": "Driver App or Rider App",
+      "receivedBy": "Server",
+      "data": {
+        "required": ["rideId"],
+        "schema": {
+          "rideId": "string (Ride MongoDB ObjectId)",
+          "additionalData": "object (any additional data)"
+        }
+      },
+      "responseEvents": [
+        {
+          "event": "rideInProgress",
+          "emittedTo": "All clients",
+          "data": "Same as input data"
+        }
+      ],
+      "functionality": "Broadcasts ride in progress updates to all clients. Used for real-time status updates during ride."
+    },
+    "rideLocationUpdate": {
+      "event": "rideLocationUpdate",
+      "type": "client_to_server",
+      "description": "Update ride location during ride",
+      "emittedBy": "Driver App",
+      "receivedBy": "Server",
+      "data": {
+        "required": ["rideId"],
+        "optional": ["userSocketId", "location"],
+        "schema": {
+          "rideId": "string (Ride MongoDB ObjectId)",
+          "userSocketId": "string",
+          "location": {
+            "coordinates": ["number (longitude)", "number (latitude)"]
+          },
+          "additionalData": "object"
+        }
+      },
+      "responseEvents": [
+        {
+          "event": "rideLocationUpdate",
+          "emittedTo": "All clients",
+          "data": "Same as input data"
+        },
+        {
+          "event": "rideLocationUpdate",
+          "emittedTo": "Specific rider (if userSocketId provided)",
+          "data": "Same as input data"
+        }
+      ],
+      "functionality": "Broadcasts ride location updates. If userSocketId provided, also sends to specific rider for real-time tracking."
+    },
+    "verifyStopOtp": {
+      "event": "verifyStopOtp",
+      "type": "client_to_server",
+      "description": "Verify stop OTP before completing ride",
+      "emittedBy": "Driver App or Rider App",
+      "receivedBy": "Server",
+      "data": {
+        "required": ["rideId", "otp"],
+        "schema": {
+          "rideId": "string (Ride MongoDB ObjectId)",
+          "otp": "string (4-digit OTP)"
+        }
+      },
+      "responseEvents": [
+        {
+          "event": "otpVerified",
+          "emittedTo": "Sender (if success)",
+          "data": {
+            "success": true,
+            "ride": "Ride object"
+          }
+        },
+        {
+          "event": "otpVerificationFailed",
+          "emittedTo": "Sender (if failed)",
+          "data": {
+            "message": "Ride ID and OTP required | Error message"
+          }
+        }
+      ],
+      "functionality": "Verifies the stop OTP for a ride. OTP must match the ride's stopOtp and ride must be in 'in_progress' status. Returns success or failure."
+    },
+    "rideCompleted": {
+      "event": "rideCompleted",
+      "type": "client_to_server",
+      "description": "Complete a ride (with optional OTP verification and final fare)",
+      "emittedBy": "Driver App",
+      "receivedBy": "Server",
+      "data": {
+        "required": ["rideId"],
+        "optional": ["fare", "otp"],
+        "schema": {
+          "rideId": "string (Ride MongoDB ObjectId)",
+          "fare": "number (final fare amount, optional)",
+          "otp": "string (4-digit OTP, optional but recommended)"
+        }
+      },
+      "responseEvents": [
+        {
+          "event": "rideCompleted",
+          "emittedTo": "Rider",
+          "data": "Completed ride object"
+        },
+        {
+          "event": "rideCompleted",
+          "emittedTo": "Driver",
+          "data": "Completed ride object"
+        },
+        {
+          "event": "rideCompleted",
+          "emittedTo": "All clients",
+          "data": "Completed ride object"
+        },
+        {
+          "event": "rideError",
+          "emittedTo": "Sender (if error)",
+          "data": {
+            "message": "Invalid OTP | Failed to complete ride"
+          }
+        }
+      ],
+      "functionality": "Completes a ride, updates status to 'completed', sets actualEndTime, calculates actualDuration, updates driver isBusy to false. If OTP provided, verifies it first. If fare provided, updates final fare. Notifies rider and driver. Creates notifications for both. Broadcasts to all clients."
+    },
+    "rideCancelled": {
+      "event": "rideCancelled",
+      "type": "client_to_server",
+      "description": "Cancel a ride",
+      "emittedBy": "Driver App or Rider App",
+      "receivedBy": "Server",
+      "data": {
+        "required": ["rideId", "cancelledBy"],
+        "optional": ["reason"],
+        "schema": {
+          "rideId": "string (Ride MongoDB ObjectId)",
+          "cancelledBy": "string (enum: 'rider' | 'driver' | 'system')",
+          "reason": "string (cancellation reason)"
+        }
+      },
+      "responseEvents": [
+        {
+          "event": "rideCancelled",
+          "emittedTo": "Rider",
+          "data": "Cancelled ride object"
+        },
+        {
+          "event": "rideCancelled",
+          "emittedTo": "Driver",
+          "data": "Cancelled ride object"
+        },
+        {
+          "event": "rideCancelled",
+          "emittedTo": "All clients",
+          "data": "Cancelled ride object"
+        },
+        {
+          "event": "rideError",
+          "emittedTo": "Sender (if error)",
+          "data": {
+            "message": "Failed to cancel ride"
+          }
+        }
+      ],
+      "functionality": "Cancels a ride, updates status to 'cancelled', sets cancelledBy and cancellationReason. Notifies rider and driver. Creates notifications for both. Broadcasts to all clients."
+    },
+    "submitRating": {
+      "event": "submitRating",
+      "type": "client_to_server",
+      "description": "Submit a rating for a ride (rider rates driver or driver rates rider)",
+      "emittedBy": "Rider App or Driver App",
+      "receivedBy": "Server",
+      "data": {
+        "required": ["rideId", "ratedBy", "ratedByModel", "ratedTo", "ratedToModel", "rating"],
+        "optional": ["review", "tags"],
+        "schema": {
+          "rideId": "string (Ride MongoDB ObjectId)",
+          "ratedBy": "string (User or Driver MongoDB ObjectId)",
+          "ratedByModel": "string (enum: 'User' | 'Driver')",
+          "ratedTo": "string (User or Driver MongoDB ObjectId)",
+          "ratedToModel": "string (enum: 'User' | 'Driver')",
+          "rating": "number (1-5)",
+          "review": "string",
+          "tags": ["Array of strings"]
+        }
+      },
+      "responseEvents": [
+        {
+          "event": "ratingSubmitted",
+          "emittedTo": "Sender",
+          "data": {
+            "success": true,
+            "rating": "Rating object"
+          }
+        },
+        {
+          "event": "ratingReceived",
+          "emittedTo": "Rated person (if online)",
+          "data": "Rating object"
+        },
+        {
+          "event": "ratingError",
+          "emittedTo": "Sender (if error)",
+          "data": {
+            "message": "Error message"
+          }
+        }
+      ],
+      "functionality": "Submits a rating for a ride. Updates ride with rating (driverRating or riderRating). Calculates and updates average rating for the rated entity. Creates notification for rated person. Sends confirmation to sender and notification to rated person if online."
+    },
+    "sendMessage": {
+      "event": "sendMessage",
+      "type": "client_to_server",
+      "description": "Send a message between rider and driver for a ride",
+      "emittedBy": "Rider App or Driver App",
+      "receivedBy": "Server",
+      "data": {
+        "required": ["rideId", "senderId", "senderModel", "receiverId", "receiverModel", "message"],
+        "optional": ["messageType"],
+        "schema": {
+          "rideId": "string (Ride MongoDB ObjectId)",
+          "senderId": "string (User or Driver MongoDB ObjectId)",
+          "senderModel": "string (enum: 'User' | 'Driver')",
+          "receiverId": "string (User or Driver MongoDB ObjectId)",
+          "receiverModel": "string (enum: 'User' | 'Driver')",
+          "message": "string",
+          "messageType": "string (default: 'text')"
+        }
+      },
+      "responseEvents": [
+        {
+          "event": "messageSent",
+          "emittedTo": "Sender",
+          "data": {
+            "success": true,
+            "message": "Message object"
+          }
+        },
+        {
+          "event": "receiveMessage",
+          "emittedTo": "Receiver (if online)",
+          "data": "Message object"
+        },
+        {
+          "event": "messageError",
+          "emittedTo": "Sender (if error)",
+          "data": {
+            "message": "Error message"
+          }
+        }
+      ],
+      "functionality": "Saves message to database and sends to receiver if online. Sends confirmation to sender. Creates real-time messaging between rider and driver during ride."
+    },
+    "markMessageRead": {
+      "event": "markMessageRead",
+      "type": "client_to_server",
+      "description": "Mark a message as read",
+      "emittedBy": "Rider App or Driver App",
+      "receivedBy": "Server",
+      "data": {
+        "required": ["messageId"],
+        "schema": {
+          "messageId": "string (Message MongoDB ObjectId)"
+        }
+      },
+      "responseEvents": [
+        {
+          "event": "messageMarkedRead",
+          "emittedTo": "Sender",
+          "data": {
+            "success": true
+          }
+        }
+      ],
+      "functionality": "Marks a message as read in the database."
+    },
+    "getRideMessages": {
+      "event": "getRideMessages",
+      "type": "client_to_server",
+      "description": "Get all messages for a ride",
+      "emittedBy": "Rider App or Driver App",
+      "receivedBy": "Server",
+      "data": {
+        "required": ["rideId"],
+        "schema": {
+          "rideId": "string (Ride MongoDB ObjectId)"
+        }
+      },
+      "responseEvents": [
+        {
+          "event": "rideMessages",
+          "emittedTo": "Sender",
+          "data": ["Array of message objects with populated sender and receiver"]
+        },
+        {
+          "event": "messageError",
+          "emittedTo": "Sender (if error)",
+          "data": {
+            "message": "Error message"
+          }
+        }
+      ],
+      "functionality": "Retrieves all messages for a ride, sorted by creation time. Returns messages with populated sender and receiver details."
+    },
+    "getNotifications": {
+      "event": "getNotifications",
+      "type": "client_to_server",
+      "description": "Get notifications for a user/driver",
+      "emittedBy": "Rider App or Driver App",
+      "receivedBy": "Server",
+      "data": {
+        "required": ["userId", "userModel"],
+        "schema": {
+          "userId": "string (User or Driver MongoDB ObjectId)",
+          "userModel": "string (enum: 'User' | 'Driver')"
+        }
+      },
+      "responseEvents": [
+        {
+          "event": "notifications",
+          "emittedTo": "Sender",
+          "data": ["Array of notification objects (max 50, sorted by newest first)"]
+        },
+        {
+          "event": "notificationError",
+          "emittedTo": "Sender (if error)",
+          "data": {
+            "message": "Error message"
+          }
+        }
+      ],
+      "functionality": "Retrieves notifications for a user or driver, sorted by creation time (newest first), limited to 50."
+    },
+    "markNotificationRead": {
+      "event": "markNotificationRead",
+      "type": "client_to_server",
+      "description": "Mark a notification as read",
+      "emittedBy": "Rider App or Driver App",
+      "receivedBy": "Server",
+      "data": {
+        "required": ["notificationId"],
+        "schema": {
+          "notificationId": "string (Notification MongoDB ObjectId)"
+        }
+      },
+      "responseEvents": [
+        {
+          "event": "notificationMarkedRead",
+          "emittedTo": "Sender",
+          "data": {
+            "success": true
+          }
+        }
+      ],
+      "functionality": "Marks a notification as read in the database."
+    },
+    "emergencyAlert": {
+      "event": "emergencyAlert",
+      "type": "client_to_server",
+      "description": "Trigger an emergency/SOS alert for a ride",
+      "emittedBy": "Rider App or Driver App",
+      "receivedBy": "Server",
+      "data": {
+        "required": ["rideId", "triggeredBy", "triggeredByModel", "location", "reason"],
+        "optional": ["description"],
+        "schema": {
+          "rideId": "string (Ride MongoDB ObjectId)",
+          "triggeredBy": "string (User or Driver MongoDB ObjectId)",
+          "triggeredByModel": "string (enum: 'User' | 'Driver')",
+          "location": {
+            "longitude": "number",
+            "latitude": "number"
+          },
+          "reason": "string",
+          "description": "string"
+        }
+      },
+      "responseEvents": [
+        {
+          "event": "emergencyAlert",
+          "emittedTo": "Rider (if ride exists)",
+          "data": "Emergency object"
+        },
+        {
+          "event": "emergencyAlert",
+          "emittedTo": "Driver (if ride exists)",
+          "data": "Emergency object"
+        },
+        {
+          "event": "emergencyBroadcast",
+          "emittedTo": "All clients (admin/support)",
+          "data": "Emergency object"
+        },
+        {
+          "event": "emergencyAlertCreated",
+          "emittedTo": "Sender",
+          "data": {
+            "success": true,
+            "emergency": "Emergency object"
+          }
+        },
+        {
+          "event": "emergencyError",
+          "emittedTo": "Sender (if error)",
+          "data": {
+            "message": "Error message"
+          }
+        }
+      ],
+      "functionality": "Creates an emergency alert, updates ride status to 'cancelled' with emergency reason. Notifies rider, driver, and broadcasts to all clients (for admin/support monitoring). Creates notifications for rider and driver. Critical safety feature."
+    },
+    "disconnect": {
+      "event": "disconnect",
+      "type": "system",
+      "description": "Socket disconnection (automatic)",
+      "emittedBy": "System",
+      "receivedBy": "Server",
+      "data": null,
+      "responseEvents": [
+        {
+          "event": "riderDisconnect",
+          "emittedTo": "All clients (if rider)",
+          "data": {
+            "userId": "string"
+          }
+        },
+        {
+          "event": "driverDisconnect",
+          "emittedTo": "All clients (if driver)",
+          "data": {
+            "driverId": "string"
+          }
+        }
+      ],
+      "functionality": "Automatic cleanup when socket disconnects. Clears user/driver socket, updates isOnline to false, updates driver status. Broadcasts disconnection to all clients."
+    },
+    "errorEvent": {
+      "event": "errorEvent",
+      "type": "server_to_client",
+      "description": "Error notification",
+      "emittedBy": "Server",
+      "receivedBy": "Client",
+      "data": {
+        "schema": {
+          "message": "string (error message)"
+        }
+      },
+      "functionality": "Sent to clients when errors occur during event processing."
+    },
+    "rideError": {
+      "event": "rideError",
+      "type": "server_to_client",
+      "description": "Ride-related error notification",
+      "emittedBy": "Server",
+      "receivedBy": "Client",
+      "data": {
+        "schema": {
+          "message": "string (error message)"
+        }
+      },
+      "functionality": "Sent to clients when ride-related errors occur."
+    },
+    "ratingError": {
+      "event": "ratingError",
+      "type": "server_to_client",
+      "description": "Rating-related error notification",
+      "emittedBy": "Server",
+      "receivedBy": "Client",
+      "data": {
+        "schema": {
+          "message": "string (error message)"
+        }
+      },
+      "functionality": "Sent to clients when rating-related errors occur."
+    },
+    "messageError": {
+      "event": "messageError",
+      "type": "server_to_client",
+      "description": "Message-related error notification",
+      "emittedBy": "Server",
+      "receivedBy": "Client",
+      "data": {
+        "schema": {
+          "message": "string (error message)"
+        }
+      },
+      "functionality": "Sent to clients when message-related errors occur."
+    },
+    "notificationError": {
+      "event": "notificationError",
+      "type": "server_to_client",
+      "description": "Notification-related error notification",
+      "emittedBy": "Server",
+      "receivedBy": "Client",
+      "data": {
+        "schema": {
+          "message": "string (error message)"
+        }
+      },
+      "functionality": "Sent to clients when notification-related errors occur."
+    },
+    "emergencyError": {
+      "event": "emergencyError",
+      "type": "server_to_client",
+      "description": "Emergency-related error notification",
+      "emittedBy": "Server",
+      "receivedBy": "Client",
+      "data": {
+        "schema": {
+          "message": "string (error message)"
+        }
+      },
+      "functionality": "Sent to clients when emergency-related errors occur."
+    }
+  },
+  "rooms": {
+    "rider": {
+      "description": "All riders join this room",
+      "joinedBy": "riderConnect event"
+    },
+    "driver": {
+      "description": "All drivers join this room",
+      "joinedBy": "driverConnect event"
+    },
+    "user_{userId}": {
+      "description": "User-specific room",
+      "joinedBy": "riderConnect event",
+      "example": "user_507f1f77bcf86cd799439011"
+    },
+    "driver_{driverId}": {
+      "description": "Driver-specific room",
+      "joinedBy": "driverConnect event",
+      "example": "driver_507f1f77bcf86cd799439011"
+    }
+  },
+  "notes": {
+    "otp": "Start and stop OTPs are 4-digit numbers (1000-9999) generated automatically when ride is created",
+    "fareCalculation": "Fare is calculated as: service.basePrice + (distanceInKm * perKmRate), with minimum fare applied",
+    "distanceCalculation": "Distance is calculated using Haversine formula between pickup and dropoff coordinates",
+    "autoAssignment": "When a ride is created, the system automatically searches for nearby drivers within 10km radius and sends ride request to them",
+    "statusFlow": "Ride status flow: requested -> accepted -> in_progress -> completed (or cancelled at any point)",
+    "socketManagement": "Socket IDs are stored in User and Driver models for targeted messaging",
+    "notifications": "Notifications are automatically created for important events (ride accepted, started, completed, etc.)",
+    "locationFormat": "Location can be provided in two formats: GeoJSON Point with coordinates array [lng, lat] or object with longitude and latitude properties"
+  }
+}
+

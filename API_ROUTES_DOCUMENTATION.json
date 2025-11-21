@@ -1,0 +1,2733 @@
+{
+  "apiName": "Cerca API",
+  "baseUrl": "http://localhost:3000",
+  "version": "1.0.0",
+  "description": "Complete REST API documentation for Cerca ride-sharing platform",
+  "routes": {
+    "users": {
+      "basePath": "/users",
+      "description": "User management endpoints",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/users/:id",
+          "controller": "getUserById",
+          "description": "Get a single user by ID",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "User MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "_id": "string",
+                "fullName": "string",
+                "email": "string",
+                "phoneNumber": "string",
+                "profilePic": "string (URL)",
+                "walletBalance": "number",
+                "isOnline": "boolean",
+                "socketId": "string",
+                "lastSeen": "date",
+                "createdAt": "date",
+                "updatedAt": "date"
+              }
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "User not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/users",
+          "controller": "createUser",
+          "description": "Create a new user with optional profile picture",
+          "parameters": null,
+          "requestBody": {
+            "contentType": "multipart/form-data or application/json",
+            "required": ["fullName", "phoneNumber"],
+            "optional": ["email", "profilePic (file)"],
+            "schema": {
+              "fullName": "string",
+              "email": "string",
+              "phoneNumber": "string",
+              "profilePic": "file (jpeg, jpg, png)"
+            }
+          },
+          "response": {
+            "success": {
+              "status": 201,
+              "body": "User object with all fields"
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "Error creating user",
+                "error": "error details"
+              }
+            }
+          }
+        },
+        {
+          "method": "PUT",
+          "path": "/users/:id",
+          "controller": "updateUser",
+          "description": "Update a user by ID with optional new profile picture",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "User MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": {
+            "contentType": "multipart/form-data or application/json",
+            "optional": ["fullName", "email", "phoneNumber", "profilePic (file)"],
+            "schema": {
+              "fullName": "string",
+              "email": "string",
+              "phoneNumber": "string",
+              "profilePic": "file (jpeg, jpg, png)"
+            }
+          },
+          "response": {
+            "success": {
+              "status": 200,
+              "body": "Updated user object"
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "User not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/users/:id",
+          "controller": "deleteUser",
+          "description": "Delete a user by ID and their profile picture",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "User MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "User deleted successfully"
+              }
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "User not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/users/login",
+          "controller": "loginUserByMobile",
+          "description": "Login user by mobile number. Returns JWT token if user exists, otherwise returns isNewUser flag",
+          "parameters": null,
+          "requestBody": {
+            "contentType": "application/json",
+            "required": ["phoneNumber"],
+            "schema": {
+              "phoneNumber": "string"
+            }
+          },
+          "response": {
+            "success_existing": {
+              "status": 200,
+              "body": {
+                "message": "Login successful",
+                "token": "JWT token string",
+                "userId": "string",
+                "phoneNumber": "string",
+                "isNewUser": false
+              }
+            },
+            "success_new": {
+              "status": 200,
+              "body": {
+                "message": "User not found",
+                "isNewUser": true
+              }
+            },
+            "error": {
+              "status": 500,
+              "body": {
+                "message": "An error occurred during login",
+                "error": "error details"
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/users/:id/wallet",
+          "controller": "getUserWallet",
+          "description": "Get the wallet balance of a user",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "User MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "walletBalance": "number"
+              }
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "User not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "PUT",
+          "path": "/users/:id/wallet",
+          "controller": "updateUserWallet",
+          "description": "Update user wallet balance (add or deduct)",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "User MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": {
+            "contentType": "application/json",
+            "required": ["amount", "type"],
+            "schema": {
+              "amount": "number (must be > 0)",
+              "type": "string (enum: 'add' | 'deduct')"
+            }
+          },
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "Wallet credited/debited successfully",
+                "walletBalance": "number"
+              }
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "Invalid wallet amount | Insufficient wallet balance | Invalid transaction type"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "addresses": {
+      "basePath": "/address",
+      "description": "User address management endpoints",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/address",
+          "controller": "createAddress",
+          "description": "Create a new address for a user",
+          "parameters": null,
+          "requestBody": {
+            "contentType": "application/json",
+            "required": ["addressLine", "location", "id"],
+            "optional": ["landmark", "placeId", "formattedAddress"],
+            "schema": {
+              "id": "string (user ID)",
+              "addressLine": "string",
+              "landmark": "string",
+              "location": {
+                "type": "Point",
+                "coordinates": ["number (longitude)", "number (latitude)"]
+              },
+              "placeId": "string",
+              "formattedAddress": "string"
+            }
+          },
+          "response": {
+            "success": {
+              "status": 201,
+              "body": {
+                "success": true,
+                "data": "Address object"
+              }
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "success": false,
+                "error": "error message"
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/address/user/:id",
+          "controller": "getUserAddresses",
+          "description": "Get all addresses for a specific user",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "User MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "success": true,
+                "data": ["Array of address objects"]
+              }
+            },
+            "error": {
+              "status": 500,
+              "body": {
+                "success": false,
+                "error": "error message"
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/address/:id/user/:userId",
+          "controller": "getAddressById",
+          "description": "Get a specific address by address ID and user ID",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Address MongoDB ObjectId"
+              },
+              "userId": {
+                "type": "string",
+                "required": true,
+                "description": "User MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "success": true,
+                "data": "Address object"
+              }
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "success": false,
+                "error": "Address not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "PUT",
+          "path": "/address/:id/user/:userId",
+          "controller": "updateAddress",
+          "description": "Update a specific address by address ID and user ID",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Address MongoDB ObjectId"
+              },
+              "userId": {
+                "type": "string",
+                "required": true,
+                "description": "User MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": {
+            "contentType": "application/json",
+            "optional": ["addressLine", "landmark", "location", "placeId", "formattedAddress"],
+            "schema": {
+              "addressLine": "string",
+              "landmark": "string",
+              "location": {
+                "type": "Point",
+                "coordinates": ["number (longitude)", "number (latitude)"]
+              },
+              "placeId": "string",
+              "formattedAddress": "string"
+            }
+          },
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "success": true,
+                "data": "Updated address object"
+              }
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "success": false,
+                "error": "Address not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/address/:id",
+          "controller": "deleteAddress",
+          "description": "Delete a specific address by address ID",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Address MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "success": true,
+                "message": "Address deleted"
+              }
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "success": false,
+                "error": "Address not found"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drivers": {
+      "basePath": "/drivers",
+      "description": "Driver management endpoints",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/drivers",
+          "controller": "addDriver",
+          "description": "Add a new driver",
+          "parameters": null,
+          "requestBody": {
+            "contentType": "application/json",
+            "required": ["name", "email", "phone", "password"],
+            "optional": ["location"],
+            "schema": {
+              "name": "string",
+              "email": "string",
+              "phone": "string",
+              "password": "string (will be hashed)",
+              "location": {
+                "type": "Point",
+                "coordinates": ["number (longitude)", "number (latitude)"]
+              }
+            }
+          },
+          "response": {
+            "success": {
+              "status": 201,
+              "body": {
+                "id": "Driver object",
+                "message": "Driver added successfully"
+              }
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "Driver with this phone number already exists | Error adding driver"
+              }
+            }
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/drivers/login",
+          "controller": "loginDriver",
+          "description": "Login driver by email and password",
+          "parameters": null,
+          "requestBody": {
+            "contentType": "application/json",
+            "required": ["email", "password"],
+            "schema": {
+              "email": "string",
+              "password": "string"
+            }
+          },
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "Login successful",
+                "token": "JWT token string",
+                "id": "Driver MongoDB ObjectId"
+              }
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Driver not found"
+              }
+            },
+            "error_credentials": {
+              "status": 401,
+              "body": {
+                "message": "Invalid credentials"
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/drivers",
+          "controller": "getAllDrivers",
+          "description": "Get all drivers",
+          "parameters": null,
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": ["Array of driver objects"]
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/drivers/:id",
+          "controller": "getDriverById",
+          "description": "Get a driver by ID",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Driver MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": "Driver object"
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Driver not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "PUT",
+          "path": "/drivers/:id",
+          "controller": "updateDriver",
+          "description": "Update a driver by ID",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Driver MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": {
+            "contentType": "application/json",
+            "optional": ["name", "email", "phone", "location", "vehicleInfo"],
+            "schema": {
+              "name": "string",
+              "email": "string",
+              "phone": "string",
+              "location": {
+                "type": "Point",
+                "coordinates": ["number (longitude)", "number (latitude)"]
+              },
+              "vehicleInfo": {
+                "make": "string",
+                "model": "string",
+                "year": "number",
+                "color": "string",
+                "licensePlate": "string",
+                "vehicleType": "string"
+              }
+            }
+          },
+          "response": {
+            "success": {
+              "status": 200,
+              "body": "Updated driver object"
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Driver not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/drivers/:id",
+          "controller": "deleteDriver",
+          "description": "Delete a driver by ID",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Driver MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "Driver deleted successfully"
+              }
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Driver not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/drivers/:id/documents",
+          "controller": "addDriverDocuments",
+          "description": "Add documents to a driver's documents array",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Driver MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": {
+            "contentType": "multipart/form-data",
+            "required": ["documents"],
+            "schema": {
+              "documents": "file[] (max 10 files)"
+            }
+          },
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "Documents added successfully",
+                "documents": ["Array of document URLs"]
+              }
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "No files uploaded"
+              }
+            }
+          }
+        },
+        {
+          "method": "PUT",
+          "path": "/drivers/:id/documents",
+          "controller": "updateDriverDocuments",
+          "description": "Update a driver's documents (replaces all existing documents)",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Driver MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": {
+            "contentType": "multipart/form-data",
+            "required": ["documents"],
+            "schema": {
+              "documents": "file[] (max 10 files)"
+            }
+          },
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "Driver documents updated successfully",
+                "documents": ["Array of document URLs"]
+              }
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "No files uploaded"
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/drivers/:id/rides",
+          "controller": "getAllRidesOfDriver",
+          "description": "Get all rides of a driver, sorted by status priority",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Driver MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "rides": ["Array of ride objects with populated rider"]
+              }
+            },
+            "success_empty": {
+              "status": 200,
+              "body": {
+                "message": "No rides found for this driver",
+                "rides": []
+              }
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "path": "/drivers/:id/location",
+          "controller": "updateDriverLocation",
+          "description": "Update the location of a driver",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Driver MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": {
+            "contentType": "application/json",
+            "required": ["coordinates"],
+            "schema": {
+              "coordinates": ["number (longitude)", "number (latitude)"]
+            }
+          },
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "Driver location updated successfully",
+                "location": {
+                  "type": "Point",
+                  "coordinates": ["number (longitude)", "number (latitude)"]
+                }
+              }
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "Invalid coordinates. Must be an array of [longitude, latitude]."
+              }
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "path": "/drivers/:id/online-status",
+          "controller": "updateDriverOnlineStatus",
+          "description": "Update driver online/offline status",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Driver MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": {
+            "contentType": "application/json",
+            "required": ["isOnline"],
+            "schema": {
+              "isOnline": "boolean"
+            }
+          },
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "Driver online status updated successfully",
+                "driver": "Driver object"
+              }
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "isOnline must be a boolean value"
+              }
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "path": "/drivers/:id/vehicle",
+          "controller": "updateDriverVehicle",
+          "description": "Update driver vehicle information",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Driver MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": {
+            "contentType": "application/json",
+            "optional": ["make", "model", "year", "color", "licensePlate", "vehicleType"],
+            "schema": {
+              "make": "string",
+              "model": "string",
+              "year": "number",
+              "color": "string",
+              "licensePlate": "string",
+              "vehicleType": "string (default: 'sedan')"
+            }
+          },
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "Driver vehicle information updated successfully",
+                "vehicleInfo": "Vehicle info object"
+              }
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "path": "/drivers/:id/busy-status",
+          "controller": "updateDriverBusyStatus",
+          "description": "Update driver busy status",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Driver MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": {
+            "contentType": "application/json",
+            "required": ["isBusy"],
+            "schema": {
+              "isBusy": "boolean"
+            }
+          },
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "Driver busy status updated successfully",
+                "driver": "Driver object (password excluded)"
+              }
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "isBusy must be a boolean value"
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/drivers/:id/earnings",
+          "controller": "getDriverEarnings",
+          "description": "Get driver earnings with platform fees and commission calculations",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Driver MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "totalGrossEarnings": "number",
+                "totalPlatformFees": "number",
+                "totalDriverEarnings": "number",
+                "platformFeePercentage": "number",
+                "driverCommissionPercentage": "number",
+                "totalRides": "number",
+                "averageGrossPerRide": "string",
+                "averageNetPerRide": "string",
+                "recentRides": ["Array of recent ride objects with earnings breakdown"]
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/drivers/:id/stats",
+          "controller": "getDriverStats",
+          "description": "Get driver statistics",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Driver MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "stats": {
+                  "totalRides": "number",
+                  "completedRides": "number",
+                  "cancelledRides": "number",
+                  "inProgressRides": "number",
+                  "rating": "number",
+                  "totalRatings": "number",
+                  "totalEarnings": "number",
+                  "isOnline": "boolean",
+                  "isActive": "boolean",
+                  "isBusy": "boolean",
+                  "lastSeen": "date"
+                }
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/drivers/nearby",
+          "controller": "getNearbyDrivers",
+          "description": "Get nearby active drivers within a radius",
+          "parameters": {
+            "query": {
+              "longitude": {
+                "type": "number",
+                "required": true,
+                "description": "Longitude coordinate"
+              },
+              "latitude": {
+                "type": "number",
+                "required": true,
+                "description": "Latitude coordinate"
+              },
+              "maxDistance": {
+                "type": "number",
+                "required": false,
+                "default": 10000,
+                "description": "Maximum distance in meters"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "drivers": ["Array of driver objects (password and documents excluded)"],
+                "count": "number"
+              }
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "longitude and latitude are required"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "rides": {
+      "basePath": "/rides",
+      "description": "Ride management endpoints",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/rides/rides",
+          "controller": "createRide",
+          "description": "Create a new ride with fare calculation based on distance and service",
+          "parameters": null,
+          "requestBody": {
+            "contentType": "application/json",
+            "required": ["rider", "pickupLocation", "dropoffLocation", "service", "pickupAddress", "dropoffAddress"],
+            "optional": ["rideType", "paymentMethod", "userSocketId"],
+            "schema": {
+              "rider": "string (User MongoDB ObjectId)",
+              "pickupLocation": {
+                "type": "Point",
+                "coordinates": ["number (longitude)", "number (latitude)"]
+              },
+              "dropoffLocation": {
+                "type": "Point",
+                "coordinates": ["number (longitude)", "number (latitude)"]
+              },
+              "pickupAddress": "string",
+              "dropoffAddress": "string",
+              "service": "string (must match a service name from admin settings)",
+              "rideType": "string (default: 'normal')",
+              "paymentMethod": "string (default: 'CASH')",
+              "userSocketId": "string"
+            }
+          },
+          "response": {
+            "success": {
+              "status": 201,
+              "body": {
+                "ride": "Ride object with calculated fare and distance",
+                "startOtp": "string (4-digit OTP)",
+                "stopOtp": "string (4-digit OTP)"
+              }
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "Error creating ride | Invalid service selected | Admin settings not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/rides/rides",
+          "controller": "getAllRides",
+          "description": "Get all rides",
+          "parameters": null,
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": ["Array of all ride objects"]
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/rides/rides/:id",
+          "controller": "getRideById",
+          "description": "Get a single ride by ID with populated driver and rider",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Ride MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": "Ride object with populated driver and rider"
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Ride not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "PUT",
+          "path": "/rides/rides/:id",
+          "controller": "updateRide",
+          "description": "Update a ride by ID",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Ride MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": {
+            "contentType": "application/json",
+            "optional": ["status", "fare", "driver", "rider", "pickupLocation", "dropoffLocation"],
+            "schema": "Any ride field can be updated"
+          },
+          "response": {
+            "success": {
+              "status": 200,
+              "body": "Updated ride object"
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Ride not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/rides/rides/:id",
+          "controller": "deleteRide",
+          "description": "Delete a ride by ID",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Ride MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "Ride deleted successfully"
+              }
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Ride not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/rides/rides/user/:userId",
+          "controller": "getRidesByUserId",
+          "description": "Get rides for a specific user by user ID",
+          "parameters": {
+            "path": {
+              "userId": {
+                "type": "string",
+                "required": true,
+                "description": "User MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": ["Array of ride objects for the user"]
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "No rides found for this user"
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/rides/rides/driver/:driverId",
+          "controller": "getRidesByDriverId",
+          "description": "Get rides for a specific driver by driver ID",
+          "parameters": {
+            "path": {
+              "driverId": {
+                "type": "string",
+                "required": true,
+                "description": "Driver MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": ["Array of ride objects for the driver"]
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "No rides found for this driver"
+              }
+            }
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/rides/rides/search/:id",
+          "controller": "searchRide",
+          "description": "Search for nearby drivers based on user location",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "User MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": {
+            "contentType": "application/json",
+            "required": ["pickupLocation"],
+            "schema": {
+              "pickupLocation": {
+                "lat": "number",
+                "lon": "number"
+              }
+            }
+          },
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "nearbyDrivers": ["Array of nearby driver objects"]
+              }
+            },
+            "error": {
+              "status": 500,
+              "body": {
+                "message": "Error fetching nearby drivers"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "messages": {
+      "basePath": "/messages",
+      "description": "Messaging system endpoints",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/messages",
+          "controller": "sendMessage",
+          "description": "Send a message between rider and driver for a ride",
+          "parameters": null,
+          "requestBody": {
+            "contentType": "application/json",
+            "required": ["rideId", "senderId", "senderModel", "receiverId", "receiverModel", "message"],
+            "optional": ["messageType"],
+            "schema": {
+              "rideId": "string (Ride MongoDB ObjectId)",
+              "senderId": "string (User or Driver MongoDB ObjectId)",
+              "senderModel": "string (enum: 'User' | 'Driver')",
+              "receiverId": "string (User or Driver MongoDB ObjectId)",
+              "receiverModel": "string (enum: 'User' | 'Driver')",
+              "message": "string",
+              "messageType": "string (default: 'text')"
+            }
+          },
+          "response": {
+            "success": {
+              "status": 201,
+              "body": {
+                "message": "Message sent successfully",
+                "data": "Message object with populated sender and receiver"
+              }
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "Missing required fields | Invalid sender or receiver model"
+              }
+            },
+            "error_ride": {
+              "status": 404,
+              "body": {
+                "message": "Ride not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/messages/ride/:rideId",
+          "controller": "getRideMessages",
+          "description": "Get all messages for a ride",
+          "parameters": {
+            "path": {
+              "rideId": {
+                "type": "string",
+                "required": true,
+                "description": "Ride MongoDB ObjectId"
+              }
+            },
+            "query": {
+              "limit": {
+                "type": "number",
+                "required": false,
+                "default": 100,
+                "description": "Maximum number of messages to return"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "messages": ["Array of message objects with populated sender and receiver"],
+                "count": "number"
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/messages/unread/:receiverId",
+          "controller": "getUnreadMessages",
+          "description": "Get unread messages for a user/driver",
+          "parameters": {
+            "path": {
+              "receiverId": {
+                "type": "string",
+                "required": true,
+                "description": "User or Driver MongoDB ObjectId"
+              }
+            },
+            "query": {
+              "receiverModel": {
+                "type": "string",
+                "required": true,
+                "description": "enum: 'User' | 'Driver'"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "messages": ["Array of unread message objects"],
+                "count": "number"
+              }
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "Invalid or missing receiverModel query parameter"
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/messages/conversation/:rideId/:userId",
+          "controller": "getConversation",
+          "description": "Get conversation between two users for a ride",
+          "parameters": {
+            "path": {
+              "rideId": {
+                "type": "string",
+                "required": true,
+                "description": "Ride MongoDB ObjectId"
+              },
+              "userId": {
+                "type": "string",
+                "required": true,
+                "description": "User or Driver MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "messages": ["Array of message objects"],
+                "count": "number"
+              }
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "path": "/messages/:id/read",
+          "controller": "markMessageAsRead",
+          "description": "Mark a message as read",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Message MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "Message marked as read",
+                "data": "Message object"
+              }
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Message not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "path": "/messages/ride/:rideId/read-all",
+          "controller": "markAllMessagesAsRead",
+          "description": "Mark all messages as read for a ride",
+          "parameters": {
+            "path": {
+              "rideId": {
+                "type": "string",
+                "required": true,
+                "description": "Ride MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": {
+            "contentType": "application/json",
+            "required": ["receiverId"],
+            "schema": {
+              "receiverId": "string (User or Driver MongoDB ObjectId)"
+            }
+          },
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "All messages marked as read",
+                "modifiedCount": "number"
+              }
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "receiverId is required"
+              }
+            }
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/messages/:id",
+          "controller": "deleteMessage",
+          "description": "Delete a message",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Message MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "Message deleted successfully"
+              }
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Message not found"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ratings": {
+      "basePath": "/ratings",
+      "description": "Rating system endpoints",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/ratings",
+          "controller": "submitRating",
+          "description": "Submit a rating for a ride (rider rates driver or driver rates rider)",
+          "parameters": null,
+          "requestBody": {
+            "contentType": "application/json",
+            "required": ["rideId", "ratedBy", "ratedByModel", "ratedTo", "ratedToModel", "rating"],
+            "optional": ["review", "tags"],
+            "schema": {
+              "rideId": "string (Ride MongoDB ObjectId)",
+              "ratedBy": "string (User or Driver MongoDB ObjectId)",
+              "ratedByModel": "string (enum: 'User' | 'Driver')",
+              "ratedTo": "string (User or Driver MongoDB ObjectId)",
+              "ratedToModel": "string (enum: 'User' | 'Driver')",
+              "rating": "number (1-5)",
+              "review": "string",
+              "tags": ["Array of strings"]
+            }
+          },
+          "response": {
+            "success": {
+              "status": 201,
+              "body": {
+                "message": "Rating submitted successfully",
+                "rating": "Rating object"
+              }
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "Missing required fields | Rating must be between 1 and 5 | Rating already submitted for this ride"
+              }
+            },
+            "error_ride": {
+              "status": 404,
+              "body": {
+                "message": "Ride not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/ratings/:entityModel/:entityId",
+          "controller": "getRatingsForEntity",
+          "description": "Get ratings for a specific entity (Driver or User)",
+          "parameters": {
+            "path": {
+              "entityModel": {
+                "type": "string",
+                "required": true,
+                "description": "enum: 'Driver' | 'User'"
+              },
+              "entityId": {
+                "type": "string",
+                "required": true,
+                "description": "Driver or User MongoDB ObjectId"
+              }
+            },
+            "query": {
+              "limit": {
+                "type": "number",
+                "required": false,
+                "default": 20,
+                "description": "Maximum number of ratings to return"
+              },
+              "skip": {
+                "type": "number",
+                "required": false,
+                "default": 0,
+                "description": "Number of ratings to skip"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "ratings": ["Array of rating objects with populated ratedBy and ride"],
+                "total": "number",
+                "count": "number"
+              }
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "Invalid entity model"
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/ratings/:entityModel/:entityId/stats",
+          "controller": "getRatingStats",
+          "description": "Get average rating and stats for an entity",
+          "parameters": {
+            "path": {
+              "entityModel": {
+                "type": "string",
+                "required": true,
+                "description": "enum: 'Driver' | 'User'"
+              },
+              "entityId": {
+                "type": "string",
+                "required": true,
+                "description": "Driver or User MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "averageRating": "number",
+                "totalRatings": "number",
+                "ratingDistribution": {
+                  "1": "number",
+                  "2": "number",
+                  "3": "number",
+                  "4": "number",
+                  "5": "number"
+                }
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/ratings/ride/:rideId",
+          "controller": "getRatingByRide",
+          "description": "Get rating for a specific ride",
+          "parameters": {
+            "path": {
+              "rideId": {
+                "type": "string",
+                "required": true,
+                "description": "Ride MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "ratings": ["Array of rating objects for the ride"]
+              }
+            }
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/ratings/:id",
+          "controller": "deleteRating",
+          "description": "Delete a rating (admin only)",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Rating MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "Rating deleted successfully"
+              }
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Rating not found"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "notifications": {
+      "basePath": "/notifications",
+      "description": "Notification system endpoints",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/notifications",
+          "controller": "createNotification",
+          "description": "Create a notification for a user or driver",
+          "parameters": null,
+          "requestBody": {
+            "contentType": "application/json",
+            "required": ["recipientId", "recipientModel", "title", "message", "type"],
+            "optional": ["relatedRide", "data"],
+            "schema": {
+              "recipientId": "string (User or Driver MongoDB ObjectId)",
+              "recipientModel": "string (enum: 'User' | 'Driver')",
+              "title": "string",
+              "message": "string",
+              "type": "string",
+              "relatedRide": "string (Ride MongoDB ObjectId)",
+              "data": "object (any additional data)"
+            }
+          },
+          "response": {
+            "success": {
+              "status": 201,
+              "body": {
+                "message": "Notification created successfully",
+                "notification": "Notification object"
+              }
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "Missing required fields | Invalid recipient model"
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/notifications/:recipientId",
+          "controller": "getUserNotifications",
+          "description": "Get all notifications for a user/driver",
+          "parameters": {
+            "path": {
+              "recipientId": {
+                "type": "string",
+                "required": true,
+                "description": "User or Driver MongoDB ObjectId"
+              }
+            },
+            "query": {
+              "recipientModel": {
+                "type": "string",
+                "required": true,
+                "description": "enum: 'User' | 'Driver'"
+              },
+              "limit": {
+                "type": "number",
+                "required": false,
+                "default": 50,
+                "description": "Maximum number of notifications to return"
+              },
+              "skip": {
+                "type": "number",
+                "required": false,
+                "default": 0,
+                "description": "Number of notifications to skip"
+              },
+              "unreadOnly": {
+                "type": "boolean",
+                "required": false,
+                "default": false,
+                "description": "If true, return only unread notifications"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "notifications": ["Array of notification objects"],
+                "total": "number",
+                "unreadCount": "number",
+                "count": "number"
+              }
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "Invalid or missing recipientModel query parameter"
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/notifications/:recipientId/unread-count",
+          "controller": "getUnreadCount",
+          "description": "Get unread count for a user/driver",
+          "parameters": {
+            "path": {
+              "recipientId": {
+                "type": "string",
+                "required": true,
+                "description": "User or Driver MongoDB ObjectId"
+              }
+            },
+            "query": {
+              "recipientModel": {
+                "type": "string",
+                "required": true,
+                "description": "enum: 'User' | 'Driver'"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "unreadCount": "number"
+              }
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "Invalid or missing recipientModel query parameter"
+              }
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "path": "/notifications/:id/read",
+          "controller": "markNotificationAsRead",
+          "description": "Mark notification as read",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Notification MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "Notification marked as read",
+                "notification": "Notification object"
+              }
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Notification not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "path": "/notifications/read-all/:recipientId",
+          "controller": "markAllNotificationsAsRead",
+          "description": "Mark all notifications as read for a user/driver",
+          "parameters": {
+            "path": {
+              "recipientId": {
+                "type": "string",
+                "required": true,
+                "description": "User or Driver MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": {
+            "contentType": "application/json",
+            "required": ["recipientModel"],
+            "schema": {
+              "recipientModel": "string (enum: 'User' | 'Driver')"
+            }
+          },
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "All notifications marked as read",
+                "modifiedCount": "number"
+              }
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "Invalid or missing recipientModel"
+              }
+            }
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/notifications/:id",
+          "controller": "deleteNotification",
+          "description": "Delete a notification",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Notification MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "Notification deleted successfully"
+              }
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Notification not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/notifications/all/:recipientId",
+          "controller": "deleteAllNotifications",
+          "description": "Delete all notifications for a user/driver",
+          "parameters": {
+            "path": {
+              "recipientId": {
+                "type": "string",
+                "required": true,
+                "description": "User or Driver MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": {
+            "contentType": "application/json",
+            "required": ["recipientModel"],
+            "schema": {
+              "recipientModel": "string (enum: 'User' | 'Driver')"
+            }
+          },
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "All notifications deleted successfully",
+                "deletedCount": "number"
+              }
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "Invalid or missing recipientModel"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "emergencies": {
+      "basePath": "/emergencies",
+      "description": "Emergency/SOS system endpoints",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/emergencies",
+          "controller": "createEmergencyAlert",
+          "description": "Create an emergency alert for a ride",
+          "parameters": null,
+          "requestBody": {
+            "contentType": "application/json",
+            "required": ["rideId", "triggeredBy", "triggeredByModel", "location", "reason"],
+            "optional": ["description"],
+            "schema": {
+              "rideId": "string (Ride MongoDB ObjectId)",
+              "triggeredBy": "string (User or Driver MongoDB ObjectId)",
+              "triggeredByModel": "string (enum: 'User' | 'Driver')",
+              "location": {
+                "longitude": "number",
+                "latitude": "number"
+              },
+              "reason": "string",
+              "description": "string"
+            }
+          },
+          "response": {
+            "success": {
+              "status": 201,
+              "body": {
+                "message": "Emergency alert created successfully",
+                "emergency": "Emergency object with populated ride and triggeredBy"
+              }
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "Missing required fields | Invalid triggeredBy model | Invalid location"
+              }
+            },
+            "error_ride": {
+              "status": 404,
+              "body": {
+                "message": "Ride not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/emergencies",
+          "controller": "getAllEmergencies",
+          "description": "Get all emergencies (admin)",
+          "parameters": {
+            "query": {
+              "status": {
+                "type": "string",
+                "required": false,
+                "description": "Filter by status (active, resolved, dismissed)"
+              },
+              "limit": {
+                "type": "number",
+                "required": false,
+                "default": 50,
+                "description": "Maximum number of emergencies to return"
+              },
+              "skip": {
+                "type": "number",
+                "required": false,
+                "default": 0,
+                "description": "Number of emergencies to skip"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "emergencies": ["Array of emergency objects"],
+                "total": "number",
+                "count": "number"
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/emergencies/active",
+          "controller": "getActiveEmergencies",
+          "description": "Get active emergencies (for admin dashboard)",
+          "parameters": null,
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "emergencies": ["Array of active emergency objects"],
+                "count": "number"
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/emergencies/:id",
+          "controller": "getEmergencyById",
+          "description": "Get emergency by ID",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Emergency MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "emergency": "Emergency object with populated ride and triggeredBy"
+              }
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Emergency not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/emergencies/ride/:rideId",
+          "controller": "getEmergenciesByRide",
+          "description": "Get emergencies for a ride",
+          "parameters": {
+            "path": {
+              "rideId": {
+                "type": "string",
+                "required": true,
+                "description": "Ride MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "emergencies": ["Array of emergency objects"],
+                "count": "number"
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/emergencies/user/:userId",
+          "controller": "getEmergenciesByUser",
+          "description": "Get emergencies by user/driver",
+          "parameters": {
+            "path": {
+              "userId": {
+                "type": "string",
+                "required": true,
+                "description": "User or Driver MongoDB ObjectId"
+              }
+            },
+            "query": {
+              "userModel": {
+                "type": "string",
+                "required": true,
+                "description": "enum: 'User' | 'Driver'"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "emergencies": ["Array of emergency objects"],
+                "count": "number"
+              }
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "Invalid or missing userModel query parameter"
+              }
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "path": "/emergencies/:id/resolve",
+          "controller": "resolveEmergency",
+          "description": "Resolve an emergency",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Emergency MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "Emergency resolved successfully",
+                "emergency": "Emergency object"
+              }
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Emergency not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "path": "/emergencies/:id/dismiss",
+          "controller": "dismissEmergency",
+          "description": "Dismiss an emergency",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Emergency MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "Emergency dismissed successfully",
+                "emergency": "Emergency object"
+              }
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Emergency not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/emergencies/:id",
+          "controller": "deleteEmergency",
+          "description": "Delete an emergency (admin only)",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Emergency MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "Emergency deleted successfully"
+              }
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Emergency not found"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "admin": {
+      "basePath": "/admin",
+      "description": "Admin management endpoints",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/admin",
+          "controller": "createSubAdmin",
+          "description": "Create a new sub-admin",
+          "parameters": null,
+          "requestBody": {
+            "contentType": "application/json",
+            "required": ["fullName", "email", "phoneNumber", "password"],
+            "optional": ["level"],
+            "schema": {
+              "fullName": "string",
+              "email": "string",
+              "phoneNumber": "string",
+              "password": "string (will be hashed)",
+              "level": "string"
+            }
+          },
+          "response": {
+            "success": {
+              "status": 201,
+              "body": "Sub-admin object"
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "Error creating sub-admin"
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/admin",
+          "controller": "getAllSubAdmins",
+          "description": "Get all sub-admins",
+          "parameters": null,
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": ["Array of sub-admin objects"]
+            }
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/admin/:id",
+          "controller": "deleteSubAdmin",
+          "description": "Delete a sub-admin by ID",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Sub-admin MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "Sub-admin deleted successfully"
+              }
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Sub-admin not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/admin/login",
+          "controller": "adminLogin",
+          "description": "Admin login",
+          "parameters": null,
+          "requestBody": {
+            "contentType": "application/json",
+            "required": ["email", "password"],
+            "schema": {
+              "email": "string",
+              "password": "string"
+            }
+          },
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "Login successful",
+                "token": "JWT token string"
+              }
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Admin not found"
+              }
+            },
+            "error_credentials": {
+              "status": 401,
+              "body": {
+                "message": "Invalid credentials"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "settings": {
+      "basePath": "/settings",
+      "description": "Admin settings management endpoints",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/settings/settings",
+          "controller": "addSettings",
+          "description": "Add new settings (or update if exists)",
+          "parameters": null,
+          "requestBody": {
+            "contentType": "application/json",
+            "required": ["pricingConfigurations", "services", "systemSettings"],
+            "schema": {
+              "pricingConfigurations": {
+                "perKmRate": "number",
+                "minimumFare": "number",
+                "platformFees": "number (percentage)",
+                "driverCommissions": "number (percentage)"
+              },
+              "services": [
+                {
+                  "name": "string",
+                  "price": "number",
+                  "description": "string"
+                }
+              ],
+              "systemSettings": {
+                "maintenanceMode": "boolean",
+                "forceUpdate": "boolean"
+              }
+            }
+          },
+          "response": {
+            "success": {
+              "status": 201,
+              "body": {
+                "message": "Settings added successfully",
+                "settings": "Settings object"
+              }
+            },
+            "success_update": {
+              "status": 200,
+              "body": {
+                "message": "Settings already existed and have been updated",
+                "settings": "Updated settings object"
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/settings/settings",
+          "controller": "getSettings",
+          "description": "Get all settings",
+          "parameters": null,
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": "Settings object"
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Settings not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "PUT",
+          "path": "/settings/settings",
+          "controller": "updateSettings",
+          "description": "Update settings",
+          "parameters": null,
+          "requestBody": {
+            "contentType": "application/json",
+            "optional": ["pricingConfigurations", "services", "systemSettings"],
+            "schema": "Any settings field can be updated"
+          },
+          "response": {
+            "success": {
+              "status": 200,
+              "body": "Updated settings object"
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Settings not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "path": "/settings/settings/maintenance-mode",
+          "controller": "toggleMaintenanceMode",
+          "description": "Toggle maintenance mode",
+          "parameters": null,
+          "requestBody": {
+            "contentType": "application/json",
+            "required": ["maintenanceMode"],
+            "schema": {
+              "maintenanceMode": "boolean"
+            }
+          },
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "Maintenance mode updated",
+                "maintenanceMode": "boolean"
+              }
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Settings not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "path": "/settings/settings/force-update",
+          "controller": "toggleForceUpdate",
+          "description": "Toggle force update",
+          "parameters": null,
+          "requestBody": {
+            "contentType": "application/json",
+            "required": ["forceUpdate"],
+            "schema": {
+              "forceUpdate": "boolean"
+            }
+          },
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "Force update status updated",
+                "forceUpdate": "boolean"
+              }
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Settings not found"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "coupons": {
+      "basePath": "/coupons",
+      "description": "Coupon management endpoints",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/coupons",
+          "controller": "addCoupon",
+          "description": "Add a new coupon",
+          "parameters": null,
+          "requestBody": {
+            "contentType": "application/json",
+            "required": ["code", "discountType", "discountValue"],
+            "optional": ["startDate", "validUntil", "maxUses", "usedCount", "isActive"],
+            "schema": {
+              "code": "string",
+              "discountType": "string (enum: 'percentage' | 'fixed')",
+              "discountValue": "number",
+              "startDate": "string (YYYY-MM-DD)",
+              "validUntil": "string (YYYY-MM-DD)",
+              "maxUses": "number",
+              "usedCount": "number",
+              "isActive": "boolean"
+            }
+          },
+          "response": {
+            "success": {
+              "status": 201,
+              "body": {
+                "message": "Coupon added successfully",
+                "coupon": "Coupon object"
+              }
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "Invalid startDate format. Use YYYY-MM-DD. | Invalid validUntil format. Use YYYY-MM-DD."
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/coupons",
+          "controller": "getAllCoupons",
+          "description": "Get all coupons",
+          "parameters": null,
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": ["Array of coupon objects"]
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/coupons/:id",
+          "controller": "getCouponById",
+          "description": "Get a single coupon by ID",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Coupon MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": "Coupon object"
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Coupon not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "PUT",
+          "path": "/coupons/:id",
+          "controller": "updateCoupon",
+          "description": "Update a coupon by ID",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Coupon MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": {
+            "contentType": "application/json",
+            "optional": ["code", "discountType", "discountValue", "startDate", "validUntil", "maxUses", "usedCount", "isActive"],
+            "schema": "Any coupon field can be updated"
+          },
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "Coupon updated successfully",
+                "updatedCoupon": "Updated coupon object"
+              }
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Coupon not found"
+              }
+            }
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/coupons/:id",
+          "controller": "deleteCoupon",
+          "description": "Delete a coupon by ID",
+          "parameters": {
+            "path": {
+              "id": {
+                "type": "string",
+                "required": true,
+                "description": "Coupon MongoDB ObjectId"
+              }
+            }
+          },
+          "requestBody": null,
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "Coupon deleted successfully"
+              }
+            },
+            "error": {
+              "status": 404,
+              "body": {
+                "message": "Coupon not found"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "upload": {
+      "basePath": "/upload",
+      "description": "File upload endpoint",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/upload",
+          "controller": "upload.single('image')",
+          "description": "Upload an image file (jpeg, jpg, png)",
+          "parameters": null,
+          "requestBody": {
+            "contentType": "multipart/form-data",
+            "required": ["image"],
+            "schema": {
+              "image": "file (jpeg, jpg, png)"
+            }
+          },
+          "response": {
+            "success": {
+              "status": 200,
+              "body": {
+                "message": "File uploaded successfully!",
+                "file": {
+                  "filename": "string",
+                  "path": "string",
+                  "mimetype": "string",
+                  "size": "number"
+                }
+              }
+            },
+            "error": {
+              "status": 400,
+              "body": {
+                "message": "No file uploaded. | Only images (jpeg, jpg, png) are allowed!"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
