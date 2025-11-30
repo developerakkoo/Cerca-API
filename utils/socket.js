@@ -2,6 +2,8 @@ const { Server } = require("socket.io");
 const logger = require("./logger");
 const Driver = require("../Models/Driver/driver.model");
 const Ride = require("../Models/Driver/ride.model");
+const AdminEarnings = require("../Models/Admin/adminEarnings.model");
+const Settings = require("../Models/Admin/settings.modal");
 const {
   updateDriverStatus,
   updateDriverLocation,
@@ -30,6 +32,7 @@ const {
   createEmergencyAlert,
   resolveEmergency,
   autoAssignDriver,
+  searchDriversWithProgressiveRadius,
 } = require("./ride_booking_functions");
 
 let io;
@@ -224,14 +227,13 @@ function initializeSocket(server) {
           .populate('rider', 'fullName name phone email')
           .exec();
 
-        // Find nearby drivers
-        const nearbyDrivers = await autoAssignDriver(
-          ride._id, 
-          ride.pickupLocation, 
-          10000 // 10km radius
+        // Find nearby drivers using progressive radius expansion (3km → 6km → 9km → 12km)
+        const { drivers: nearbyDrivers, radiusUsed } = await searchDriversWithProgressiveRadius(
+          ride.pickupLocation,
+          [3000, 6000, 9000, 12000] // Progressive radii in meters
         );
 
-        logger.info(`Found ${nearbyDrivers.length} nearby drivers for rideId: ${ride._id}`);
+        logger.info(`Found ${nearbyDrivers.length} nearby drivers for rideId: ${ride._id} within ${radiusUsed}m radius`);
 
         if (nearbyDrivers.length > 0) {
           // Notify specific nearby drivers
@@ -254,12 +256,20 @@ function initializeSocket(server) {
             });
           });
         } else {
-          // Notify all drivers if no nearby drivers
-          logger.warn(`No nearby drivers found for rideId: ${ride._id}, broadcasting to all drivers`);
-          io.to('driver').emit('newRideRequest', populatedRide);
+          // No drivers found after progressive radius expansion
+          logger.warn(`No drivers found for rideId: ${ride._id} after searching up to ${radiusUsed}m radius`);
+          
+          // Emit noDriverFound event to rider (NEW event - optional for apps)
+          if (populatedRide.userSocketId) {
+            io.to(populatedRide.userSocketId).emit('noDriverFound', {
+              rideId: ride._id,
+              message: 'No drivers found within 12km radius. Please try again later.',
+            });
+            logger.info(`No driver found event sent to rider: ${populatedRide.rider._id}`);
+          }
         }
 
-        // Ack to the rider
+        // Ack to the rider (backward compatible - existing apps expect this)
         if (populatedRide.userSocketId) {
           io.to(populatedRide.userSocketId).emit('rideRequested', populatedRide);
           logger.info(`Ride request confirmation sent to rider: ${data.rider || data.riderId}`);
@@ -540,6 +550,12 @@ function initializeSocket(server) {
         
         logger.info(`Ride completed successfully - rideId: ${rideId}, finalFare: ${completedRide.fare}`);
         
+        // Store earnings for admin analytics (non-blocking)
+        storeRideEarnings(completedRide).catch(err => {
+          logger.error(`Error storing ride earnings for rideId: ${rideId}:`, err);
+          // Don't fail ride completion if earnings storage fails
+        });
+        
         if (completedRide.userSocketId) {
           io.to(completedRide.userSocketId).emit('rideCompleted', completedRide);
           logger.info(`Ride completion notification sent to rider - rideId: ${rideId}`);
@@ -587,14 +603,16 @@ function initializeSocket(server) {
           return;
         }
 
-        const cancelledRide = await cancelRide(rideId, cancelledBy);
-        logger.info(`Ride cancelled successfully - rideId: ${rideId}, cancelledBy: ${cancelledBy}`);
-        
-        // Update cancellation reason if provided
-        if (reason) {
-          await Ride.findByIdAndUpdate(rideId, { cancellationReason: reason });
-          logger.info(`Cancellation reason saved - rideId: ${rideId}`);
+        // Validate and set cancellation reason (backward compatible)
+        let cancellationReason = reason;
+        if (!cancellationReason || cancellationReason.trim() === '') {
+          cancellationReason = 'No reason provided';
+          logger.warn(`rideCancelled: No reason provided for rideId: ${rideId}, using default`);
         }
+
+        // Cancel ride with reason
+        const cancelledRide = await cancelRide(rideId, cancelledBy, cancellationReason);
+        logger.info(`Ride cancelled successfully - rideId: ${rideId}, cancelledBy: ${cancelledBy}, reason: ${cancellationReason}`);
         
         if (cancelledRide.userSocketId) {
           io.to(cancelledRide.userSocketId).emit('rideCancelled', cancelledRide);
@@ -867,6 +885,56 @@ function getSocketIO() {
     );
   }
   return io;
+}
+
+// Store ride earnings for admin analytics (non-blocking)
+async function storeRideEarnings(ride) {
+  try {
+    if (!ride || !ride._id || !ride.driver || !ride.rider) {
+      logger.warn('storeRideEarnings: Invalid ride data, skipping');
+      return;
+    }
+
+    // Check if earnings already stored (prevent duplicates)
+    const existing = await AdminEarnings.findOne({ rideId: ride._id });
+    if (existing) {
+      logger.info(`Earnings already stored for rideId: ${ride._id}`);
+      return;
+    }
+
+    // Get settings for commission calculation
+    const settings = await Settings.findOne();
+    if (!settings) {
+      logger.warn('storeRideEarnings: Settings not found, skipping earnings storage');
+      return;
+    }
+
+    const { platformFees, driverCommissions } = settings.pricingConfigurations;
+    const grossFare = ride.fare || 0;
+
+    // Calculate platform fee and driver earning
+    const platformFee = platformFees ? grossFare * (platformFees / 100) : 0;
+    const driverEarning = driverCommissions 
+      ? grossFare * (driverCommissions / 100) 
+      : grossFare - platformFee;
+
+    // Create earnings record
+    const earnings = await AdminEarnings.create({
+      rideId: ride._id,
+      driverId: ride.driver._id || ride.driver,
+      riderId: ride.rider._id || ride.rider,
+      grossFare: grossFare,
+      platformFee: Math.round(platformFee * 100) / 100, // Round to 2 decimal places
+      driverEarning: Math.round(driverEarning * 100) / 100, // Round to 2 decimal places
+      rideDate: ride.actualEndTime || new Date(),
+      paymentStatus: ride.paymentStatus || 'completed',
+    });
+
+    logger.info(`Earnings stored for rideId: ${ride._id}, platformFee: ${earnings.platformFee}, driverEarning: ${earnings.driverEarning}`);
+  } catch (error) {
+    logger.error('Error storing ride earnings:', error);
+    // Don't throw - this is a background operation
+  }
 }
 
 module.exports = { initializeSocket, getSocketIO };

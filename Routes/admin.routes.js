@@ -4,6 +4,7 @@ const {
     getAllSubAdmins,
     deleteSubAdmin,
     adminLogin,
+    getAdminEarnings,
 } = require('../Controllers/admin.controller.js');
 const {
     getSettings,
@@ -28,5 +29,8 @@ router.get('/settings', getSettings);
 router.put('/settings', updateSettings);
 router.patch('/settings/maintenance-mode', toggleMaintenanceMode);
 router.patch('/settings/force-update', toggleForceUpdate);
+
+// Route for admin earnings analytics
+router.get('/earnings', getAdminEarnings);
 
 module.exports = router;

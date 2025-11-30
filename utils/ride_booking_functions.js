@@ -191,17 +191,37 @@ const calculateHaversineDistance = (lat1, lon1, lat2, lon2) => {
 
 const assignDriverToRide = async (rideId, driverId, driverSocketId) => {
     try {
+        // Enhanced atomic operation to prevent race conditions
+        // Check both status and driver existence in a single atomic operation
         const ride = await Ride.findOneAndUpdate(
-            { _id: rideId, status: 'requested', driver: { $exists: false } },
-            { $set: { driver: driverId, driverSocketId, status: 'accepted' } },
-            { new: true }
-          ).populate('driver rider');
-          if (!ride) {
+            { 
+                _id: rideId, 
+                status: 'requested',  // Must be in requested state
+                driver: { $exists: false }  // Must not have a driver assigned
+            },
+            { 
+                $set: { 
+                    driver: driverId, 
+                    driverSocketId, 
+                    status: 'accepted' 
+                } 
+            },
+            { 
+                new: true,
+                runValidators: true
+            }
+        ).populate('driver rider');
+        
+        if (!ride) {
             // Either already accepted by someone else or ride not in requested state
             const current = await Ride.findById(rideId).select('status driver');
-            const reason = current?.driver ? 'already_assigned' : `bad_state_${current?.status}`;
+            if (!current) {
+                throw new Error('Ride not found');
+            }
+            const reason = current.driver ? 'already_assigned' : `bad_state_${current.status}`;
             throw new Error(`Ride cannot be accepted (${reason})`);
-          }
+        }
+        
         return ride;
     } catch (error) {
         throw new Error(`Error assigning driver: ${error.message}`);
@@ -236,11 +256,21 @@ const completeRide = async (rideId, fare) => {
     }
 };
 
-const cancelRide = async (rideId, cancelledBy) => {
+const cancelRide = async (rideId, cancelledBy, cancellationReason = null) => {
     try {
+        const updateData = { 
+            status: 'cancelled', 
+            cancelledBy 
+        };
+        
+        // Add cancellation reason if provided
+        if (cancellationReason) {
+            updateData.cancellationReason = cancellationReason;
+        }
+        
         const ride = await Ride.findByIdAndUpdate(
             rideId,
-            { status: 'cancelled', cancelledBy },
+            updateData,
             { new: true }
         ).populate('driver rider');
         if (!ride) throw new Error('Ride not found');
@@ -622,6 +652,42 @@ const autoAssignDriver = async (rideId, pickupLocation, maxDistance = 5000) => {
     }
 };
 
+// Search drivers with progressive radius expansion
+const searchDriversWithProgressiveRadius = async (pickupLocation, radii = [3000, 6000, 9000, 12000]) => {
+    try {
+        // Ensure pickupLocation has coordinates array
+        const coordinates = pickupLocation.coordinates || [pickupLocation.longitude, pickupLocation.latitude];
+        
+        // Try each radius sequentially
+        for (const radius of radii) {
+            const drivers = await Driver.find({
+                location: {
+                    $near: {
+                        $geometry: {
+                            type: 'Point',
+                            coordinates: coordinates,
+                        },
+                        $maxDistance: radius, // meters
+                    },
+                },
+                isActive: true,
+                isBusy: false,
+                isOnline: true,
+            }).limit(10); // Limit to 10 drivers per radius
+            
+            // If drivers found, return them immediately
+            if (drivers.length > 0) {
+                return { drivers, radiusUsed: radius };
+            }
+        }
+        
+        // No drivers found in any radius
+        return { drivers: [], radiusUsed: radii[radii.length - 1] };
+    } catch (error) {
+        throw new Error(`Error searching drivers with progressive radius: ${error.message}`);
+    }
+};
+
 
   // Exporting functions for use in other modules
 module.exports = {
@@ -654,4 +720,5 @@ module.exports = {
     createEmergencyAlert,
     resolveEmergency,
     autoAssignDriver,
+    searchDriversWithProgressiveRadius,
 };
