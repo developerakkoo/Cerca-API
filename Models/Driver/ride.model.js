@@ -155,6 +155,16 @@ const rideSchema = new mongoose.Schema({
     },
     
     transactionId: String,
+    
+    rejectedDrivers: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Driver'
+    }],
+    
+    notifiedDrivers: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Driver'
+    }],
 },{
     timestamps:true
 });

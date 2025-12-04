@@ -1,6 +1,7 @@
 const { Server } = require("socket.io");
 const logger = require("./logger");
 const Driver = require("../Models/Driver/driver.model");
+const User = require("../Models/User/user.model");
 const Ride = require("../Models/Driver/ride.model");
 const AdminEarnings = require("../Models/Admin/adminEarnings.model");
 const Settings = require("../Models/Admin/settings.modal");
@@ -60,6 +61,25 @@ function initializeSocket(server) {
         if (!userId) {
           logger.warn('riderConnect: userId is missing');
           return;
+        }
+
+        // Check if user already has a socketId (reconnection scenario)
+        const currentUser = await User.findById(userId);
+        if (currentUser?.socketId && currentUser.socketId !== socket.id) {
+          logger.info(`Rider ${userId} reconnecting. Old socketId: ${currentUser.socketId}, New socketId: ${socket.id}`);
+          
+          // Check if old socket is still connected
+          const oldSocket = io.sockets.sockets.get(currentUser.socketId);
+          if (oldSocket && oldSocket.connected) {
+            logger.warn(`Rider ${userId} reconnecting from new device/connection. Disconnecting old socket: ${currentUser.socketId}`);
+            oldSocket.disconnect();
+          } else {
+            logger.info(`Rider ${userId} old socket ${currentUser.socketId} is not connected, cleaning up stale socketId`);
+          }
+          
+          // Clear old socketId before setting new one
+          await clearUserSocket(userId, currentUser.socketId);
+          logger.info(`Cleaned up old socketId for rider ${userId}`);
         }
 
         await setUserSocket(userId, socket.id);
@@ -302,6 +322,15 @@ function initializeSocket(server) {
             logger.info(`   📋 Skip reasons: noSocketId=${skippedReasons.noSocketId}, socketNotConnected=${skippedReasons.socketNotConnected}, socketNotFound=${skippedReasons.socketNotFound}`);
           }
           
+          // Track notified drivers in ride document
+          const notifiedDriverIds = nearbyDrivers.map(driver => driver._id);
+          await Ride.findByIdAndUpdate(ride._id, {
+            $set: {
+              notifiedDrivers: notifiedDriverIds
+            }
+          });
+          logger.info(`📝 Tracked ${notifiedDriverIds.length} notified drivers for rideId: ${ride._id}`);
+          
           // Create notifications for nearby drivers (including those who didn't receive socket notification)
           nearbyDrivers.forEach(async (driver) => {
             await createNotification({
@@ -476,6 +505,150 @@ function initializeSocket(server) {
       } catch (err) {
         logger.error('rideAccepted error:', err);
         socket.emit('rideError', { message: err.message || 'Failed to accept ride' });
+      }
+    });
+
+    // ============================
+    // DRIVER REJECTS RIDE
+    // ============================
+    socket.on('rideRejected', async (data) => {
+      try {
+        logger.info(`rideRejected event - rideId: ${data?.rideId}, driverId: ${data?.driverId}`);
+        const { rideId, driverId } = data || {};
+        if (!rideId || !driverId) {
+          logger.warn('rideRejected: Missing rideId or driverId');
+          return;
+        }
+
+        // Get the ride to check current status
+        const ride = await Ride.findById(rideId).populate('rider', 'fullName name phone email');
+        if (!ride) {
+          logger.warn(`rideRejected: Ride not found - rideId: ${rideId}`);
+          return;
+        }
+
+        // Check if ride is already accepted or completed
+        if (ride.status !== 'requested') {
+          logger.info(`rideRejected: Ride ${rideId} is already ${ride.status}, ignoring rejection`);
+          return;
+        }
+
+        // Add driver to rejectedDrivers array (avoid duplicates)
+        const updatedRide = await Ride.findByIdAndUpdate(
+          rideId,
+          {
+            $addToSet: { rejectedDrivers: driverId }
+          },
+          { new: true }
+        );
+
+        logger.info(`Driver ${driverId} rejected ride ${rideId}. Total rejections: ${updatedRide.rejectedDrivers.length}`);
+
+        // Check if all notified drivers have rejected
+        const notifiedCount = updatedRide.notifiedDrivers ? updatedRide.notifiedDrivers.length : 0;
+        const rejectedCount = updatedRide.rejectedDrivers.length;
+
+        logger.info(`Rejection status for rideId: ${rideId} - Notified: ${notifiedCount}, Rejected: ${rejectedCount}`);
+
+        if (notifiedCount > 0 && rejectedCount >= notifiedCount) {
+          // All notified drivers have rejected
+          logger.warn(`All ${notifiedCount} notified drivers have rejected ride ${rideId}`);
+
+          // Try searching again with larger radius (15km, 20km, 25km)
+          logger.info(`🔍 Retrying driver search with larger radius for rideId: ${rideId}`);
+          const { drivers: newDrivers, radiusUsed } = await searchDriversWithProgressiveRadius(
+            ride.pickupLocation,
+            [15000, 20000, 25000] // Larger radii in meters
+          );
+
+          // Filter out already rejected drivers
+          const rejectedDriverIds = updatedRide.rejectedDrivers.map(id => id.toString());
+          const availableNewDrivers = newDrivers.filter(
+            driver => !rejectedDriverIds.includes(driver._id.toString())
+          );
+
+          logger.info(`Found ${availableNewDrivers.length} new available drivers (excluding ${rejectedCount} rejected) within ${radiusUsed}m radius`);
+
+          if (availableNewDrivers.length > 0) {
+            // Found new drivers, notify them
+            let notifiedCount = 0;
+            const newNotifiedDriverIds = [];
+
+            availableNewDrivers.forEach(driver => {
+              if (driver.socketId) {
+                const socketConnection = io.sockets.sockets.get(driver.socketId);
+                if (socketConnection && socketConnection.connected) {
+                  const populatedRide = {
+                    ...ride.toObject(),
+                    _id: ride._id
+                  };
+                  io.to(driver.socketId).emit('newRideRequest', populatedRide);
+                  logger.info(`✅ Retry: Ride request sent to driver: ${driver._id} (socketId: ${driver.socketId})`);
+                  notifiedCount++;
+                  newNotifiedDriverIds.push(driver._id);
+                } else {
+                  logger.warn(`⚠️ Retry: Driver ${driver._id} has socketId but socket is not connected`);
+                }
+              } else {
+                logger.warn(`⚠️ Retry: Driver ${driver._id} has no socketId`);
+              }
+            });
+
+            // Update notifiedDrivers to include new drivers
+            const allNotifiedDrivers = [
+              ...(updatedRide.notifiedDrivers || []),
+              ...newNotifiedDriverIds
+            ];
+            await Ride.findByIdAndUpdate(rideId, {
+              $set: { notifiedDrivers: allNotifiedDrivers }
+            });
+
+            logger.info(`📝 Updated notifiedDrivers: ${allNotifiedDrivers.length} total drivers notified for rideId: ${rideId}`);
+            logger.info(`✅ Retry search successful - ${notifiedCount} new drivers notified for rideId: ${rideId}`);
+          } else {
+            // No more drivers available, cancel the ride
+            logger.warn(`❌ No more drivers available for rideId: ${rideId} after all rejections. Cancelling ride.`);
+
+            await Ride.findByIdAndUpdate(rideId, {
+              $set: {
+                status: 'cancelled',
+                cancelledBy: 'system',
+                cancellationReason: 'All drivers rejected or unavailable'
+              }
+            });
+
+            // Notify rider
+            if (ride.userSocketId) {
+              io.to(ride.userSocketId).emit('noDriverFound', {
+                rideId: ride._id,
+                message: 'No drivers available. All nearby drivers have declined the ride. Please try again later.',
+              });
+              logger.info(`No driver found event sent to rider: ${ride.rider._id}`);
+            } else {
+              logger.warn(`⚠️ Cannot send noDriverFound event: userSocketId is missing`);
+            }
+
+            // Create notification for rider
+            await createNotification({
+              recipientId: ride.rider._id,
+              recipientModel: 'User',
+              title: 'Ride Cancelled',
+              message: 'No drivers available. All nearby drivers have declined the ride.',
+              type: 'ride_cancelled',
+              relatedRide: rideId,
+            });
+
+            logger.info(`Ride ${rideId} cancelled due to all drivers rejecting`);
+          }
+        } else {
+          // Not all drivers have rejected yet, wait for more responses
+          logger.info(`Not all drivers have rejected yet. Waiting for more responses for rideId: ${rideId}`);
+        }
+
+        logger.info(`rideRejected completed successfully - rideId: ${rideId}, driverId: ${driverId}`);
+      } catch (err) {
+        logger.error('rideRejected error:', err);
+        socket.emit('rideError', { message: err.message || 'Failed to process ride rejection' });
       }
     });
 
