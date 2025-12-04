@@ -87,6 +87,26 @@ function initializeSocket(server) {
           return;
         }
 
+        // Check if driver already has a socketId (reconnection scenario)
+        const currentDriver = await Driver.findById(driverId);
+        if (currentDriver?.socketId && currentDriver.socketId !== socket.id) {
+          logger.info(`Driver ${driverId} reconnecting. Old socketId: ${currentDriver.socketId}, New socketId: ${socket.id}`);
+          
+          // Check if old socket is still connected
+          const oldSocket = io.sockets.sockets.get(currentDriver.socketId);
+          if (oldSocket && oldSocket.connected) {
+            logger.warn(`Driver ${driverId} reconnecting from new device/connection. Disconnecting old socket: ${currentDriver.socketId}`);
+            oldSocket.disconnect();
+          } else {
+            logger.info(`Driver ${driverId} old socket ${currentDriver.socketId} is not connected, cleaning up stale socketId`);
+          }
+          
+          // Clear old socketId before setting new one
+          await clearDriverSocket(driverId, currentDriver.socketId);
+          logger.info(`Cleaned up old socketId for driver ${driverId}`);
+        }
+
+        // Now set the new socketId
         const driver = await setDriverSocket(driverId, socket.id);
         // Only set isOnline, but don't change isActive status
         // isActive (toggle) should be controlled separately by driverToggleStatus event
@@ -228,6 +248,10 @@ function initializeSocket(server) {
           .exec();
 
         // Find nearby drivers using progressive radius expansion (3km → 6km → 9km → 12km)
+        logger.info(`🔍 Searching for drivers for rideId: ${ride._id}`);
+        logger.info(`   Pickup location: ${JSON.stringify(ride.pickupLocation)}`);
+        logger.info(`   Pickup coordinates: [${ride.pickupLocation.coordinates[0]}, ${ride.pickupLocation.coordinates[1]}]`);
+        
         const { drivers: nearbyDrivers, radiusUsed } = await searchDriversWithProgressiveRadius(
           ride.pickupLocation,
           [3000, 6000, 9000, 12000] // Progressive radii in meters
@@ -236,15 +260,49 @@ function initializeSocket(server) {
         logger.info(`Found ${nearbyDrivers.length} nearby drivers for rideId: ${ride._id} within ${radiusUsed}m radius`);
 
         if (nearbyDrivers.length > 0) {
-          // Notify specific nearby drivers
+          let notifiedCount = 0;
+          let skippedCount = 0;
+          const skippedReasons = {
+            noSocketId: 0,
+            socketNotConnected: 0,
+            socketNotFound: 0
+          };
+
+          // Notify specific nearby drivers - verify socket connection is active
           nearbyDrivers.forEach(driver => {
             if (driver.socketId) {
-              io.to(driver.socketId).emit('newRideRequest', populatedRide);
-              logger.info(`Ride request sent to driver: ${driver._id}`);
+              // Verify socket connection is still active
+              const socketConnection = io.sockets.sockets.get(driver.socketId);
+              if (socketConnection && socketConnection.connected) {
+                io.to(driver.socketId).emit('newRideRequest', populatedRide);
+                logger.info(`✅ Ride request sent to driver: ${driver._id} (socketId: ${driver.socketId})`);
+                notifiedCount++;
+              } else {
+                if (socketConnection) {
+                  logger.warn(`⚠️ Driver ${driver._id} has socketId but socket is not connected: ${driver.socketId}`);
+                  skippedReasons.socketNotConnected++;
+                } else {
+                  logger.warn(`⚠️ Driver ${driver._id} has socketId but socket not found in server: ${driver.socketId}`);
+                  skippedReasons.socketNotFound++;
+                }
+                skippedCount++;
+              }
+            } else {
+              logger.warn(`⚠️ Driver ${driver._id} has no socketId, cannot send ride request`);
+              skippedReasons.noSocketId++;
+              skippedCount++;
             }
           });
           
-          // Create notifications for nearby drivers
+          // Log notification summary
+          logger.info(`📊 Ride request notification summary for rideId: ${ride._id}`);
+          logger.info(`   ✅ Successfully notified: ${notifiedCount} drivers`);
+          logger.info(`   ⚠️ Skipped: ${skippedCount} drivers`);
+          if (skippedCount > 0) {
+            logger.info(`   📋 Skip reasons: noSocketId=${skippedReasons.noSocketId}, socketNotConnected=${skippedReasons.socketNotConnected}, socketNotFound=${skippedReasons.socketNotFound}`);
+          }
+          
+          // Create notifications for nearby drivers (including those who didn't receive socket notification)
           nearbyDrivers.forEach(async (driver) => {
             await createNotification({
               recipientId: driver._id,
@@ -257,7 +315,80 @@ function initializeSocket(server) {
           });
         } else {
           // No drivers found after progressive radius expansion
-          logger.warn(`No drivers found for rideId: ${ride._id} after searching up to ${radiusUsed}m radius`);
+          logger.warn(`❌ No drivers found for rideId: ${ride._id} after searching up to ${radiusUsed}m radius`);
+          
+          // Add detailed debugging information
+          try {
+            // Check total drivers in database
+            const totalDrivers = await Driver.countDocuments({});
+            logger.warn(`   📊 Total drivers in database: ${totalDrivers}`);
+            
+            // Check drivers by status
+            const activeDrivers = await Driver.countDocuments({ isActive: true });
+            const onlineDrivers = await Driver.countDocuments({ isOnline: true });
+            const busyDrivers = await Driver.countDocuments({ isBusy: true });
+            const availableDrivers = await Driver.countDocuments({ 
+              isActive: true, 
+              isBusy: false, 
+              isOnline: true 
+            });
+            
+            logger.warn(`   📊 Driver status breakdown:`);
+            logger.warn(`      - Total drivers: ${totalDrivers}`);
+            logger.warn(`      - isActive=true: ${activeDrivers}`);
+            logger.warn(`      - isOnline=true: ${onlineDrivers}`);
+            logger.warn(`      - isBusy=true: ${busyDrivers}`);
+            logger.warn(`      - Available (isActive=true, isBusy=false, isOnline=true): ${availableDrivers}`);
+            
+            // Check if there are any drivers near the pickup location (without filters)
+            const nearbyWithoutFilters = await Driver.find({
+              location: {
+                $near: {
+                  $geometry: {
+                    type: 'Point',
+                    coordinates: ride.pickupLocation.coordinates,
+                  },
+                  $maxDistance: radiusUsed,
+                },
+              },
+            }).limit(10);
+            
+            logger.warn(`   📍 Drivers within ${radiusUsed}m radius (no filters): ${nearbyWithoutFilters.length}`);
+            
+            if (nearbyWithoutFilters.length > 0) {
+              logger.warn(`   ⚠️ Found ${nearbyWithoutFilters.length} drivers nearby but all were excluded by filters:`);
+              nearbyWithoutFilters.forEach((driver, index) => {
+                logger.warn(`      Driver ${index + 1} (${driver._id}):`);
+                logger.warn(`        - isActive: ${driver.isActive}`);
+                logger.warn(`        - isBusy: ${driver.isBusy}`);
+                logger.warn(`        - isOnline: ${driver.isOnline}`);
+                logger.warn(`        - Location: [${driver.location.coordinates[0]}, ${driver.location.coordinates[1]}]`);
+              });
+            } else {
+              logger.warn(`   📍 No drivers found within ${radiusUsed}m radius (even without filters)`);
+              logger.warn(`   💡 This suggests either:`);
+              logger.warn(`      1. No drivers exist in the database`);
+              logger.warn(`      2. All drivers are very far from pickup location`);
+              logger.warn(`      3. Driver location data is missing or incorrect`);
+            }
+            
+            // Verify coordinate format
+            const coords = ride.pickupLocation.coordinates;
+            logger.warn(`   📐 Coordinate format verification:`);
+            logger.warn(`      - Coordinates: [${coords[0]}, ${coords[1]}]`);
+            logger.warn(`      - Format: [longitude, latitude]`);
+            logger.warn(`      - Longitude range: -180 to 180 (current: ${coords[0]})`);
+            logger.warn(`      - Latitude range: -90 to 90 (current: ${coords[1]})`);
+            
+            if (coords[0] < -180 || coords[0] > 180) {
+              logger.error(`      ❌ INVALID: Longitude out of range!`);
+            }
+            if (coords[1] < -90 || coords[1] > 90) {
+              logger.error(`      ❌ INVALID: Latitude out of range!`);
+            }
+          } catch (debugError) {
+            logger.error(`   ❌ Error gathering debug information: ${debugError.message}`);
+          }
           
           // Emit noDriverFound event to rider (NEW event - optional for apps)
           if (populatedRide.userSocketId) {
@@ -266,6 +397,8 @@ function initializeSocket(server) {
               message: 'No drivers found within 12km radius. Please try again later.',
             });
             logger.info(`No driver found event sent to rider: ${populatedRide.rider._id}`);
+          } else {
+            logger.warn(`   ⚠️ Cannot send noDriverFound event: userSocketId is missing`);
           }
         }
 

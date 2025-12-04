@@ -5,6 +5,7 @@ const Rating = require('../Models/Driver/rating.model');
 const Message = require('../Models/Driver/message.model');
 const Notification = require('../Models/User/notification.model');
 const Emergency = require('../Models/User/emergency.model');
+const logger = require('./logger');
 
 //Helper Function
 function toLngLat(input) {
@@ -658,8 +659,51 @@ const searchDriversWithProgressiveRadius = async (pickupLocation, radii = [3000,
         // Ensure pickupLocation has coordinates array
         const coordinates = pickupLocation.coordinates || [pickupLocation.longitude, pickupLocation.latitude];
         
+        // Validate coordinate format
+        if (!Array.isArray(coordinates) || coordinates.length !== 2) {
+            throw new Error(`Invalid coordinates format: expected [longitude, latitude], got ${JSON.stringify(coordinates)}`);
+        }
+        
+        const [longitude, latitude] = coordinates;
+        
+        // Validate longitude range (-180 to 180)
+        if (typeof longitude !== 'number' || longitude < -180 || longitude > 180) {
+            throw new Error(`Invalid longitude: ${longitude} (must be between -180 and 180)`);
+        }
+        
+        // Validate latitude range (-90 to 90)
+        if (typeof latitude !== 'number' || latitude < -90 || latitude > 90) {
+            throw new Error(`Invalid latitude: ${latitude} (must be between -90 and 90)`);
+        }
+        
+        // Log coordinate format for debugging
+        logger.info(`🔍 Starting driver search with progressive radius`);
+        logger.info(`   Pickup location coordinates: [${longitude}, ${latitude}]`);
+        logger.info(`   Coordinate format: [longitude, latitude] ✓`);
+        logger.info(`   Longitude: ${longitude} (valid: ${longitude >= -180 && longitude <= 180 ? '✓' : '✗'})`);
+        logger.info(`   Latitude: ${latitude} (valid: ${latitude >= -90 && latitude <= 90 ? '✓' : '✗'})`);
+        logger.info(`   Radii to try: ${radii.join(', ')} meters`);
+        
         // Try each radius sequentially
         for (const radius of radii) {
+            logger.info(`   🔎 Searching within ${radius}m radius...`);
+            
+            // First, find all drivers within radius (no filters) for debugging
+            const allDriversInRadius = await Driver.find({
+                location: {
+                    $near: {
+                        $geometry: {
+                            type: 'Point',
+                            coordinates: coordinates,
+                        },
+                        $maxDistance: radius,
+                    },
+                },
+            }).limit(50); // Get more for debugging
+            
+            logger.info(`   📊 Found ${allDriversInRadius.length} total drivers within ${radius}m radius (before filters)`);
+            
+            // Now apply filters - including socketId to ensure only connected drivers
             const drivers = await Driver.find({
                 location: {
                     $near: {
@@ -673,17 +717,55 @@ const searchDriversWithProgressiveRadius = async (pickupLocation, radii = [3000,
                 isActive: true,
                 isBusy: false,
                 isOnline: true,
-            }).limit(10); // Limit to 10 drivers per radius
+                socketId: { $exists: true, $ne: null, $ne: '' } // Only drivers with valid socketId (connected)
+            }).select('socketId') // Explicitly select socketId field
+            .limit(10); // Limit to 10 drivers per radius
+            
+            logger.info(`   ✅ Found ${drivers.length} drivers after applying filters (isActive: true, isBusy: false, isOnline: true, socketId exists)`);
+            
+            // Log how many drivers have socketId
+            const driversWithSocketId = drivers.filter(d => d.socketId && d.socketId.trim() !== '').length;
+            if (drivers.length > 0) {
+                logger.info(`   📊 Drivers with valid socketId: ${driversWithSocketId} out of ${drivers.length}`);
+            }
+            
+            // Log details about excluded drivers for debugging
+            if (allDriversInRadius.length > 0 && drivers.length === 0) {
+                logger.warn(`   ⚠️ All ${allDriversInRadius.length} drivers were excluded by filters. Details:`);
+                
+                // Count drivers excluded by each filter
+                const excludedByIsActive = allDriversInRadius.filter(d => !d.isActive).length;
+                const excludedByIsBusy = allDriversInRadius.filter(d => d.isBusy).length;
+                const excludedByIsOnline = allDriversInRadius.filter(d => !d.isOnline).length;
+                
+                logger.warn(`      - Excluded by isActive=false: ${excludedByIsActive}`);
+                logger.warn(`      - Excluded by isBusy=true: ${excludedByIsBusy}`);
+                logger.warn(`      - Excluded by isOnline=false: ${excludedByIsOnline}`);
+                
+                // Show details of first few excluded drivers
+                const excludedDrivers = allDriversInRadius.slice(0, 5);
+                excludedDrivers.forEach((driver, index) => {
+                    logger.warn(`      Driver ${index + 1} (${driver._id}):`);
+                    logger.warn(`        - isActive: ${driver.isActive}`);
+                    logger.warn(`        - isBusy: ${driver.isBusy}`);
+                    logger.warn(`        - isOnline: ${driver.isOnline}`);
+                    logger.warn(`        - Location: [${driver.location.coordinates[0]}, ${driver.location.coordinates[1]}]`);
+                });
+            }
             
             // If drivers found, return them immediately
             if (drivers.length > 0) {
+                logger.info(`   ✅ Successfully found ${drivers.length} available drivers within ${radius}m radius`);
                 return { drivers, radiusUsed: radius };
             }
         }
         
         // No drivers found in any radius
+        logger.warn(`   ❌ No drivers found after searching all radii (up to ${radii[radii.length - 1]}m)`);
         return { drivers: [], radiusUsed: radii[radii.length - 1] };
     } catch (error) {
+        logger.error(`❌ Error searching drivers with progressive radius: ${error.message}`);
+        logger.error(`   Stack: ${error.stack}`);
         throw new Error(`Error searching drivers with progressive radius: ${error.message}`);
     }
 };
