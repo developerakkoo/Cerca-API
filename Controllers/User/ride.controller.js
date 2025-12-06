@@ -171,7 +171,10 @@ export const deleteRide = async (req, res) => {
  */
 export const getRidesByUserId = async (req, res) => {
     try {
-        const rides = await Ride.find({ rider: req.params.userId });
+        const rides = await Ride.find({ rider: req.params.userId })
+            .populate('driver', 'name phone rating totalTrips profilePic vehicleInfo')
+            .populate('rider', 'name email phoneNumber')
+            .sort({ createdAt: -1 }); // Sort by newest first
         if (!rides || rides.length === 0) {
             return res.status(404).json({ message: 'No rides found for this user' });
         }
