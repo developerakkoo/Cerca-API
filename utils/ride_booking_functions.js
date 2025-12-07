@@ -138,12 +138,53 @@ const createRide = async (rideData) => {
         let fare = service.price + (distance * perKmRate);
         fare = Math.max(fare, minimumFare); // Ensure minimum fare
         fare = Math.round(fare * 100) / 100; // Round to 2 decimal places
+        
+        // Apply promo code if provided
+        let discount = 0;
+        let finalFare = fare;
+        if (rideData.promoCode) {
+            const Coupon = require('../Models/Admin/coupon.modal.js');
+            const coupon = await Coupon.findOne({ 
+                couponCode: rideData.promoCode.toUpperCase().trim() 
+            });
+            
+            if (coupon) {
+                // Check if user can use this coupon
+                const canUse = coupon.canUserUse(riderId);
+                if (canUse.canUse) {
+                    // Check service applicability
+                    const serviceApplicable = !coupon.applicableServices || 
+                        coupon.applicableServices.length === 0 || 
+                        coupon.applicableServices.includes(service.name);
+                    
+                    // Check ride type applicability
+                    const rideTypeApplicable = !coupon.applicableRideTypes || 
+                        coupon.applicableRideTypes.length === 0 || 
+                        coupon.applicableRideTypes.includes(rideData.rideType || 'normal');
+                    
+                    if (serviceApplicable && rideTypeApplicable) {
+                        const discountResult = coupon.calculateDiscount(fare);
+                        if (discountResult.discount > 0) {
+                            discount = discountResult.discount;
+                            finalFare = discountResult.finalFare;
+                            
+                            // Record coupon usage (will be saved after ride is created)
+                            rideData._couponToApply = {
+                                coupon,
+                                discount,
+                                originalFare: fare,
+                            };
+                        }
+                    }
+                }
+            }
+        }
     
         const rideDoc = {
             rider: riderId,
             pickupLocation: { type: 'Point', coordinates: pickupLngLat },
             dropoffLocation: { type: 'Point', coordinates: dropoffLngLat },
-            fare: fare,
+            fare: finalFare,
             distanceInKm: Math.round(distance * 100) / 100, // Round to 2 decimal places
             rideType: rideData.rideType || 'normal',
             userSocketId: rideData.userSocketId,
@@ -152,11 +193,32 @@ const createRide = async (rideData) => {
             pickupAddress: rideData.pickupAddress,
             dropoffAddress: rideData.dropoffAddress,
             service: service.name,
+            promoCode: rideData.promoCode || null,
+            discount: discount,
             // startOtp & stopOtp come from schema defaults
         };
   
         // Single insert; returns the created document including generated OTPs
         const ride = await Ride.create(rideDoc);
+        
+        // Apply coupon if provided and valid
+        if (rideData._couponToApply) {
+            const { coupon, discount, originalFare } = rideData._couponToApply;
+            try {
+                await coupon.recordUsage(
+                    riderId,
+                    ride._id,
+                    discount,
+                    originalFare,
+                    finalFare
+                );
+                logger.info(`Coupon ${coupon.couponCode} applied to ride ${ride._id}, discount: ₹${discount}`);
+            } catch (error) {
+                logger.error(`Error recording coupon usage for ride ${ride._id}:`, error);
+                // Don't fail ride creation if coupon recording fails
+            }
+        }
+        
         return ride;
     } catch (error) {
         throw new Error(`Error creating ride: ${error.message}`);

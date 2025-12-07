@@ -87,6 +87,32 @@ const userSchema = new Schema(
       type: String, // Socket ID for real-time notifications
 
     },
+    
+    // Referral system
+    referralCode: {
+      type: String,
+      unique: true,
+      sparse: true,
+      uppercase: true,
+      index: true,
+    },
+    referredBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    referralCodeUsed: {
+      type: String,
+      default: null,
+    },
+    totalReferrals: {
+      type: Number,
+      default: 0,
+    },
+    referralRewardsEarned: {
+      type: Number,
+      default: 0,
+    },
 
     // Audit & soft-delete
     lastLogin: Date,

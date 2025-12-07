@@ -862,6 +862,12 @@ function initializeSocket(server) {
           // Don't fail ride completion if earnings storage fails
         });
         
+        // Process referral reward if this is user's first completed ride (non-blocking)
+        processReferralRewardIfFirstRide(completedRide.rider._id || completedRide.rider, rideId).catch(err => {
+          logger.error(`Error processing referral reward for rideId: ${rideId}:`, err);
+          // Don't fail ride completion if referral processing fails
+        });
+        
         if (completedRide.userSocketId) {
           io.to(completedRide.userSocketId).emit('rideCompleted', completedRide);
           logger.info(`Ride completion notification sent to rider - rideId: ${rideId}`);
@@ -1239,6 +1245,112 @@ async function storeRideEarnings(ride) {
     logger.info(`Earnings stored for rideId: ${ride._id}, platformFee: ${earnings.platformFee}, driverEarning: ${earnings.driverEarning}`);
   } catch (error) {
     logger.error('Error storing ride earnings:', error);
+    // Don't throw - this is a background operation
+  }
+}
+
+// Process referral reward if this is user's first completed ride
+async function processReferralRewardIfFirstRide(userId, rideId) {
+  try {
+    const Referral = require('../Models/User/referral.model');
+    const User = require('../Models/User/user.model');
+    const WalletTransaction = require('../Models/User/walletTransaction.model');
+    
+    // Check if user has a pending referral
+    const referral = await Referral.findOne({ 
+      referee: userId, 
+      status: 'PENDING' 
+    }).populate('referrer', 'fullName walletBalance');
+    
+    if (!referral) {
+      return; // No referral to process
+    }
+    
+    // Check if this is user's first completed ride
+    const Ride = require('../Models/Driver/ride.model');
+    const completedRides = await Ride.countDocuments({ 
+      rider: userId, 
+      status: 'completed' 
+    });
+    
+    if (completedRides > 1) {
+      return; // Not the first ride
+    }
+    
+    // Get referral reward settings
+    const referrerReward = 100; // ₹100 for referrer
+    const refereeReward = 50;   // ₹50 for referee
+    
+    // Update referral status
+    referral.status = 'COMPLETED';
+    referral.firstRideCompletedAt = new Date();
+    referral.reward = {
+      referrerReward,
+      refereeReward,
+      rewardType: 'WALLET_CREDIT',
+    };
+    await referral.save();
+    
+    // Credit referrer's wallet
+    const referrer = await User.findById(referral.referrer);
+    if (referrer) {
+      const balanceBefore = referrer.walletBalance || 0;
+      const balanceAfter = balanceBefore + referrerReward;
+      
+      referrer.walletBalance = balanceAfter;
+      referrer.referralRewardsEarned = (referrer.referralRewardsEarned || 0) + referrerReward;
+      await referrer.save();
+      
+      // Create wallet transaction for referrer
+      await WalletTransaction.create({
+        user: referrer._id,
+        transactionType: 'REFERRAL_REWARD',
+        amount: referrerReward,
+        balanceBefore,
+        balanceAfter,
+        status: 'COMPLETED',
+        description: `Referral reward for referring user`,
+        metadata: {
+          referralId: referral._id,
+          refereeId: userId,
+        },
+      });
+    }
+    
+    // Credit referee's wallet
+    const referee = await User.findById(userId);
+    if (referee) {
+      const balanceBefore = referee.walletBalance || 0;
+      const balanceAfter = balanceBefore + refereeReward;
+      
+      referee.walletBalance = balanceAfter;
+      await referee.save();
+      
+      // Create wallet transaction for referee
+      await WalletTransaction.create({
+        user: userId,
+        transactionType: 'REFERRAL_REWARD',
+        amount: refereeReward,
+        balanceBefore,
+        balanceAfter,
+        relatedRide: rideId,
+        status: 'COMPLETED',
+        description: 'Welcome bonus for using referral code',
+        metadata: {
+          referralId: referral._id,
+          referrerId: referral.referrer,
+        },
+      });
+    }
+    
+    // Mark referral as rewarded
+    referral.status = 'REWARDED';
+    referral.rewardedAt = new Date();
+    await referral.save();
+    
+    logger.info(`Referral reward processed automatically: Referrer ${referral.referrer} got ₹${referrerReward}, Referee ${userId} got ₹${refereeReward}`);
+  } catch (error) {
+    logger.error('Error processing referral reward automatically:', error);
     // Don't throw - this is a background operation
   }
 }
