@@ -60,6 +60,7 @@ const upload = multer({
 
 //Routes
 const userRoutes = require('./Routes/User/user.routes.js');
+const walletRoutes = require('./Routes/User/wallet.routes.js');
 const addressRoutes = require('./Routes/User/address.route.js');
 const driverRoutes = require('./Routes/Driver/driver.routes.js');
 const adminRoutes = require('./Routes/admin.routes.js');
@@ -72,6 +73,7 @@ const notificationRoutes = require('./Routes/User/notification.routes.js');
 const emergencyRoutes = require('./Routes/User/emergency.routes.js');
 
 app.use('/users', userRoutes);
+app.use('/users', walletRoutes);
 app.use('/drivers',driverRoutes);
 app.use('/admin', adminRoutes);
 app.use('/settings', settingsRoutes);
