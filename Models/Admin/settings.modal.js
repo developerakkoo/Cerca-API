@@ -27,6 +27,15 @@ const SettingsSchema = new mongoose.Schema({
         driverAppVersion: { type: String, required: false },
         userAppVersion: { type: String, required: false },
     },
+    payoutConfigurations: {
+        minPayoutThreshold: { type: Number, default: 500 },
+        payoutSchedule: {
+            type: String,
+            enum: ['DAILY', 'WEEKLY', 'MONTHLY'],
+            default: 'WEEKLY',
+        },
+        processingDays: { type: Number, default: 3 }, // Business days
+    },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Settings', SettingsSchema);

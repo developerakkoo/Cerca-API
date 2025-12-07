@@ -60,6 +60,17 @@ const driverSchema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
+    bankAccount: {
+        accountNumber: String,
+        ifscCode: String,
+        accountHolderName: String,
+        bankName: String,
+        accountType: {
+            type: String,
+            enum: ['SAVINGS', 'CURRENT'],
+            default: 'SAVINGS',
+        },
+    },
     vehicleInfo: {
         make: String,
         model: String,
