@@ -23,7 +23,7 @@ app.use(express.json());
 
 app.use(cors({
     origin: '*', // Allow all origins
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allowed HTTP methods
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], // Allowed HTTP methods
     allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
 }));
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
