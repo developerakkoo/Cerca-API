@@ -1,9 +1,53 @@
-const fetch = require('node-fetch');
+const https = require('https');
+const { URL } = require('url');
 const logger = require('../utils/logger');
 
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || 'AIzaSyDQq0QpnwQKzDR99ObP1frWj_uRTQ54pbo';
 const AUTocomplete_API_URL = 'https://maps.googleapis.com/maps/api/place/autocomplete/json';
 const PLACE_DETAILS_API_URL = 'https://maps.googleapis.com/maps/api/place/details/json';
+
+/**
+ * Helper function to make HTTPS GET requests
+ */
+const httpsGet = (url) => {
+  return new Promise((resolve, reject) => {
+    const urlObj = new URL(url);
+    const options = {
+      hostname: urlObj.hostname,
+      path: urlObj.pathname + urlObj.search,
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+    };
+
+    const req = https.get(options, (res) => {
+      let data = '';
+
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+
+      res.on('end', () => {
+        try {
+          const jsonData = JSON.parse(data);
+          resolve(jsonData);
+        } catch (error) {
+          reject(new Error('Failed to parse JSON response'));
+        }
+      });
+    });
+
+    req.on('error', (error) => {
+      reject(error);
+    });
+
+    req.setTimeout(10000, () => {
+      req.destroy();
+      reject(new Error('Request timeout'));
+    });
+  });
+};
 
 /**
  * Get place predictions (autocomplete)
@@ -48,8 +92,7 @@ const getPlacePredictions = async (req, res) => {
     logger.info(`Fetching place predictions for query: ${query}`);
 
     // Call Google Places API
-    const response = await fetch(url);
-    const data = await response.json();
+    const data = await httpsGet(url);
 
     // Handle Google API errors
     if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
@@ -112,8 +155,7 @@ const getPlaceDetails = async (req, res) => {
     logger.info(`Fetching place details for place_id: ${place_id}`);
 
     // Call Google Places API
-    const response = await fetch(url);
-    const data = await response.json();
+    const data = await httpsGet(url);
 
     // Handle Google API errors
     if (data.status !== 'OK') {
