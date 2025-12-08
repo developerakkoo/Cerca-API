@@ -9,6 +9,7 @@ const {
   requestWithdrawal,
   getWalletTransactionById,
   getWalletStatistics,
+  processHybridPayment,
 } = require('../../Controllers/User/wallet.controller');
 
 /**
@@ -58,6 +59,12 @@ router.post('/:userId/wallet/refund', refundToWallet);
  * @desc    Request wallet withdrawal
  */
 router.post('/:userId/wallet/withdraw', requestWithdrawal);
+
+/**
+ * @route   POST /api/users/:userId/wallet/hybrid-payment
+ * @desc    Process hybrid payment (wallet + Razorpay)
+ */
+router.post('/:userId/wallet/hybrid-payment', processHybridPayment);
 
 module.exports = router;
 

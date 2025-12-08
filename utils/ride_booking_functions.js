@@ -180,7 +180,7 @@ const createRide = async (rideData) => {
             }
         }
     
-        const rideDoc = {
+        const rideDoc: any = {
             rider: riderId,
             pickupLocation: { type: 'Point', coordinates: pickupLngLat },
             dropoffLocation: { type: 'Point', coordinates: dropoffLngLat },
@@ -197,6 +197,17 @@ const createRide = async (rideData) => {
             discount: discount,
             // startOtp & stopOtp come from schema defaults
         };
+        
+        // Add hybrid payment fields if present
+        if (rideData.razorpayPaymentId) {
+            rideDoc.razorpayPaymentId = rideData.razorpayPaymentId;
+        }
+        if (rideData.walletAmountUsed !== undefined) {
+            rideDoc.walletAmountUsed = rideData.walletAmountUsed;
+        }
+        if (rideData.razorpayAmountPaid !== undefined) {
+            rideDoc.razorpayAmountPaid = rideData.razorpayAmountPaid;
+        }
   
         // Single insert; returns the created document including generated OTPs
         const ride = await Ride.create(rideDoc);

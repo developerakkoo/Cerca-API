@@ -7,6 +7,7 @@ const {
     markAllMessagesAsRead,
     deleteMessage,
     getConversation,
+    getUnreadCountForRide,
 } = require('../../Controllers/Driver/message.controller.js');
 
 const router = express.Router();
@@ -16,6 +17,10 @@ router.post('/', sendMessage);
 
 // Get all messages for a ride
 router.get('/ride/:rideId', getRideMessages);
+
+// Get unread message count for a specific ride
+// Query params: receiverId, receiverModel (User or Driver)
+router.get('/ride/:rideId/unread-count', getUnreadCountForRide);
 
 // Get unread messages for a user/driver
 // Query param: receiverModel (User or Driver)

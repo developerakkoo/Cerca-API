@@ -150,11 +150,29 @@ const rideSchema = new mongoose.Schema({
     
     paymentStatus: {
         type: String,
-        enum: ['pending', 'completed', 'failed', 'refunded'],
+        enum: ['pending', 'completed', 'failed', 'refunded', 'partial'],
         default: 'pending',
     },
     
     transactionId: String,
+    
+    // Hybrid payment tracking fields
+    razorpayPaymentId: {
+        type: String,
+        default: null,
+    },
+    
+    walletAmountUsed: {
+        type: Number,
+        default: 0,
+        min: 0,
+    },
+    
+    razorpayAmountPaid: {
+        type: Number,
+        default: 0,
+        min: 0,
+    },
     
     rejectedDrivers: [{
         type: mongoose.Schema.Types.ObjectId,

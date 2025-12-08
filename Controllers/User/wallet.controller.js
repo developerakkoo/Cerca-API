@@ -675,6 +675,183 @@ const getWalletStatistics = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Process hybrid payment (wallet + Razorpay)
+ * @route   POST /api/users/:userId/wallet/hybrid-payment
+ */
+const processHybridPayment = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { rideId, totalAmount, walletAmount, razorpayPaymentId } = req.body;
+    
+    // Validation
+    if (!rideId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Ride ID is required',
+      });
+    }
+    
+    if (!totalAmount || totalAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid total amount',
+      });
+    }
+    
+    if (!walletAmount || walletAmount < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid wallet amount',
+      });
+    }
+    
+    if (!razorpayPaymentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Razorpay payment ID is required',
+      });
+    }
+    
+    // Verify amounts add up
+    const razorpayAmount = totalAmount - walletAmount;
+    if (razorpayAmount < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Wallet amount cannot exceed total amount',
+      });
+    }
+    
+    // Get user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+    
+    const balanceBefore = user.walletBalance || 0;
+    
+    // Check sufficient balance if wallet amount > 0
+    if (walletAmount > 0 && balanceBefore < walletAmount) {
+      return res.status(400).json({
+        success: false,
+        message: 'Insufficient wallet balance',
+        data: {
+          required: walletAmount,
+          available: balanceBefore,
+          shortfall: walletAmount - balanceBefore,
+        },
+      });
+    }
+    
+    // Import Ride model
+    const Ride = require('../../Models/Driver/ride.model');
+    
+    // Verify ride exists
+    const ride = await Ride.findById(rideId);
+    if (!ride) {
+      return res.status(404).json({
+        success: false,
+        message: 'Ride not found',
+      });
+    }
+    
+    // Deduct wallet amount if applicable
+    let walletTransaction = null;
+    let balanceAfter = balanceBefore;
+    
+    if (walletAmount > 0) {
+      balanceAfter = balanceBefore - walletAmount;
+      
+      // Create wallet transaction record
+      walletTransaction = await WalletTransaction.create({
+        user: userId,
+        transactionType: 'RIDE_PAYMENT',
+        amount: walletAmount,
+        balanceBefore,
+        balanceAfter,
+        relatedRide: rideId,
+        paymentMethod: 'WALLET',
+        status: 'COMPLETED',
+        description: `Ride payment (hybrid) - Wallet: ₹${walletAmount}, Razorpay: ₹${razorpayAmount}`,
+        metadata: {
+          hybridPayment: true,
+          razorpayPaymentId,
+          totalAmount,
+        },
+      });
+      
+      // Update user wallet balance
+      user.walletBalance = balanceAfter;
+      await user.save();
+    }
+    
+    // Update ride with payment details
+    ride.walletAmountUsed = walletAmount;
+    ride.razorpayAmountPaid = razorpayAmount;
+    ride.razorpayPaymentId = razorpayPaymentId;
+    ride.paymentStatus = 'completed';
+    ride.transactionId = razorpayPaymentId;
+    await ride.save();
+    
+    logger.info(`Hybrid payment processed - User: ${userId}, Ride: ${rideId}, Wallet: ₹${walletAmount}, Razorpay: ₹${razorpayAmount}`);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Hybrid payment processed successfully',
+      data: {
+        walletTransaction: walletTransaction,
+        newBalance: balanceAfter,
+        previousBalance: balanceBefore,
+        razorpayAmount: razorpayAmount,
+        walletAmount: walletAmount,
+        totalAmount: totalAmount,
+      },
+    });
+  } catch (error) {
+    logger.error('Error processing hybrid payment:', error);
+    
+    // If wallet was deducted but ride update failed, refund wallet
+    if (req.body.walletAmount > 0 && userId) {
+      try {
+        const user = await User.findById(userId);
+        if (user) {
+          user.walletBalance = (user.walletBalance || 0) + req.body.walletAmount;
+          await user.save();
+          
+          // Create refund transaction
+          await WalletTransaction.create({
+            user: userId,
+            transactionType: 'REFUND',
+            amount: req.body.walletAmount,
+            balanceBefore: user.walletBalance - req.body.walletAmount,
+            balanceAfter: user.walletBalance,
+            relatedRide: req.body.rideId,
+            paymentMethod: 'WALLET',
+            status: 'COMPLETED',
+            description: `Refund due to hybrid payment processing error`,
+            metadata: {
+              originalError: error.message,
+            },
+          });
+          
+          logger.info(`Wallet refunded due to hybrid payment error - User: ${userId}, Amount: ₹${req.body.walletAmount}`);
+        }
+      } catch (refundError) {
+        logger.error('Error refunding wallet after hybrid payment failure:', refundError);
+      }
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: 'Error processing hybrid payment',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getUserWallet,
   getWalletTransactions,
@@ -684,5 +861,6 @@ module.exports = {
   requestWithdrawal,
   getWalletTransactionById,
   getWalletStatistics,
+  processHybridPayment,
 };
 

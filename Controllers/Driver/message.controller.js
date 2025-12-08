@@ -216,6 +216,42 @@ const getConversation = async (req, res) => {
     }
 };
 
+/**
+ * @desc    Get unread message count for a specific ride
+ * @route   GET /messages/ride/:rideId/unread-count
+ * @query   receiverId - ID of the receiver (User or Driver)
+ * @query   receiverModel - 'User' or 'Driver'
+ */
+const getUnreadCountForRide = async (req, res) => {
+    try {
+        const { rideId } = req.params;
+        const { receiverId, receiverModel } = req.query;
+
+        if (!receiverId || !receiverModel || !['User', 'Driver'].includes(receiverModel)) {
+            return res.status(400).json({ 
+                message: 'Invalid or missing receiverId/receiverModel query parameters' 
+            });
+        }
+
+        const unreadCount = await Message.countDocuments({
+            ride: rideId,
+            receiver: receiverId,
+            receiverModel,
+            isRead: false
+        });
+
+        logger.info(`Unread count for ride ${rideId}, receiver ${receiverId} (${receiverModel}): ${unreadCount}`);
+
+        res.status(200).json({ 
+            unreadCount,
+            rideId 
+        });
+    } catch (error) {
+        logger.error('Error fetching unread count:', error);
+        res.status(500).json({ message: 'Error fetching unread count', error: error.message });
+    }
+};
+
 module.exports = {
     sendMessage,
     getRideMessages,
@@ -224,5 +260,6 @@ module.exports = {
     markAllMessagesAsRead,
     deleteMessage,
     getConversation,
+    getUnreadCountForRide,
 };
 

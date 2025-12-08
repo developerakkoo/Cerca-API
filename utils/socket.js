@@ -3,6 +3,7 @@ const logger = require("./logger");
 const Driver = require("../Models/Driver/driver.model");
 const User = require("../Models/User/user.model");
 const Ride = require("../Models/Driver/ride.model");
+const Message = require("../Models/Driver/message.model");
 const AdminEarnings = require("../Models/Admin/adminEarnings.model");
 const Settings = require("../Models/Admin/settings.modal");
 const {
@@ -262,6 +263,66 @@ function initializeSocket(server) {
         logger.info(`newRideRequest event - riderId: ${data?.rider || data?.riderId}, service: ${data?.service}`);
         const ride = await createRide(data);
         logger.info(`Ride created - rideId: ${ride._id}, fare: ${ride.fare}, distance: ${ride.distanceInKm}km`);
+        
+        // Process hybrid payment if applicable
+        if (data.paymentMethod === 'RAZORPAY' && data.walletAmountUsed && data.walletAmountUsed > 0 && data.razorpayPaymentId) {
+          try {
+            const User = require('../Models/User/user.model');
+            const WalletTransaction = require('../Models/User/walletTransaction.model');
+            const riderId = data.rider || data.riderId;
+            
+            // Get user
+            const user = await User.findById(riderId);
+            if (user) {
+              const balanceBefore = user.walletBalance || 0;
+              const walletAmount = data.walletAmountUsed;
+              
+              // Check sufficient balance
+              if (balanceBefore >= walletAmount) {
+                const balanceAfter = balanceBefore - walletAmount;
+                
+                // Create wallet transaction
+                await WalletTransaction.create({
+                  user: riderId,
+                  transactionType: 'RIDE_PAYMENT',
+                  amount: walletAmount,
+                  balanceBefore,
+                  balanceAfter,
+                  relatedRide: ride._id,
+                  paymentMethod: 'WALLET',
+                  status: 'COMPLETED',
+                  description: `Ride payment (hybrid) - Wallet: ₹${walletAmount}, Razorpay: ₹${data.razorpayAmountPaid || 0}`,
+                  metadata: {
+                    hybridPayment: true,
+                    razorpayPaymentId: data.razorpayPaymentId,
+                    totalAmount: ride.fare,
+                  },
+                });
+                
+                // Update user wallet balance
+                user.walletBalance = balanceAfter;
+                await user.save();
+                
+                // Update ride with payment details
+                ride.walletAmountUsed = walletAmount;
+                ride.razorpayAmountPaid = data.razorpayAmountPaid || (ride.fare - walletAmount);
+                ride.razorpayPaymentId = data.razorpayPaymentId;
+                ride.paymentStatus = 'completed';
+                ride.transactionId = data.razorpayPaymentId;
+                await ride.save();
+                
+                logger.info(`Hybrid payment processed - Ride: ${ride._id}, Wallet: ₹${walletAmount}, Razorpay: ₹${data.razorpayAmountPaid || 0}`);
+              } else {
+                logger.warn(`Insufficient wallet balance for hybrid payment - Ride: ${ride._id}, Required: ₹${walletAmount}, Available: ₹${balanceBefore}`);
+                // Don't fail ride creation, but log warning
+              }
+            }
+          } catch (hybridError) {
+            logger.error(`Error processing hybrid payment for ride ${ride._id}:`, hybridError);
+            // Don't fail ride creation if hybrid payment processing fails
+            // The ride will be created but payment status may be pending
+          }
+        }
         
         const populatedRide = await Ride.findById(ride._id)
           .populate('rider', 'fullName name phone email')
@@ -1005,6 +1066,35 @@ function initializeSocket(server) {
     // ============================
     // MESSAGING SYSTEM
     // ============================
+    
+    // Helper function to emit unread count update to receiver
+    const emitUnreadCountUpdate = async (rideId, receiverId, receiverModel) => {
+      try {
+        const unreadCount = await Message.countDocuments({
+          ride: rideId,
+          receiver: receiverId,
+          receiverModel,
+          isRead: false
+        });
+
+        const receiverSocketId = receiverModel === 'Driver'
+          ? (await Driver.findById(receiverId))?.socketId
+          : (await User.findById(receiverId))?.socketId;
+
+        if (receiverSocketId) {
+          io.to(receiverSocketId).emit('unreadCountUpdated', {
+            rideId,
+            receiverId,
+            receiverModel,
+            unreadCount
+          });
+          logger.info(`Unread count updated - rideId: ${rideId}, receiver: ${receiverId} (${receiverModel}), count: ${unreadCount}`);
+        }
+      } catch (err) {
+        logger.error('Error emitting unread count update:', err);
+      }
+    };
+
     socket.on('sendMessage', async (data) => {
       try {
         logger.info(`sendMessage event - rideId: ${data?.rideId}, from: ${data?.senderId} (${data?.senderModel}), to: ${data?.receiverId} (${data?.receiverModel})`);
@@ -1014,7 +1104,7 @@ function initializeSocket(server) {
         // Notify receiver
         const receiverSocketId = data.receiverModel === 'Driver'
           ? (await Driver.findById(data.receiverId))?.socketId
-          : (await require('../Models/User/user.model').findById(data.receiverId))?.socketId;
+          : (await User.findById(data.receiverId))?.socketId;
         
         if (receiverSocketId) {
           io.to(receiverSocketId).emit('receiveMessage', message);
@@ -1022,6 +1112,9 @@ function initializeSocket(server) {
         } else {
           logger.warn(`Receiver socket not found for: ${data.receiverId}`);
         }
+        
+        // Emit unread count update to receiver
+        await emitUnreadCountUpdate(data.rideId, data.receiverId, data.receiverModel);
         
         socket.emit('messageSent', { success: true, message });
       } catch (err) {
@@ -1034,7 +1127,17 @@ function initializeSocket(server) {
       try {
         logger.info(`markMessageRead event - messageId: ${data?.messageId}`);
         const { messageId } = data || {};
-        await markMessageAsRead(messageId);
+        const message = await markMessageAsRead(messageId);
+        
+        if (message) {
+          // Emit unread count update to receiver (the one who marked it as read)
+          await emitUnreadCountUpdate(
+            message.ride.toString(),
+            message.receiver.toString(),
+            message.receiverModel
+          );
+        }
+        
         socket.emit('messageMarkedRead', { success: true });
         logger.info(`Message marked as read - messageId: ${messageId}`);
       } catch (err) {
@@ -1047,8 +1150,25 @@ function initializeSocket(server) {
         logger.info(`getRideMessages event - rideId: ${data?.rideId}`);
         const { rideId } = data || {};
         const messages = await getRideMessages(rideId);
-        socket.emit('rideMessages', messages);
-        logger.info(`Ride messages retrieved - rideId: ${rideId}, count: ${messages?.length || 0}`);
+        
+        // Ensure messages are properly formatted with all required fields
+        const formattedMessages = messages.map(msg => ({
+          _id: msg._id,
+          ride: msg.ride,
+          rideId: msg.ride?.toString() || msg.ride,
+          sender: msg.sender,
+          senderModel: msg.senderModel,
+          receiver: msg.receiver,
+          receiverModel: msg.receiverModel,
+          message: msg.message,
+          messageType: msg.messageType || 'text',
+          isRead: msg.isRead || false,
+          createdAt: msg.createdAt,
+          updatedAt: msg.updatedAt,
+        }));
+        
+        socket.emit('rideMessages', formattedMessages);
+        logger.info(`Ride messages retrieved - rideId: ${rideId}, count: ${formattedMessages?.length || 0}`);
       } catch (err) {
         logger.error('getRideMessages error:', err);
         socket.emit('messageError', { message: err.message });
