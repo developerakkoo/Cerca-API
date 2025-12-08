@@ -180,7 +180,7 @@ const createRide = async (rideData) => {
             }
         }
     
-        const rideDoc: any = {
+        const rideDoc = {
             rider: riderId,
             pickupLocation: { type: 'Point', coordinates: pickupLngLat },
             dropoffLocation: { type: 'Point', coordinates: dropoffLngLat },
