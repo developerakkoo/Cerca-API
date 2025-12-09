@@ -88,6 +88,28 @@ function initializeSocket(server) {
         socket.join('rider');
         socket.join(`user_${userId}`);
 
+        // Auto-join all active ride rooms for this user
+        logger.info(`🚪 [Socket] Auto-joining user to active ride rooms...`);
+        const activeRides = await Ride.find({
+          rider: userId,
+          status: { $in: ['requested', 'accepted', 'arrived', 'in_progress'] }
+        }).select('_id status').lean();
+        
+        if (!socket.data.rooms) {
+          socket.data.rooms = [];
+        }
+        
+        for (const ride of activeRides) {
+          const roomName = `ride_${ride._id}`;
+          socket.join(roomName);
+          if (!socket.data.rooms.includes(roomName)) {
+            socket.data.rooms.push(roomName);
+          }
+          logger.info(`✅ [Socket] User auto-joined room: ${roomName} (ride status: ${ride.status})`);
+        }
+        
+        logger.info(`✅ [Socket] User auto-joined ${activeRides.length} active ride rooms`);
+
         logger.info(`Rider connected successfully - userId: ${userId}, socketId: ${socket.id}`);
         io.emit('riderConnect', { userId });
       } catch (err) {
@@ -135,6 +157,28 @@ function initializeSocket(server) {
         socketToDriver.set(socket.id, String(driverId));
         socket.join('driver');
         socket.join(`driver_${driverId}`);
+
+        // Auto-join all active ride rooms for this driver
+        logger.info(`🚪 [Socket] Auto-joining driver to active ride rooms...`);
+        const activeRides = await Ride.find({
+          driver: driverId,
+          status: { $in: ['requested', 'accepted', 'arrived', 'in_progress'] }
+        }).select('_id status').lean();
+        
+        if (!socket.data.rooms) {
+          socket.data.rooms = [];
+        }
+        
+        for (const ride of activeRides) {
+          const roomName = `ride_${ride._id}`;
+          socket.join(roomName);
+          if (!socket.data.rooms.includes(roomName)) {
+            socket.data.rooms.push(roomName);
+          }
+          logger.info(`✅ [Socket] Driver auto-joined room: ${roomName} (ride status: ${ride.status})`);
+        }
+        
+        logger.info(`✅ [Socket] Driver auto-joined ${activeRides.length} active ride rooms`);
 
         logger.info(`Driver connected successfully - driverId: ${driverId}, socketId: ${socket.id}, isActive: ${driver?.isActive}`);
         if (driver) io.emit('driverConnected', driver);
@@ -560,6 +604,44 @@ function initializeSocket(server) {
           type: 'ride_accepted',
           relatedRide: rideId,
         });
+
+        // Auto-join both user and driver sockets to ride room
+        const roomName = `ride_${rideId}`;
+        logger.info(`🚪 [Socket] Auto-joining sockets to room: ${roomName}`);
+        
+        // Join driver socket to room
+        if (assignedRide.driverSocketId) {
+          const driverSocket = io.sockets.sockets.get(assignedRide.driverSocketId);
+          if (driverSocket) {
+            driverSocket.join(roomName);
+            if (!driverSocket.data.rooms) {
+              driverSocket.data.rooms = [];
+            }
+            if (!driverSocket.data.rooms.includes(roomName)) {
+              driverSocket.data.rooms.push(roomName);
+            }
+            logger.info(`✅ [Socket] Driver socket ${assignedRide.driverSocketId} auto-joined room: ${roomName}`);
+          } else {
+            logger.warn(`⚠️ [Socket] Driver socket not found: ${assignedRide.driverSocketId}`);
+          }
+        }
+        
+        // Join user socket to room
+        if (assignedRide.userSocketId) {
+          const userSocket = io.sockets.sockets.get(assignedRide.userSocketId);
+          if (userSocket) {
+            userSocket.join(roomName);
+            if (!userSocket.data.rooms) {
+              userSocket.data.rooms = [];
+            }
+            if (!userSocket.data.rooms.includes(roomName)) {
+              userSocket.data.rooms.push(roomName);
+            }
+            logger.info(`✅ [Socket] User socket ${assignedRide.userSocketId} auto-joined room: ${roomName}`);
+          } else {
+            logger.warn(`⚠️ [Socket] User socket not found: ${assignedRide.userSocketId}`);
+          }
+        }
 
         io.emit('rideAccepted', assignedRide);
         logger.info(`rideAccepted completed successfully - rideId: ${rideId}`);
@@ -1067,6 +1149,154 @@ function initializeSocket(server) {
     // MESSAGING SYSTEM
     // ============================
     
+    // ============================
+    // ROOM MANAGEMENT - Join/Leave Ride Rooms
+    // ============================
+    
+    socket.on('joinRideRoom', async (data) => {
+      try {
+        logger.info('🚪 ========================================');
+        logger.info('🚪 [Socket] joinRideRoom event received');
+        logger.info('🚪 ========================================');
+        logger.info(`🆔 Ride ID: ${data?.rideId}`);
+        logger.info(`👤 User/Driver ID: ${data?.userId || data?.driverId}`);
+        logger.info(`👤 User Type: ${data?.userType || 'unknown'}`);
+        logger.info(`🔌 Socket ID: ${socket.id}`);
+        logger.info(`⏰ Timestamp: ${new Date().toISOString()}`);
+
+        const { rideId, userId, driverId, userType } = data || {};
+        
+        if (!rideId) {
+          logger.warn('⚠️ [Socket] joinRideRoom: rideId is missing');
+          socket.emit('roomJoinError', { message: 'Ride ID is required' });
+          return;
+        }
+
+        // Validate rideId format (MongoDB ObjectId)
+        if (!/^[0-9a-fA-F]{24}$/.test(rideId)) {
+          logger.warn(`⚠️ [Socket] joinRideRoom: Invalid rideId format: ${rideId}`);
+          socket.emit('roomJoinError', { message: 'Invalid ride ID format' });
+          return;
+        }
+
+        // Verify ride exists
+        const ride = await Ride.findById(rideId);
+        if (!ride) {
+          logger.warn(`⚠️ [Socket] joinRideRoom: Ride not found - rideId: ${rideId}`);
+          socket.emit('roomJoinError', { message: 'Ride not found' });
+          return;
+        }
+
+        // Check ride status (only allow join for active rides)
+        const activeStatuses = ['requested', 'accepted', 'arrived', 'in_progress'];
+        if (!activeStatuses.includes(ride.status)) {
+          logger.warn(`⚠️ [Socket] joinRideRoom: Ride is not active - status: ${ride.status}`);
+          socket.emit('roomJoinError', { message: 'Ride is not active' });
+          return;
+        }
+
+        // Verify user/driver has access to this ride
+        const userIdToCheck = userId || driverId;
+        const userTypeToCheck = userType || (userId ? 'User' : 'Driver');
+        
+        if (userTypeToCheck === 'User') {
+          const rideUserId = ride.rider?.toString() || ride.rider;
+          if (rideUserId !== userIdToCheck) {
+            logger.warn(`⚠️ [Socket] joinRideRoom: User ${userIdToCheck} does not have access to ride ${rideId}`);
+            socket.emit('roomJoinError', { message: 'Access denied' });
+            return;
+          }
+        } else if (userTypeToCheck === 'Driver') {
+          const rideDriverId = ride.driver?.toString() || ride.driver;
+          if (rideDriverId !== userIdToCheck) {
+            logger.warn(`⚠️ [Socket] joinRideRoom: Driver ${userIdToCheck} does not have access to ride ${rideId}`);
+            socket.emit('roomJoinError', { message: 'Access denied' });
+            return;
+          }
+        }
+
+        // Join socket to room
+        const roomName = `ride_${rideId}`;
+        socket.join(roomName);
+        
+        // Store rideId in socket data for reference
+        if (!socket.data.rooms) {
+          socket.data.rooms = [];
+        }
+        if (!socket.data.rooms.includes(roomName)) {
+          socket.data.rooms.push(roomName);
+        }
+
+        logger.info(`✅ [Socket] Socket ${socket.id} joined room: ${roomName}`);
+        logger.info(`   User/Driver: ${userIdToCheck} (${userTypeToCheck})`);
+        logger.info(`   Ride Status: ${ride.status}`);
+        logger.info(`   Total rooms for socket: ${socket.data.rooms.length}`);
+        
+        // Emit confirmation back to client
+        socket.emit('roomJoined', { 
+          success: true, 
+          rideId: rideId,
+          roomName: roomName 
+        });
+        
+        logger.info('✅ [Socket] joinRideRoom completed successfully');
+        logger.info('========================================');
+      } catch (err) {
+        logger.error('❌ [Socket] joinRideRoom error:', err);
+        logger.error(`   Error message: ${err.message}`);
+        logger.error(`   Error stack: ${err.stack}`);
+        socket.emit('roomJoinError', { message: err.message });
+        logger.info('========================================');
+      }
+    });
+
+    socket.on('leaveRideRoom', async (data) => {
+      try {
+        logger.info('🚪 ========================================');
+        logger.info('🚪 [Socket] leaveRideRoom event received');
+        logger.info('🚪 ========================================');
+        logger.info(`🆔 Ride ID: ${data?.rideId}`);
+        logger.info(`🔌 Socket ID: ${socket.id}`);
+        logger.info(`⏰ Timestamp: ${new Date().toISOString()}`);
+
+        const { rideId } = data || {};
+        
+        if (!rideId) {
+          logger.warn('⚠️ [Socket] leaveRideRoom: rideId is missing');
+          socket.emit('roomLeaveError', { message: 'Ride ID is required' });
+          return;
+        }
+
+        // Leave socket from room
+        const roomName = `ride_${rideId}`;
+        socket.leave(roomName);
+        
+        // Remove from socket data
+        if (socket.data.rooms) {
+          socket.data.rooms = socket.data.rooms.filter(r => r !== roomName);
+        }
+
+        logger.info(`✅ [Socket] Socket ${socket.id} left room: ${roomName}`);
+        logger.info(`   Remaining rooms for socket: ${socket.data.rooms?.length || 0}`);
+        
+        // Emit confirmation back to client
+        socket.emit('roomLeft', { 
+          success: true, 
+          rideId: rideId,
+          roomName: roomName 
+        });
+        
+        logger.info('✅ [Socket] leaveRideRoom completed successfully');
+        logger.info('========================================');
+      } catch (err) {
+        logger.error('❌ [Socket] leaveRideRoom error:', err);
+        logger.error(`   Error message: ${err.message}`);
+        logger.error(`   Error stack: ${err.stack}`);
+        socket.emit('roomLeaveError', { message: err.message });
+        logger.info('========================================');
+      }
+    });
+    
     // Helper function to emit unread count update to receiver
     const emitUnreadCountUpdate = async (rideId, receiverId, receiverModel) => {
       try {
@@ -1151,29 +1381,31 @@ function initializeSocket(server) {
         logger.info(`   Sender: ${populatedMessage?.sender?.name || populatedMessage?.sender?.fullName || 'unknown'}`);
         logger.info(`   Receiver: ${populatedMessage?.receiver?.name || populatedMessage?.receiver?.fullName || 'unknown'}`);
         
-        logger.info(`🔍 [Socket] Looking up receiver socket ID (${data.receiverModel})...`);
-        // Notify receiver
+        // Emit message to room (both user and driver in the room will receive it)
+        const roomName = `ride_${data.rideId}`;
+        logger.info(`📤 [Socket] Emitting receiveMessage event to room: ${roomName}`);
+        logger.info(`📦 [Socket] Message data:`, JSON.stringify({
+          _id: populatedMessage._id,
+          rideId: populatedMessage.ride,
+          sender: populatedMessage.sender?._id,
+          receiver: populatedMessage.receiver?._id,
+          message: populatedMessage.message?.substring(0, 50)
+        }));
+        
+        // Emit to room - both user and driver will receive if they're in the room
+        io.to(roomName).emit('receiveMessage', populatedMessage);
+        logger.info(`✅ [Socket] Message delivered to room: ${roomName}`);
+        
+        // Fallback: Also try direct socket emission if room fails (for backward compatibility)
         const receiverSocketId = data.receiverModel === 'Driver'
           ? (await Driver.findById(data.receiverId))?.socketId
           : (await User.findById(data.receiverId))?.socketId;
         
-        logger.info(`🔌 [Socket] Receiver socket ID: ${receiverSocketId || 'null'}`);
-        
         if (receiverSocketId) {
-          logger.info('📤 [Socket] Emitting receiveMessage event to receiver...');
-          logger.info(`📦 [Socket] Message data:`, JSON.stringify({
-            _id: populatedMessage._id,
-            rideId: populatedMessage.ride,
-            sender: populatedMessage.sender?._id,
-            receiver: populatedMessage.receiver?._id,
-            message: populatedMessage.message?.substring(0, 50)
-          }));
-          
+          logger.info(`🔌 [Socket] Fallback: Also emitting to receiver socket: ${receiverSocketId}`);
           io.to(receiverSocketId).emit('receiveMessage', populatedMessage);
-          logger.info(`✅ [Socket] Message delivered to receiver: ${data.receiverId} (socket: ${receiverSocketId})`);
         } else {
-          logger.warn(`⚠️ [Socket] Receiver socket not found for: ${data.receiverId} (${data.receiverModel})`);
-          logger.warn(`   Message saved but receiver may be offline`);
+          logger.info(`ℹ️ [Socket] Receiver socket not found (may be offline or not connected)`);
         }
         
         logger.info('🔔 [Socket] Emitting unread count update...');
