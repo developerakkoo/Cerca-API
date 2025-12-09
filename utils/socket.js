@@ -1070,108 +1070,244 @@ function initializeSocket(server) {
     // Helper function to emit unread count update to receiver
     const emitUnreadCountUpdate = async (rideId, receiverId, receiverModel) => {
       try {
+        logger.info('🔔 ========================================');
+        logger.info('🔔 [Socket] emitUnreadCountUpdate() called');
+        logger.info('🔔 ========================================');
+        logger.info(`🆔 Ride ID: ${rideId}`);
+        logger.info(`👤 Receiver ID: ${receiverId}`);
+        logger.info(`👤 Receiver Model: ${receiverModel}`);
+        logger.info(`⏰ Timestamp: ${new Date().toISOString()}`);
+
+        logger.info('📊 [Socket] Counting unread messages...');
         const unreadCount = await Message.countDocuments({
           ride: rideId,
           receiver: receiverId,
           receiverModel,
           isRead: false
         });
+        logger.info(`✅ [Socket] Unread count: ${unreadCount}`);
 
+        logger.info(`🔍 [Socket] Looking up receiver socket ID (${receiverModel})...`);
         const receiverSocketId = receiverModel === 'Driver'
           ? (await Driver.findById(receiverId))?.socketId
           : (await User.findById(receiverId))?.socketId;
 
+        logger.info(`🔌 [Socket] Receiver socket ID: ${receiverSocketId || 'null'}`);
+
         if (receiverSocketId) {
-          io.to(receiverSocketId).emit('unreadCountUpdated', {
+          const unreadCountData = {
             rideId,
             receiverId,
             receiverModel,
-            unreadCount
-          });
-          logger.info(`Unread count updated - rideId: ${rideId}, receiver: ${receiverId} (${receiverModel}), count: ${unreadCount}`);
+            count: unreadCount
+          };
+          
+          logger.info('📤 [Socket] Emitting unreadCountUpdated event...');
+          logger.info(`📦 [Socket] Event data:`, JSON.stringify(unreadCountData));
+          
+          io.to(receiverSocketId).emit('unreadCountUpdated', unreadCountData);
+          
+          logger.info(`✅ [Socket] Unread count updated - rideId: ${rideId}, receiver: ${receiverId} (${receiverModel}), count: ${unreadCount}`);
+          logger.info('========================================');
+        } else {
+          logger.warn(`⚠️ [Socket] Receiver socket not found - rideId: ${rideId}, receiver: ${receiverId} (${receiverModel})`);
+          logger.info('========================================');
         }
       } catch (err) {
-        logger.error('Error emitting unread count update:', err);
+        logger.error('❌ [Socket] Error emitting unread count update:', err);
+        logger.error(`   Error message: ${err.message}`);
+        logger.error(`   Error stack: ${err.stack}`);
+        logger.info('========================================');
       }
     };
 
     socket.on('sendMessage', async (data) => {
       try {
-        logger.info(`sendMessage event - rideId: ${data?.rideId}, from: ${data?.senderId} (${data?.senderModel}), to: ${data?.receiverId} (${data?.receiverModel})`);
+        logger.info('📤 ========================================');
+        logger.info('📤 [Socket] sendMessage event received');
+        logger.info('📤 ========================================');
+        logger.info(`🆔 Ride ID: ${data?.rideId}`);
+        logger.info(`👤 Sender ID: ${data?.senderId}`);
+        logger.info(`👤 Sender Model: ${data?.senderModel}`);
+        logger.info(`👤 Receiver ID: ${data?.receiverId}`);
+        logger.info(`👤 Receiver Model: ${data?.receiverModel}`);
+        logger.info(`💬 Message: ${data?.message?.substring(0, 50)}${data?.message?.length > 50 ? '...' : ''}`);
+        logger.info(`📝 Message Type: ${data?.messageType || 'text'}`);
+        logger.info(`🔌 Socket ID: ${socket.id}`);
+        logger.info(`⏰ Timestamp: ${new Date().toISOString()}`);
+
+        logger.info('💾 [Socket] Saving message to database...');
         const message = await saveMessage(data);
-        logger.info(`Message saved - messageId: ${message._id}`);
+        logger.info(`✅ [Socket] Message saved - messageId: ${message._id}`);
         
+        logger.info('🔄 [Socket] Populating message with sender/receiver details...');
+        // Populate message with sender and receiver details before emitting
+        const populatedMessage = await Message.findById(message._id)
+          .populate('sender', 'name fullName')
+          .populate('receiver', 'name fullName')
+          .lean();
+        
+        logger.info(`✅ [Socket] Message populated`);
+        logger.info(`   Sender: ${populatedMessage?.sender?.name || populatedMessage?.sender?.fullName || 'unknown'}`);
+        logger.info(`   Receiver: ${populatedMessage?.receiver?.name || populatedMessage?.receiver?.fullName || 'unknown'}`);
+        
+        logger.info(`🔍 [Socket] Looking up receiver socket ID (${data.receiverModel})...`);
         // Notify receiver
         const receiverSocketId = data.receiverModel === 'Driver'
           ? (await Driver.findById(data.receiverId))?.socketId
           : (await User.findById(data.receiverId))?.socketId;
         
+        logger.info(`🔌 [Socket] Receiver socket ID: ${receiverSocketId || 'null'}`);
+        
         if (receiverSocketId) {
-          io.to(receiverSocketId).emit('receiveMessage', message);
-          logger.info(`Message delivered to receiver: ${data.receiverId}`);
+          logger.info('📤 [Socket] Emitting receiveMessage event to receiver...');
+          logger.info(`📦 [Socket] Message data:`, JSON.stringify({
+            _id: populatedMessage._id,
+            rideId: populatedMessage.ride,
+            sender: populatedMessage.sender?._id,
+            receiver: populatedMessage.receiver?._id,
+            message: populatedMessage.message?.substring(0, 50)
+          }));
+          
+          io.to(receiverSocketId).emit('receiveMessage', populatedMessage);
+          logger.info(`✅ [Socket] Message delivered to receiver: ${data.receiverId} (socket: ${receiverSocketId})`);
         } else {
-          logger.warn(`Receiver socket not found for: ${data.receiverId}`);
+          logger.warn(`⚠️ [Socket] Receiver socket not found for: ${data.receiverId} (${data.receiverModel})`);
+          logger.warn(`   Message saved but receiver may be offline`);
         }
         
+        logger.info('🔔 [Socket] Emitting unread count update...');
         // Emit unread count update to receiver
         await emitUnreadCountUpdate(data.rideId, data.receiverId, data.receiverModel);
         
-        socket.emit('messageSent', { success: true, message });
+        logger.info('📤 [Socket] Sending confirmation to sender...');
+        // Also send populated message to sender for confirmation
+        const confirmationData = { success: true, message: populatedMessage };
+        socket.emit('messageSent', confirmationData);
+        logger.info(`✅ [Socket] Confirmation sent to sender: ${data.senderId}`);
+        
+        logger.info('✅ [Socket] sendMessage event completed successfully');
+        logger.info('========================================');
       } catch (err) {
-        logger.error('sendMessage error:', err);
+        logger.error('❌ [Socket] sendMessage error:', err);
+        logger.error(`   Error message: ${err.message}`);
+        logger.error(`   Error stack: ${err.stack}`);
+        logger.error(`   Failed data:`, JSON.stringify(data));
         socket.emit('messageError', { message: err.message });
+        logger.info('========================================');
       }
     });
 
     socket.on('markMessageRead', async (data) => {
       try {
-        logger.info(`markMessageRead event - messageId: ${data?.messageId}`);
+        logger.info('📖 ========================================');
+        logger.info('📖 [Socket] markMessageRead event received');
+        logger.info('📖 ========================================');
+        logger.info(`🆔 Message ID: ${data?.messageId}`);
+        logger.info(`🔌 Socket ID: ${socket.id}`);
+        logger.info(`⏰ Timestamp: ${new Date().toISOString()}`);
+
         const { messageId } = data || {};
+        if (!messageId) {
+          logger.warn('⚠️ [Socket] markMessageRead: messageId is missing');
+          return;
+        }
+
+        logger.info('💾 [Socket] Marking message as read in database...');
         const message = await markMessageAsRead(messageId);
         
         if (message) {
+          logger.info(`✅ [Socket] Message marked as read - messageId: ${messageId}`);
+          logger.info(`🆔 [Socket] Ride ID: ${message.ride.toString()}`);
+          logger.info(`👤 [Socket] Receiver ID: ${message.receiver.toString()}`);
+          logger.info(`👤 [Socket] Receiver Model: ${message.receiverModel}`);
+          
+          logger.info('🔔 [Socket] Emitting unread count update...');
           // Emit unread count update to receiver (the one who marked it as read)
           await emitUnreadCountUpdate(
             message.ride.toString(),
             message.receiver.toString(),
             message.receiverModel
           );
+        } else {
+          logger.warn(`⚠️ [Socket] Message not found - messageId: ${messageId}`);
         }
         
+        logger.info('📤 [Socket] Sending confirmation to client...');
         socket.emit('messageMarkedRead', { success: true });
-        logger.info(`Message marked as read - messageId: ${messageId}`);
+        logger.info(`✅ [Socket] Confirmation sent - messageId: ${messageId}`);
+        logger.info('========================================');
       } catch (err) {
-        logger.error('markMessageRead error:', err);
+        logger.error('❌ [Socket] markMessageRead error:', err);
+        logger.error(`   Error message: ${err.message}`);
+        logger.error(`   Error stack: ${err.stack}`);
+        logger.error(`   Failed data:`, JSON.stringify(data));
+        logger.info('========================================');
       }
     });
 
     socket.on('getRideMessages', async (data) => {
       try {
-        logger.info(`getRideMessages event - rideId: ${data?.rideId}`);
+        logger.info('📚 ========================================');
+        logger.info('📚 [Socket] getRideMessages event received');
+        logger.info('📚 ========================================');
+        logger.info(`🆔 Ride ID: ${data?.rideId}`);
+        logger.info(`🔌 Socket ID: ${socket.id}`);
+        logger.info(`⏰ Timestamp: ${new Date().toISOString()}`);
+
         const { rideId } = data || {};
+        if (!rideId) {
+          logger.warn('⚠️ [Socket] getRideMessages: rideId is missing');
+          socket.emit('messageError', { message: 'rideId is required' });
+          return;
+        }
+
+        logger.info('💾 [Socket] Fetching messages from database...');
         const messages = await getRideMessages(rideId);
+        logger.info(`✅ [Socket] Messages fetched - count: ${messages?.length || 0}`);
         
+        logger.info('🔄 [Socket] Formatting messages...');
         // Ensure messages are properly formatted with all required fields
-        const formattedMessages = messages.map(msg => ({
-          _id: msg._id,
-          ride: msg.ride,
-          rideId: msg.ride?.toString() || msg.ride,
-          sender: msg.sender,
-          senderModel: msg.senderModel,
-          receiver: msg.receiver,
-          receiverModel: msg.receiverModel,
-          message: msg.message,
-          messageType: msg.messageType || 'text',
-          isRead: msg.isRead || false,
-          createdAt: msg.createdAt,
-          updatedAt: msg.updatedAt,
-        }));
+        const formattedMessages = messages.map((msg, index) => {
+          const formatted = {
+            _id: msg._id,
+            ride: msg.ride,
+            rideId: msg.ride?.toString() || msg.ride,
+            sender: msg.sender,
+            senderModel: msg.senderModel,
+            receiver: msg.receiver,
+            receiverModel: msg.receiverModel,
+            message: msg.message,
+            messageType: msg.messageType || 'text',
+            isRead: msg.isRead || false,
+            createdAt: msg.createdAt,
+            updatedAt: msg.updatedAt,
+          };
+          
+          if (index < 3) {
+            logger.info(`   Message ${index + 1}:`, {
+              id: formatted._id,
+              sender: formatted.senderModel,
+              receiver: formatted.receiverModel,
+              message: formatted.message?.substring(0, 30)
+            });
+          }
+          
+          return formatted;
+        });
         
+        logger.info(`✅ [Socket] Formatted ${formattedMessages.length} messages`);
+        logger.info('📤 [Socket] Emitting rideMessages event...');
         socket.emit('rideMessages', formattedMessages);
-        logger.info(`Ride messages retrieved - rideId: ${rideId}, count: ${formattedMessages?.length || 0}`);
+        logger.info(`✅ [Socket] Ride messages sent - rideId: ${rideId}, count: ${formattedMessages?.length || 0}`);
+        logger.info('========================================');
       } catch (err) {
-        logger.error('getRideMessages error:', err);
+        logger.error('❌ [Socket] getRideMessages error:', err);
+        logger.error(`   Error message: ${err.message}`);
+        logger.error(`   Error stack: ${err.stack}`);
+        logger.error(`   Failed data:`, JSON.stringify(data));
         socket.emit('messageError', { message: err.message });
+        logger.info('========================================');
       }
     });
 

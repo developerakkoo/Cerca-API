@@ -8,25 +8,51 @@ const logger = require('../../utils/logger.js');
  */
 const sendMessage = async (req, res) => {
     try {
+        logger.info('📤 ========================================');
+        logger.info('📤 [MessageController] sendMessage() called');
+        logger.info('📤 ========================================');
+        logger.info(`⏰ Timestamp: ${new Date().toISOString()}`);
+        logger.info(`🌐 Request IP: ${req.ip || req.connection.remoteAddress}`);
+        logger.info(`📦 Request body:`, JSON.stringify({
+            rideId: req.body.rideId,
+            senderId: req.body.senderId,
+            senderModel: req.body.senderModel,
+            receiverId: req.body.receiverId,
+            receiverModel: req.body.receiverModel,
+            message: req.body.message?.substring(0, 50) + (req.body.message?.length > 50 ? '...' : ''),
+            messageType: req.body.messageType
+        }));
+
         const { rideId, senderId, senderModel, receiverId, receiverModel, message, messageType } = req.body;
 
         // Validate required fields
+        logger.info('✅ [MessageController] Validating required fields...');
         if (!rideId || !senderId || !senderModel || !receiverId || !receiverModel || !message) {
+            logger.warn('⚠️ [MessageController] Missing required fields');
+            logger.warn(`   rideId: ${!!rideId}, senderId: ${!!senderId}, senderModel: ${!!senderModel}, receiverId: ${!!receiverId}, receiverModel: ${!!receiverModel}, message: ${!!message}`);
             return res.status(400).json({ message: 'Missing required fields' });
         }
+        logger.info('✅ [MessageController] All required fields present');
 
         // Validate models
+        logger.info('✅ [MessageController] Validating models...');
         if (!['User', 'Driver'].includes(senderModel) || !['User', 'Driver'].includes(receiverModel)) {
+            logger.warn(`⚠️ [MessageController] Invalid models - senderModel: ${senderModel}, receiverModel: ${receiverModel}`);
             return res.status(400).json({ message: 'Invalid sender or receiver model' });
         }
+        logger.info('✅ [MessageController] Models validated');
 
         // Check if ride exists
+        logger.info(`🔍 [MessageController] Checking if ride exists: ${rideId}`);
         const ride = await Ride.findById(rideId);
         if (!ride) {
+            logger.warn(`⚠️ [MessageController] Ride not found: ${rideId}`);
             return res.status(404).json({ message: 'Ride not found' });
         }
+        logger.info(`✅ [MessageController] Ride found: ${rideId}`);
 
         // Create message
+        logger.info('💾 [MessageController] Creating message in database...');
         const newMessage = await Message.create({
             ride: rideId,
             sender: senderId,
@@ -36,18 +62,27 @@ const sendMessage = async (req, res) => {
             message,
             messageType: messageType || 'text',
         });
+        logger.info(`✅ [MessageController] Message created - ID: ${newMessage._id}`);
 
+        logger.info('🔄 [MessageController] Populating message with sender/receiver details...');
         const populatedMessage = await Message.findById(newMessage._id)
             .populate('sender', 'name fullName')
             .populate('receiver', 'name fullName');
+        logger.info(`✅ [MessageController] Message populated`);
+        logger.info(`   Sender: ${populatedMessage?.sender?.name || populatedMessage?.sender?.fullName || 'unknown'}`);
+        logger.info(`   Receiver: ${populatedMessage?.receiver?.name || populatedMessage?.receiver?.fullName || 'unknown'}`);
 
-        logger.info(`Message sent: ${newMessage._id}`);
+        logger.info(`✅ [MessageController] Message sent successfully - ID: ${newMessage._id}`);
+        logger.info('========================================');
         res.status(201).json({ 
             message: 'Message sent successfully', 
             data: populatedMessage 
         });
     } catch (error) {
-        logger.error('Error sending message:', error);
+        logger.error('❌ [MessageController] Error sending message:', error);
+        logger.error(`   Error message: ${error.message}`);
+        logger.error(`   Error stack: ${error.stack}`);
+        logger.info('========================================');
         res.status(500).json({ message: 'Error sending message', error: error.message });
     }
 };
@@ -58,21 +93,41 @@ const sendMessage = async (req, res) => {
  */
 const getRideMessages = async (req, res) => {
     try {
+        logger.info('📚 ========================================');
+        logger.info('📚 [MessageController] getRideMessages() called');
+        logger.info('📚 ========================================');
+        logger.info(`⏰ Timestamp: ${new Date().toISOString()}`);
+        logger.info(`🌐 Request IP: ${req.ip || req.connection.remoteAddress}`);
+        logger.info(`🆔 Ride ID: ${req.params.rideId}`);
+        logger.info(`📊 Limit: ${req.query.limit || 100}`);
+
         const { rideId } = req.params;
         const { limit = 100 } = req.query;
 
+        logger.info(`🔍 [MessageController] Fetching messages for ride: ${rideId}`);
         const messages = await Message.find({ ride: rideId })
             .sort({ createdAt: 1 })
             .limit(parseInt(limit))
             .populate('sender', 'name fullName')
             .populate('receiver', 'name fullName');
 
+        logger.info(`✅ [MessageController] Messages fetched - count: ${messages.length}`);
+        if (messages.length > 0) {
+            logger.info(`   First message: ${messages[0]._id} from ${messages[0].senderModel}`);
+            logger.info(`   Last message: ${messages[messages.length - 1]._id} from ${messages[messages.length - 1].senderModel}`);
+        }
+
+        logger.info('✅ [MessageController] getRideMessages() completed successfully');
+        logger.info('========================================');
         res.status(200).json({ 
             messages,
             count: messages.length 
         });
     } catch (error) {
-        logger.error('Error fetching ride messages:', error);
+        logger.error('❌ [MessageController] Error fetching ride messages:', error);
+        logger.error(`   Error message: ${error.message}`);
+        logger.error(`   Error stack: ${error.stack}`);
+        logger.info('========================================');
         res.status(500).json({ message: 'Error fetching ride messages', error: error.message });
     }
 };
