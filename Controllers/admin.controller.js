@@ -2,7 +2,7 @@ const Admin = require('../Models/User/admin.model.js');
 const AdminEarnings = require('../Models/Admin/adminEarnings.model.js');
 const Driver = require('../Models/Driver/driver.model.js');
 const logger = require('../utils/logger.js');
-const bcrypt = require('bcrypt');
+const bcrypt = require("bcryptjs");
 const jwt = require('jsonwebtoken');
 
 /**

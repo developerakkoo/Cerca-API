@@ -1,6 +1,6 @@
 const Driver = require('../../Models/Driver/driver.model.js');
 const Ride = require('../../Models/Driver/ride.model.js');
-const bcrypt = require('bcrypt');
+const bcrypt = require("bcryptjs");
 const jwt = require('jsonwebtoken');
 const logger = require('../../utils/logger.js');
 

@@ -6,6 +6,7 @@ const Ride = require("../Models/Driver/ride.model");
 const Message = require("../Models/Driver/message.model");
 const AdminEarnings = require("../Models/Admin/adminEarnings.model");
 const Settings = require("../Models/Admin/settings.modal");
+const rideBookingQueue = require("../src/queues/rideBooking.queue");
 const {
   updateDriverStatus,
   updateDriverLocation,
@@ -68,7 +69,7 @@ function initializeSocket(server) {
         const currentUser = await User.findById(userId);
         if (currentUser?.socketId && currentUser.socketId !== socket.id) {
           logger.info(`Rider ${userId} reconnecting. Old socketId: ${currentUser.socketId}, New socketId: ${socket.id}`);
-          
+
           // Check if old socket is still connected
           const oldSocket = io.sockets.sockets.get(currentUser.socketId);
           if (oldSocket && oldSocket.connected) {
@@ -77,7 +78,7 @@ function initializeSocket(server) {
           } else {
             logger.info(`Rider ${userId} old socket ${currentUser.socketId} is not connected, cleaning up stale socketId`);
           }
-          
+
           // Clear old socketId before setting new one
           await clearUserSocket(userId, currentUser.socketId);
           logger.info(`Cleaned up old socketId for rider ${userId}`);
@@ -94,11 +95,11 @@ function initializeSocket(server) {
           rider: userId,
           status: { $in: ['requested', 'accepted', 'arrived', 'in_progress'] }
         }).select('_id status').lean();
-        
+
         if (!socket.data.rooms) {
           socket.data.rooms = [];
         }
-        
+
         for (const ride of activeRides) {
           const roomName = `ride_${ride._id}`;
           socket.join(roomName);
@@ -107,7 +108,7 @@ function initializeSocket(server) {
           }
           logger.info(`✅ [Socket] User auto-joined room: ${roomName} (ride status: ${ride.status})`);
         }
-        
+
         logger.info(`✅ [Socket] User auto-joined ${activeRides.length} active ride rooms`);
 
         logger.info(`Rider connected successfully - userId: ${userId}, socketId: ${socket.id}`);
@@ -134,7 +135,7 @@ function initializeSocket(server) {
         const currentDriver = await Driver.findById(driverId);
         if (currentDriver?.socketId && currentDriver.socketId !== socket.id) {
           logger.info(`Driver ${driverId} reconnecting. Old socketId: ${currentDriver.socketId}, New socketId: ${socket.id}`);
-          
+
           // Check if old socket is still connected
           const oldSocket = io.sockets.sockets.get(currentDriver.socketId);
           if (oldSocket && oldSocket.connected) {
@@ -143,7 +144,7 @@ function initializeSocket(server) {
           } else {
             logger.info(`Driver ${driverId} old socket ${currentDriver.socketId} is not connected, cleaning up stale socketId`);
           }
-          
+
           // Clear old socketId before setting new one
           await clearDriverSocket(driverId, currentDriver.socketId);
           logger.info(`Cleaned up old socketId for driver ${driverId}`);
@@ -164,11 +165,11 @@ function initializeSocket(server) {
           driver: driverId,
           status: { $in: ['requested', 'accepted', 'arrived', 'in_progress'] }
         }).select('_id status').lean();
-        
+
         if (!socket.data.rooms) {
           socket.data.rooms = [];
         }
-        
+
         for (const ride of activeRides) {
           const roomName = `ride_${ride._id}`;
           socket.join(roomName);
@@ -177,14 +178,14 @@ function initializeSocket(server) {
           }
           logger.info(`✅ [Socket] Driver auto-joined room: ${roomName} (ride status: ${ride.status})`);
         }
-        
+
         logger.info(`✅ [Socket] Driver auto-joined ${activeRides.length} active ride rooms`);
 
         logger.info(`Driver connected successfully - driverId: ${driverId}, socketId: ${socket.id}, isActive: ${driver?.isActive}`);
         if (driver) io.emit('driverConnected', driver);
-        
+
         // Send back driver status to the connected driver
-        socket.emit('driverStatusUpdate', { 
+        socket.emit('driverStatusUpdate', {
           driverId,
           isOnline: true,
           isActive: driver?.isActive || false,
@@ -203,7 +204,7 @@ function initializeSocket(server) {
       try {
         logger.info(`driverToggleStatus event - driverId: ${data?.driverId}, isActive: ${data?.isActive}`);
         const { driverId, isActive } = data || {};
-        
+
         if (!driverId) {
           logger.warn('driverToggleStatus: driverId is missing');
           socket.emit('errorEvent', { message: 'Driver ID is required' });
@@ -230,7 +231,7 @@ function initializeSocket(server) {
         }
 
         logger.info(`Driver toggle status updated - driverId: ${driverId}, isActive: ${isActive}, isOnline: ${driver.isOnline}`);
-        
+
         // Send confirmation back to driver
         socket.emit('driverStatusUpdate', {
           driverId,
@@ -261,7 +262,7 @@ function initializeSocket(server) {
         logger.info(`driverLocationUpdate - driverId: ${data?.driverId}, rideId: ${data?.rideId || 'none'}`);
         await updateDriverLocation(data.driverId, data.location);
         io.emit('driverLocationUpdate', data);
-        
+
         // Notify specific rider if ride is in progress
         if (data.rideId) {
           const ride = await Ride.findById(data.rideId);
@@ -307,24 +308,24 @@ function initializeSocket(server) {
         logger.info(`newRideRequest event - riderId: ${data?.rider || data?.riderId}, service: ${data?.service}`);
         const ride = await createRide(data);
         logger.info(`Ride created - rideId: ${ride._id}, fare: ${ride.fare}, distance: ${ride.distanceInKm}km`);
-        
+
         // Process hybrid payment if applicable
         if (data.paymentMethod === 'RAZORPAY' && data.walletAmountUsed && data.walletAmountUsed > 0 && data.razorpayPaymentId) {
           try {
             const User = require('../Models/User/user.model');
             const WalletTransaction = require('../Models/User/walletTransaction.model');
             const riderId = data.rider || data.riderId;
-            
+
             // Get user
             const user = await User.findById(riderId);
             if (user) {
               const balanceBefore = user.walletBalance || 0;
               const walletAmount = data.walletAmountUsed;
-              
+
               // Check sufficient balance
               if (balanceBefore >= walletAmount) {
                 const balanceAfter = balanceBefore - walletAmount;
-                
+
                 // Create wallet transaction
                 await WalletTransaction.create({
                   user: riderId,
@@ -342,11 +343,11 @@ function initializeSocket(server) {
                     totalAmount: ride.fare,
                   },
                 });
-                
+
                 // Update user wallet balance
                 user.walletBalance = balanceAfter;
                 await user.save();
-                
+
                 // Update ride with payment details
                 ride.walletAmountUsed = walletAmount;
                 ride.razorpayAmountPaid = data.razorpayAmountPaid || (ride.fare - walletAmount);
@@ -354,7 +355,7 @@ function initializeSocket(server) {
                 ride.paymentStatus = 'completed';
                 ride.transactionId = data.razorpayPaymentId;
                 await ride.save();
-                
+
                 logger.info(`Hybrid payment processed - Ride: ${ride._id}, Wallet: ₹${walletAmount}, Razorpay: ₹${data.razorpayAmountPaid || 0}`);
               } else {
                 logger.warn(`Insufficient wallet balance for hybrid payment - Ride: ${ride._id}, Required: ₹${walletAmount}, Available: ₹${balanceBefore}`);
@@ -367,181 +368,193 @@ function initializeSocket(server) {
             // The ride will be created but payment status may be pending
           }
         }
-        
+
         const populatedRide = await Ride.findById(ride._id)
           .populate('rider', 'fullName name phone email')
           .exec();
 
-        // Find nearby drivers using progressive radius expansion (3km → 6km → 9km → 12km)
-        logger.info(`🔍 Searching for drivers for rideId: ${ride._id}`);
-        logger.info(`   Pickup location: ${JSON.stringify(ride.pickupLocation)}`);
-        logger.info(`   Pickup coordinates: [${ride.pickupLocation.coordinates[0]}, ${ride.pickupLocation.coordinates[1]}]`);
-        
-        const { drivers: nearbyDrivers, radiusUsed } = await searchDriversWithProgressiveRadius(
-          ride.pickupLocation,
-          [3000, 6000, 9000, 12000] // Progressive radii in meters
-        );
+        // ============================
+        // PUSH RIDE TO REDIS QUEUE
+        // ============================
+        logger.info(`📥 Queuing ride ${ride._id} for driver discovery`);
 
-        logger.info(`Found ${nearbyDrivers.length} nearby drivers for rideId: ${ride._id} within ${radiusUsed}m radius`);
+        await rideBookingQueue.add('process-ride', {
+          rideId: ride._id.toString()
+        });
 
-        if (nearbyDrivers.length > 0) {
-          let notifiedCount = 0;
-          let skippedCount = 0;
-          const skippedReasons = {
-            noSocketId: 0,
-            socketNotConnected: 0,
-            socketNotFound: 0
-          };
+        logger.info(`✅ Ride ${ride._id} successfully added to Redis queue`);
 
-          // Notify specific nearby drivers - verify socket connection is active
-          nearbyDrivers.forEach(driver => {
-            if (driver.socketId) {
-              // Verify socket connection is still active
-              const socketConnection = io.sockets.sockets.get(driver.socketId);
-              if (socketConnection && socketConnection.connected) {
-                io.to(driver.socketId).emit('newRideRequest', populatedRide);
-                logger.info(`✅ Ride request sent to driver: ${driver._id} (socketId: ${driver.socketId})`);
-                notifiedCount++;
-              } else {
-                if (socketConnection) {
-                  logger.warn(`⚠️ Driver ${driver._id} has socketId but socket is not connected: ${driver.socketId}`);
-                  skippedReasons.socketNotConnected++;
-                } else {
-                  logger.warn(`⚠️ Driver ${driver._id} has socketId but socket not found in server: ${driver.socketId}`);
-                  skippedReasons.socketNotFound++;
-                }
-                skippedCount++;
-              }
-            } else {
-              logger.warn(`⚠️ Driver ${driver._id} has no socketId, cannot send ride request`);
-              skippedReasons.noSocketId++;
-              skippedCount++;
-            }
-          });
-          
-          // Log notification summary
-          logger.info(`📊 Ride request notification summary for rideId: ${ride._id}`);
-          logger.info(`   ✅ Successfully notified: ${notifiedCount} drivers`);
-          logger.info(`   ⚠️ Skipped: ${skippedCount} drivers`);
-          if (skippedCount > 0) {
-            logger.info(`   📋 Skip reasons: noSocketId=${skippedReasons.noSocketId}, socketNotConnected=${skippedReasons.socketNotConnected}, socketNotFound=${skippedReasons.socketNotFound}`);
-          }
-          
-          // Track notified drivers in ride document
-          const notifiedDriverIds = nearbyDrivers.map(driver => driver._id);
-          await Ride.findByIdAndUpdate(ride._id, {
-            $set: {
-              notifiedDrivers: notifiedDriverIds
-            }
-          });
-          logger.info(`📝 Tracked ${notifiedDriverIds.length} notified drivers for rideId: ${ride._id}`);
-          
-          // Create notifications for nearby drivers (including those who didn't receive socket notification)
-          nearbyDrivers.forEach(async (driver) => {
-            await createNotification({
-              recipientId: driver._id,
-              recipientModel: 'Driver',
-              title: 'New Ride Request',
-              message: `New ride request nearby from ${populatedRide.pickupAddress}`,
-              type: 'ride_request',
-              relatedRide: ride._id,
-            });
-          });
-        } else {
-          // No drivers found after progressive radius expansion
-          logger.warn(`❌ No drivers found for rideId: ${ride._id} after searching up to ${radiusUsed}m radius`);
-          
-          // Add detailed debugging information
-          try {
-            // Check total drivers in database
-            const totalDrivers = await Driver.countDocuments({});
-            logger.warn(`   📊 Total drivers in database: ${totalDrivers}`);
-            
-            // Check drivers by status
-            const activeDrivers = await Driver.countDocuments({ isActive: true });
-            const onlineDrivers = await Driver.countDocuments({ isOnline: true });
-            const busyDrivers = await Driver.countDocuments({ isBusy: true });
-            const availableDrivers = await Driver.countDocuments({ 
-              isActive: true, 
-              isBusy: false, 
-              isOnline: true 
-            });
-            
-            logger.warn(`   📊 Driver status breakdown:`);
-            logger.warn(`      - Total drivers: ${totalDrivers}`);
-            logger.warn(`      - isActive=true: ${activeDrivers}`);
-            logger.warn(`      - isOnline=true: ${onlineDrivers}`);
-            logger.warn(`      - isBusy=true: ${busyDrivers}`);
-            logger.warn(`      - Available (isActive=true, isBusy=false, isOnline=true): ${availableDrivers}`);
-            
-            // Check if there are any drivers near the pickup location (without filters)
-            const nearbyWithoutFilters = await Driver.find({
-              location: {
-                $near: {
-                  $geometry: {
-                    type: 'Point',
-                    coordinates: ride.pickupLocation.coordinates,
-                  },
-                  $maxDistance: radiusUsed,
-                },
-              },
-            }).limit(10);
-            
-            logger.warn(`   📍 Drivers within ${radiusUsed}m radius (no filters): ${nearbyWithoutFilters.length}`);
-            
-            if (nearbyWithoutFilters.length > 0) {
-              logger.warn(`   ⚠️ Found ${nearbyWithoutFilters.length} drivers nearby but all were excluded by filters:`);
-              nearbyWithoutFilters.forEach((driver, index) => {
-                logger.warn(`      Driver ${index + 1} (${driver._id}):`);
-                logger.warn(`        - isActive: ${driver.isActive}`);
-                logger.warn(`        - isBusy: ${driver.isBusy}`);
-                logger.warn(`        - isOnline: ${driver.isOnline}`);
-                logger.warn(`        - Location: [${driver.location.coordinates[0]}, ${driver.location.coordinates[1]}]`);
-              });
-            } else {
-              logger.warn(`   📍 No drivers found within ${radiusUsed}m radius (even without filters)`);
-              logger.warn(`   💡 This suggests either:`);
-              logger.warn(`      1. No drivers exist in the database`);
-              logger.warn(`      2. All drivers are very far from pickup location`);
-              logger.warn(`      3. Driver location data is missing or incorrect`);
-            }
-            
-            // Verify coordinate format
-            const coords = ride.pickupLocation.coordinates;
-            logger.warn(`   📐 Coordinate format verification:`);
-            logger.warn(`      - Coordinates: [${coords[0]}, ${coords[1]}]`);
-            logger.warn(`      - Format: [longitude, latitude]`);
-            logger.warn(`      - Longitude range: -180 to 180 (current: ${coords[0]})`);
-            logger.warn(`      - Latitude range: -90 to 90 (current: ${coords[1]})`);
-            
-            if (coords[0] < -180 || coords[0] > 180) {
-              logger.error(`      ❌ INVALID: Longitude out of range!`);
-            }
-            if (coords[1] < -90 || coords[1] > 90) {
-              logger.error(`      ❌ INVALID: Latitude out of range!`);
-            }
-          } catch (debugError) {
-            logger.error(`   ❌ Error gathering debug information: ${debugError.message}`);
-          }
-          
-          // Emit noDriverFound event to rider (NEW event - optional for apps)
-          if (populatedRide.userSocketId) {
-            io.to(populatedRide.userSocketId).emit('noDriverFound', {
-              rideId: ride._id,
-              message: 'No drivers found within 12km radius. Please try again later.',
-            });
-            logger.info(`No driver found event sent to rider: ${populatedRide.rider._id}`);
-          } else {
-            logger.warn(`   ⚠️ Cannot send noDriverFound event: userSocketId is missing`);
-          }
-        }
+
+        // // Find nearby drivers using progressive radius expansion (3km → 6km → 9km → 12km)
+        // logger.info(`🔍 Searching for drivers for rideId: ${ride._id}`);
+        // logger.info(`   Pickup location: ${JSON.stringify(ride.pickupLocation)}`);
+        // logger.info(`   Pickup coordinates: [${ride.pickupLocation.coordinates[0]}, ${ride.pickupLocation.coordinates[1]}]`);
+
+        // const { drivers: nearbyDrivers, radiusUsed } = await searchDriversWithProgressiveRadius(
+        //   ride.pickupLocation,
+        //   [3000, 6000, 9000, 12000] // Progressive radii in meters
+        // );
+
+        // logger.info(`Found ${nearbyDrivers.length} nearby drivers for rideId: ${ride._id} within ${radiusUsed}m radius`);
+
+        // if (nearbyDrivers.length > 0) {
+        //   let notifiedCount = 0;
+        //   let skippedCount = 0;
+        //   const skippedReasons = {
+        //     noSocketId: 0,
+        //     socketNotConnected: 0,
+        //     socketNotFound: 0
+        //   };
+
+        //   // Notify specific nearby drivers - verify socket connection is active
+        //   nearbyDrivers.forEach(driver => {
+        //     if (driver.socketId) {
+        //       // Verify socket connection is still active
+        //       const socketConnection = io.sockets.sockets.get(driver.socketId);
+        //       if (socketConnection && socketConnection.connected) {
+        //         io.to(driver.socketId).emit('newRideRequest', populatedRide);
+        //         logger.info(`✅ Ride request sent to driver: ${driver._id} (socketId: ${driver.socketId})`);
+        //         notifiedCount++;
+        //       } else {
+        //         if (socketConnection) {
+        //           logger.warn(`⚠️ Driver ${driver._id} has socketId but socket is not connected: ${driver.socketId}`);
+        //           skippedReasons.socketNotConnected++;
+        //         } else {
+        //           logger.warn(`⚠️ Driver ${driver._id} has socketId but socket not found in server: ${driver.socketId}`);
+        //           skippedReasons.socketNotFound++;
+        //         }
+        //         skippedCount++;
+        //       }
+        //     } else {
+        //       logger.warn(`⚠️ Driver ${driver._id} has no socketId, cannot send ride request`);
+        //       skippedReasons.noSocketId++;
+        //       skippedCount++;
+        //     }
+        //   });
+
+        //   // Log notification summary
+        //   logger.info(`📊 Ride request notification summary for rideId: ${ride._id}`);
+        //   logger.info(`   ✅ Successfully notified: ${notifiedCount} drivers`);
+        //   logger.info(`   ⚠️ Skipped: ${skippedCount} drivers`);
+        //   if (skippedCount > 0) {
+        //     logger.info(`   📋 Skip reasons: noSocketId=${skippedReasons.noSocketId}, socketNotConnected=${skippedReasons.socketNotConnected}, socketNotFound=${skippedReasons.socketNotFound}`);
+        //   }
+
+        //   // Track notified drivers in ride document
+        //   const notifiedDriverIds = nearbyDrivers.map(driver => driver._id);
+        //   await Ride.findByIdAndUpdate(ride._id, {
+        //     $set: {
+        //       notifiedDrivers: notifiedDriverIds
+        //     }
+        //   });
+        //   logger.info(`📝 Tracked ${notifiedDriverIds.length} notified drivers for rideId: ${ride._id}`);
+
+        //   // Create notifications for nearby drivers (including those who didn't receive socket notification)
+        //   nearbyDrivers.forEach(async (driver) => {
+        //     await createNotification({
+        //       recipientId: driver._id,
+        //       recipientModel: 'Driver',
+        //       title: 'New Ride Request',
+        //       message: `New ride request nearby from ${populatedRide.pickupAddress}`,
+        //       type: 'ride_request',
+        //       relatedRide: ride._id,
+        //     });
+        //   });
+        // } else {
+        //   // No drivers found after progressive radius expansion
+        //   logger.warn(`❌ No drivers found for rideId: ${ride._id} after searching up to ${radiusUsed}m radius`);
+
+        //   // Add detailed debugging information
+        //   try {
+        //     // Check total drivers in database
+        //     const totalDrivers = await Driver.countDocuments({});
+        //     logger.warn(`   📊 Total drivers in database: ${totalDrivers}`);
+
+        //     // Check drivers by status
+        //     const activeDrivers = await Driver.countDocuments({ isActive: true });
+        //     const onlineDrivers = await Driver.countDocuments({ isOnline: true });
+        //     const busyDrivers = await Driver.countDocuments({ isBusy: true });
+        //     const availableDrivers = await Driver.countDocuments({ 
+        //       isActive: true, 
+        //       isBusy: false, 
+        //       isOnline: true 
+        //     });
+
+        //     logger.warn(`   📊 Driver status breakdown:`);
+        //     logger.warn(`      - Total drivers: ${totalDrivers}`);
+        //     logger.warn(`      - isActive=true: ${activeDrivers}`);
+        //     logger.warn(`      - isOnline=true: ${onlineDrivers}`);
+        //     logger.warn(`      - isBusy=true: ${busyDrivers}`);
+        //     logger.warn(`      - Available (isActive=true, isBusy=false, isOnline=true): ${availableDrivers}`);
+
+        //     // Check if there are any drivers near the pickup location (without filters)
+        //     const nearbyWithoutFilters = await Driver.find({
+        //       location: {
+        //         $near: {
+        //           $geometry: {
+        //             type: 'Point',
+        //             coordinates: ride.pickupLocation.coordinates,
+        //           },
+        //           $maxDistance: radiusUsed,
+        //         },
+        //       },
+        //     }).limit(10);
+
+        //     logger.warn(`   📍 Drivers within ${radiusUsed}m radius (no filters): ${nearbyWithoutFilters.length}`);
+
+        //     if (nearbyWithoutFilters.length > 0) {
+        //       logger.warn(`   ⚠️ Found ${nearbyWithoutFilters.length} drivers nearby but all were excluded by filters:`);
+        //       nearbyWithoutFilters.forEach((driver, index) => {
+        //         logger.warn(`      Driver ${index + 1} (${driver._id}):`);
+        //         logger.warn(`        - isActive: ${driver.isActive}`);
+        //         logger.warn(`        - isBusy: ${driver.isBusy}`);
+        //         logger.warn(`        - isOnline: ${driver.isOnline}`);
+        //         logger.warn(`        - Location: [${driver.location.coordinates[0]}, ${driver.location.coordinates[1]}]`);
+        //       });
+        //     } else {
+        //       logger.warn(`   📍 No drivers found within ${radiusUsed}m radius (even without filters)`);
+        //       logger.warn(`   💡 This suggests either:`);
+        //       logger.warn(`      1. No drivers exist in the database`);
+        //       logger.warn(`      2. All drivers are very far from pickup location`);
+        //       logger.warn(`      3. Driver location data is missing or incorrect`);
+        //     }
+
+        //     // Verify coordinate format
+        //     const coords = ride.pickupLocation.coordinates;
+        //     logger.warn(`   📐 Coordinate format verification:`);
+        //     logger.warn(`      - Coordinates: [${coords[0]}, ${coords[1]}]`);
+        //     logger.warn(`      - Format: [longitude, latitude]`);
+        //     logger.warn(`      - Longitude range: -180 to 180 (current: ${coords[0]})`);
+        //     logger.warn(`      - Latitude range: -90 to 90 (current: ${coords[1]})`);
+
+        //     if (coords[0] < -180 || coords[0] > 180) {
+        //       logger.error(`      ❌ INVALID: Longitude out of range!`);
+        //     }
+        //     if (coords[1] < -90 || coords[1] > 90) {
+        //       logger.error(`      ❌ INVALID: Latitude out of range!`);
+        //     }
+        //   } catch (debugError) {
+        //     logger.error(`   ❌ Error gathering debug information: ${debugError.message}`);
+        //   }
+
+        //   // Emit noDriverFound event to rider (NEW event - optional for apps)
+        //   if (populatedRide.userSocketId) {
+        //     io.to(populatedRide.userSocketId).emit('noDriverFound', {
+        //       rideId: ride._id,
+        //       message: 'No drivers found within 12km radius. Please try again later.',
+        //     });
+        //     logger.info(`No driver found event sent to rider: ${populatedRide.rider._id}`);
+        //   } else {
+        //     logger.warn(`   ⚠️ Cannot send noDriverFound event: userSocketId is missing`);
+        //   }
+        // }
 
         // Ack to the rider (backward compatible - existing apps expect this)
         if (populatedRide.userSocketId) {
           io.to(populatedRide.userSocketId).emit('rideRequested', populatedRide);
           logger.info(`Ride request confirmation sent to rider: ${data.rider || data.riderId}`);
         }
-        
+
         // Create notification for rider
         await createNotification({
           recipientId: data.rider || data.riderId,
@@ -551,7 +564,7 @@ function initializeSocket(server) {
           type: 'ride_request',
           relatedRide: ride._id,
         });
-        
+
         logger.info(`newRideRequest completed successfully - rideId: ${ride._id}`);
       } catch (err) {
         logger.error('newRideRequest error:', err);
@@ -579,7 +592,7 @@ function initializeSocket(server) {
           io.to(assignedRide.userSocketId).emit('rideAccepted', assignedRide);
           logger.info(`Ride acceptance notification sent to rider: ${assignedRide.rider._id}`);
         }
-        
+
         // Notify driver
         if (assignedRide.driverSocketId) {
           io.to(assignedRide.driverSocketId).emit('rideAssigned', assignedRide);
@@ -595,7 +608,7 @@ function initializeSocket(server) {
           type: 'ride_accepted',
           relatedRide: rideId,
         });
-        
+
         await createNotification({
           recipientId: assignedRide.driver._id,
           recipientModel: 'Driver',
@@ -608,7 +621,7 @@ function initializeSocket(server) {
         // Auto-join both user and driver sockets to ride room
         const roomName = `ride_${rideId}`;
         logger.info(`🚪 [Socket] Auto-joining sockets to room: ${roomName}`);
-        
+
         // Join driver socket to room
         if (assignedRide.driverSocketId) {
           const driverSocket = io.sockets.sockets.get(assignedRide.driverSocketId);
@@ -625,7 +638,7 @@ function initializeSocket(server) {
             logger.warn(`⚠️ [Socket] Driver socket not found: ${assignedRide.driverSocketId}`);
           }
         }
-        
+
         // Join user socket to room
         if (assignedRide.userSocketId) {
           const userSocket = io.sockets.sockets.get(assignedRide.userSocketId);
@@ -809,13 +822,13 @@ function initializeSocket(server) {
 
         const ride = await markDriverArrived(rideId);
         logger.info(`Driver marked as arrived - rideId: ${rideId}`);
-        
+
         // Notify rider
         if (ride.userSocketId) {
           io.to(ride.userSocketId).emit('driverArrived', ride);
           logger.info(`Driver arrival notification sent to rider - rideId: ${rideId}`);
         }
-        
+
         // Create notification for rider
         await createNotification({
           recipientId: ride.rider._id,
@@ -847,7 +860,7 @@ function initializeSocket(server) {
         }
 
         const { success, ride } = await verifyStartOtp(rideId, otp);
-        
+
         if (success) {
           logger.info(`Start OTP verified successfully - rideId: ${rideId}`);
           socket.emit('otpVerified', { success: true, ride });
@@ -884,7 +897,7 @@ function initializeSocket(server) {
         await updateRideStartTime(rideId);
 
         logger.info(`Ride started successfully - rideId: ${rideId}`);
-        
+
         if (startedRide.userSocketId) {
           io.to(startedRide.userSocketId).emit('rideStarted', startedRide);
           logger.info(`Ride start notification sent to rider - rideId: ${rideId}`);
@@ -903,7 +916,7 @@ function initializeSocket(server) {
           type: 'ride_started',
           relatedRide: rideId,
         });
-        
+
         await createNotification({
           recipientId: startedRide.driver._id,
           recipientModel: 'Driver',
@@ -936,7 +949,7 @@ function initializeSocket(server) {
       try {
         logger.info(`rideLocationUpdate event - rideId: ${data?.rideId}`);
         io.emit('rideLocationUpdate', data);
-        
+
         // Notify specific rider if rideId provided
         if (data.rideId && data.userSocketId) {
           io.to(data.userSocketId).emit('rideLocationUpdate', data);
@@ -961,7 +974,7 @@ function initializeSocket(server) {
         }
 
         const { success, ride } = await verifyStopOtp(rideId, otp);
-        
+
         if (success) {
           logger.info(`Stop OTP verified successfully - rideId: ${rideId}`);
           socket.emit('otpVerified', { success: true, ride });
@@ -996,21 +1009,21 @@ function initializeSocket(server) {
 
         const completedRide = await completeRide(rideId, fare);
         await updateRideEndTime(rideId);
-        
+
         logger.info(`Ride completed successfully - rideId: ${rideId}, finalFare: ${completedRide.fare}`);
-        
+
         // Store earnings for admin analytics (non-blocking)
         storeRideEarnings(completedRide).catch(err => {
           logger.error(`Error storing ride earnings for rideId: ${rideId}:`, err);
           // Don't fail ride completion if earnings storage fails
         });
-        
+
         // Process referral reward if this is user's first completed ride (non-blocking)
         processReferralRewardIfFirstRide(completedRide.rider._id || completedRide.rider, rideId).catch(err => {
           logger.error(`Error processing referral reward for rideId: ${rideId}:`, err);
           // Don't fail ride completion if referral processing fails
         });
-        
+
         if (completedRide.userSocketId) {
           io.to(completedRide.userSocketId).emit('rideCompleted', completedRide);
           logger.info(`Ride completion notification sent to rider - rideId: ${rideId}`);
@@ -1029,7 +1042,7 @@ function initializeSocket(server) {
           type: 'ride_completed',
           relatedRide: rideId,
         });
-        
+
         await createNotification({
           recipientId: completedRide.driver._id,
           recipientModel: 'Driver',
@@ -1068,7 +1081,7 @@ function initializeSocket(server) {
         // Cancel ride with reason
         const cancelledRide = await cancelRide(rideId, cancelledBy, cancellationReason);
         logger.info(`Ride cancelled successfully - rideId: ${rideId}, cancelledBy: ${cancelledBy}, reason: ${cancellationReason}`);
-        
+
         if (cancelledRide.userSocketId) {
           io.to(cancelledRide.userSocketId).emit('rideCancelled', cancelledRide);
           logger.info(`Cancellation notification sent to rider - rideId: ${rideId}`);
@@ -1089,7 +1102,7 @@ function initializeSocket(server) {
             relatedRide: rideId,
           });
         }
-        
+
         if (cancelledRide.driver) {
           await createNotification({
             recipientId: cancelledRide.driver._id,
@@ -1117,19 +1130,19 @@ function initializeSocket(server) {
         logger.info(`submitRating event - rideId: ${data?.rideId}, rating: ${data?.rating}, ratedBy: ${data?.ratedBy} (${data?.ratedByModel}), ratedTo: ${data?.ratedTo} (${data?.ratedToModel})`);
         const rating = await submitRating(data);
         logger.info(`Rating submitted successfully - ratingId: ${rating._id}, value: ${rating.rating}`);
-        
+
         socket.emit('ratingSubmitted', { success: true, rating });
-        
+
         // Notify the rated person
-        const recipientSocketId = data.ratedToModel === 'Driver' 
+        const recipientSocketId = data.ratedToModel === 'Driver'
           ? (await Driver.findById(data.ratedTo))?.socketId
           : (await require('../Models/User/user.model').findById(data.ratedTo))?.socketId;
-        
+
         if (recipientSocketId) {
           io.to(recipientSocketId).emit('ratingReceived', rating);
           logger.info(`Rating notification sent to ${data.ratedToModel}: ${data.ratedTo}`);
         }
-        
+
         // Create notification
         await createNotification({
           recipientId: data.ratedTo,
@@ -1148,11 +1161,11 @@ function initializeSocket(server) {
     // ============================
     // MESSAGING SYSTEM
     // ============================
-    
+
     // ============================
     // ROOM MANAGEMENT - Join/Leave Ride Rooms
     // ============================
-    
+
     socket.on('joinRideRoom', async (data) => {
       try {
         logger.info('🚪 ========================================');
@@ -1165,7 +1178,7 @@ function initializeSocket(server) {
         logger.info(`⏰ Timestamp: ${new Date().toISOString()}`);
 
         const { rideId, userId, driverId, userType } = data || {};
-        
+
         if (!rideId) {
           logger.warn('⚠️ [Socket] joinRideRoom: rideId is missing');
           socket.emit('roomJoinError', { message: 'Ride ID is required' });
@@ -1198,7 +1211,7 @@ function initializeSocket(server) {
         // Verify user/driver has access to this ride
         const userIdToCheck = userId || driverId;
         const userTypeToCheck = userType || (userId ? 'User' : 'Driver');
-        
+
         if (userTypeToCheck === 'User') {
           const rideUserId = ride.rider?.toString() || ride.rider;
           if (rideUserId !== userIdToCheck) {
@@ -1218,7 +1231,7 @@ function initializeSocket(server) {
         // Join socket to room
         const roomName = `ride_${rideId}`;
         socket.join(roomName);
-        
+
         // Store rideId in socket data for reference
         if (!socket.data.rooms) {
           socket.data.rooms = [];
@@ -1231,14 +1244,14 @@ function initializeSocket(server) {
         logger.info(`   User/Driver: ${userIdToCheck} (${userTypeToCheck})`);
         logger.info(`   Ride Status: ${ride.status}`);
         logger.info(`   Total rooms for socket: ${socket.data.rooms.length}`);
-        
+
         // Emit confirmation back to client
-        socket.emit('roomJoined', { 
-          success: true, 
+        socket.emit('roomJoined', {
+          success: true,
           rideId: rideId,
-          roomName: roomName 
+          roomName: roomName
         });
-        
+
         logger.info('✅ [Socket] joinRideRoom completed successfully');
         logger.info('========================================');
       } catch (err) {
@@ -1260,7 +1273,7 @@ function initializeSocket(server) {
         logger.info(`⏰ Timestamp: ${new Date().toISOString()}`);
 
         const { rideId } = data || {};
-        
+
         if (!rideId) {
           logger.warn('⚠️ [Socket] leaveRideRoom: rideId is missing');
           socket.emit('roomLeaveError', { message: 'Ride ID is required' });
@@ -1270,7 +1283,7 @@ function initializeSocket(server) {
         // Leave socket from room
         const roomName = `ride_${rideId}`;
         socket.leave(roomName);
-        
+
         // Remove from socket data
         if (socket.data.rooms) {
           socket.data.rooms = socket.data.rooms.filter(r => r !== roomName);
@@ -1278,14 +1291,14 @@ function initializeSocket(server) {
 
         logger.info(`✅ [Socket] Socket ${socket.id} left room: ${roomName}`);
         logger.info(`   Remaining rooms for socket: ${socket.data.rooms?.length || 0}`);
-        
+
         // Emit confirmation back to client
-        socket.emit('roomLeft', { 
-          success: true, 
+        socket.emit('roomLeft', {
+          success: true,
           rideId: rideId,
-          roomName: roomName 
+          roomName: roomName
         });
-        
+
         logger.info('✅ [Socket] leaveRideRoom completed successfully');
         logger.info('========================================');
       } catch (err) {
@@ -1296,7 +1309,7 @@ function initializeSocket(server) {
         logger.info('========================================');
       }
     });
-    
+
     // Helper function to emit unread count update to receiver
     const emitUnreadCountUpdate = async (rideId, receiverId, receiverModel) => {
       try {
@@ -1331,12 +1344,12 @@ function initializeSocket(server) {
             receiverModel,
             count: unreadCount
           };
-          
+
           logger.info('📤 [Socket] Emitting unreadCountUpdated event...');
           logger.info(`📦 [Socket] Event data:`, JSON.stringify(unreadCountData));
-          
+
           io.to(receiverSocketId).emit('unreadCountUpdated', unreadCountData);
-          
+
           logger.info(`✅ [Socket] Unread count updated - rideId: ${rideId}, receiver: ${receiverId} (${receiverModel}), count: ${unreadCount}`);
           logger.info('========================================');
         } else {
@@ -1369,18 +1382,18 @@ function initializeSocket(server) {
         logger.info('💾 [Socket] Saving message to database...');
         const message = await saveMessage(data);
         logger.info(`✅ [Socket] Message saved - messageId: ${message._id}`);
-        
+
         logger.info('🔄 [Socket] Populating message with sender/receiver details...');
         // Populate message with sender and receiver details before emitting
         const populatedMessage = await Message.findById(message._id)
           .populate('sender', 'name fullName')
           .populate('receiver', 'name fullName')
           .lean();
-        
+
         logger.info(`✅ [Socket] Message populated`);
         logger.info(`   Sender: ${populatedMessage?.sender?.name || populatedMessage?.sender?.fullName || 'unknown'}`);
         logger.info(`   Receiver: ${populatedMessage?.receiver?.name || populatedMessage?.receiver?.fullName || 'unknown'}`);
-        
+
         // Emit message to room (both user and driver in the room will receive it)
         const roomName = `ride_${data.rideId}`;
         logger.info(`📤 [Socket] Emitting receiveMessage event to room: ${roomName}`);
@@ -1391,33 +1404,33 @@ function initializeSocket(server) {
           receiver: populatedMessage.receiver?._id,
           message: populatedMessage.message?.substring(0, 50)
         }));
-        
+
         // Emit to room - both user and driver will receive if they're in the room
         io.to(roomName).emit('receiveMessage', populatedMessage);
         logger.info(`✅ [Socket] Message delivered to room: ${roomName}`);
-        
+
         // Fallback: Also try direct socket emission if room fails (for backward compatibility)
         const receiverSocketId = data.receiverModel === 'Driver'
           ? (await Driver.findById(data.receiverId))?.socketId
           : (await User.findById(data.receiverId))?.socketId;
-        
+
         if (receiverSocketId) {
           logger.info(`🔌 [Socket] Fallback: Also emitting to receiver socket: ${receiverSocketId}`);
           io.to(receiverSocketId).emit('receiveMessage', populatedMessage);
         } else {
           logger.info(`ℹ️ [Socket] Receiver socket not found (may be offline or not connected)`);
         }
-        
+
         logger.info('🔔 [Socket] Emitting unread count update...');
         // Emit unread count update to receiver
         await emitUnreadCountUpdate(data.rideId, data.receiverId, data.receiverModel);
-        
+
         logger.info('📤 [Socket] Sending confirmation to sender...');
         // Also send populated message to sender for confirmation
         const confirmationData = { success: true, message: populatedMessage };
         socket.emit('messageSent', confirmationData);
         logger.info(`✅ [Socket] Confirmation sent to sender: ${data.senderId}`);
-        
+
         logger.info('✅ [Socket] sendMessage event completed successfully');
         logger.info('========================================');
       } catch (err) {
@@ -1447,13 +1460,13 @@ function initializeSocket(server) {
 
         logger.info('💾 [Socket] Marking message as read in database...');
         const message = await markMessageAsRead(messageId);
-        
+
         if (message) {
           logger.info(`✅ [Socket] Message marked as read - messageId: ${messageId}`);
           logger.info(`🆔 [Socket] Ride ID: ${message.ride.toString()}`);
           logger.info(`👤 [Socket] Receiver ID: ${message.receiver.toString()}`);
           logger.info(`👤 [Socket] Receiver Model: ${message.receiverModel}`);
-          
+
           logger.info('🔔 [Socket] Emitting unread count update...');
           // Emit unread count update to receiver (the one who marked it as read)
           await emitUnreadCountUpdate(
@@ -1464,7 +1477,7 @@ function initializeSocket(server) {
         } else {
           logger.warn(`⚠️ [Socket] Message not found - messageId: ${messageId}`);
         }
-        
+
         logger.info('📤 [Socket] Sending confirmation to client...');
         socket.emit('messageMarkedRead', { success: true });
         logger.info(`✅ [Socket] Confirmation sent - messageId: ${messageId}`);
@@ -1497,7 +1510,7 @@ function initializeSocket(server) {
         logger.info('💾 [Socket] Fetching messages from database...');
         const messages = await getRideMessages(rideId);
         logger.info(`✅ [Socket] Messages fetched - count: ${messages?.length || 0}`);
-        
+
         logger.info('🔄 [Socket] Formatting messages...');
         // Ensure messages are properly formatted with all required fields
         const formattedMessages = messages.map((msg, index) => {
@@ -1515,7 +1528,7 @@ function initializeSocket(server) {
             createdAt: msg.createdAt,
             updatedAt: msg.updatedAt,
           };
-          
+
           if (index < 3) {
             logger.info(`   Message ${index + 1}:`, {
               id: formatted._id,
@@ -1524,10 +1537,10 @@ function initializeSocket(server) {
               message: formatted.message?.substring(0, 30)
             });
           }
-          
+
           return formatted;
         });
-        
+
         logger.info(`✅ [Socket] Formatted ${formattedMessages.length} messages`);
         logger.info('📤 [Socket] Emitting rideMessages event...');
         socket.emit('rideMessages', formattedMessages);
@@ -1579,10 +1592,10 @@ function initializeSocket(server) {
         logger.warn(`🚨 EMERGENCY ALERT - rideId: ${data?.rideId}, triggeredBy: ${data?.triggeredBy} (${data?.triggeredByModel})`);
         const emergency = await createEmergencyAlert(data);
         logger.warn(`Emergency alert created - emergencyId: ${emergency._id}, location: ${JSON.stringify(data.location)}`);
-        
+
         // Notify both rider and driver
         const ride = await Ride.findById(data.rideId).populate('rider driver');
-        
+
         if (ride) {
           if (ride.userSocketId) {
             io.to(ride.userSocketId).emit('emergencyAlert', emergency);
@@ -1592,11 +1605,11 @@ function initializeSocket(server) {
             io.to(ride.driverSocketId).emit('emergencyAlert', emergency);
             logger.warn(`Emergency alert sent to driver - rideId: ${data.rideId}`);
           }
-          
+
           // Broadcast to admin/support (you can add admin sockets later)
           io.emit('emergencyBroadcast', emergency);
           logger.warn(`Emergency broadcast sent to all admins - rideId: ${data.rideId}`);
-          
+
           // Create notifications
           if (ride.rider) {
             await createNotification({
@@ -1608,7 +1621,7 @@ function initializeSocket(server) {
               relatedRide: data.rideId,
             });
           }
-          
+
           if (ride.driver) {
             await createNotification({
               recipientId: ride.driver._id,
@@ -1620,7 +1633,7 @@ function initializeSocket(server) {
             });
           }
         }
-        
+
         socket.emit('emergencyAlertCreated', { success: true, emergency });
         logger.warn(`🚨 Emergency alert processing completed - emergencyId: ${emergency._id}`);
       } catch (err) {
@@ -1714,8 +1727,8 @@ async function storeRideEarnings(ride) {
 
     // Calculate platform fee and driver earning
     const platformFee = platformFees ? grossFare * (platformFees / 100) : 0;
-    const driverEarning = driverCommissions 
-      ? grossFare * (driverCommissions / 100) 
+    const driverEarning = driverCommissions
+      ? grossFare * (driverCommissions / 100)
       : grossFare - platformFee;
 
     // Create earnings record
@@ -1743,32 +1756,32 @@ async function processReferralRewardIfFirstRide(userId, rideId) {
     const Referral = require('../Models/User/referral.model');
     const User = require('../Models/User/user.model');
     const WalletTransaction = require('../Models/User/walletTransaction.model');
-    
+
     // Check if user has a pending referral
-    const referral = await Referral.findOne({ 
-      referee: userId, 
-      status: 'PENDING' 
+    const referral = await Referral.findOne({
+      referee: userId,
+      status: 'PENDING'
     }).populate('referrer', 'fullName walletBalance');
-    
+
     if (!referral) {
       return; // No referral to process
     }
-    
+
     // Check if this is user's first completed ride
     const Ride = require('../Models/Driver/ride.model');
-    const completedRides = await Ride.countDocuments({ 
-      rider: userId, 
-      status: 'completed' 
+    const completedRides = await Ride.countDocuments({
+      rider: userId,
+      status: 'completed'
     });
-    
+
     if (completedRides > 1) {
       return; // Not the first ride
     }
-    
+
     // Get referral reward settings
     const referrerReward = 100; // ₹100 for referrer
     const refereeReward = 50;   // ₹50 for referee
-    
+
     // Update referral status
     referral.status = 'COMPLETED';
     referral.firstRideCompletedAt = new Date();
@@ -1778,17 +1791,17 @@ async function processReferralRewardIfFirstRide(userId, rideId) {
       rewardType: 'WALLET_CREDIT',
     };
     await referral.save();
-    
+
     // Credit referrer's wallet
     const referrer = await User.findById(referral.referrer);
     if (referrer) {
       const balanceBefore = referrer.walletBalance || 0;
       const balanceAfter = balanceBefore + referrerReward;
-      
+
       referrer.walletBalance = balanceAfter;
       referrer.referralRewardsEarned = (referrer.referralRewardsEarned || 0) + referrerReward;
       await referrer.save();
-      
+
       // Create wallet transaction for referrer
       await WalletTransaction.create({
         user: referrer._id,
@@ -1804,16 +1817,16 @@ async function processReferralRewardIfFirstRide(userId, rideId) {
         },
       });
     }
-    
+
     // Credit referee's wallet
     const referee = await User.findById(userId);
     if (referee) {
       const balanceBefore = referee.walletBalance || 0;
       const balanceAfter = balanceBefore + refereeReward;
-      
+
       referee.walletBalance = balanceAfter;
       await referee.save();
-      
+
       // Create wallet transaction for referee
       await WalletTransaction.create({
         user: userId,
@@ -1830,12 +1843,12 @@ async function processReferralRewardIfFirstRide(userId, rideId) {
         },
       });
     }
-    
+
     // Mark referral as rewarded
     referral.status = 'REWARDED';
     referral.rewardedAt = new Date();
     await referral.save();
-    
+
     logger.info(`Referral reward processed automatically: Referrer ${referral.referrer} got ₹${referrerReward}, Referee ${userId} got ₹${refereeReward}`);
   } catch (error) {
     logger.error('Error processing referral reward automatically:', error);

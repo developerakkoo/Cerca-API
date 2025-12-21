@@ -2,6 +2,8 @@ import Ride from '../../Models/Driver/ride.model.js';
 import Settings from '../../Models/Admin/settings.modal.js';
 import logger from '../../utils/logger.js';
 import crypto from 'crypto';
+import rideBookingQueue from "../../src/queues/rideBooking.queue.js";
+
 
 /**
  * @desc    Create a new ride
@@ -53,12 +55,26 @@ export const createRide = async (req, res) => {
         // Create a new ride
         const ride = new Ride(rideData);
         await ride.save();
+
         logger.info(`Ride created successfully with ID: ${ride._id}`);
+
+        // ============================
+        // 🔥 PUSH RIDE TO REDIS QUEUE
+        // ============================
+        logger.info(`📥 Queuing ride ${ride._id} for driver discovery`);
+
+        await rideBookingQueue.add("process-ride", {
+            rideId: ride._id.toString(),
+        });
+
+        logger.info(`✅ Ride ${ride._id} successfully added to Redis queue`);
+
         res.status(201).json({
             ride,
             startOtp,
             stopOtp,
         });
+
     } catch (error) {
         logger.error('Error creating ride:', error);
         res.status(400).json({ message: 'Error creating ride', error });
@@ -83,9 +99,9 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     const a =
         Math.sin(dLat / 2) * Math.sin(dLat / 2) +
         Math.cos(toRadians(lat1)) *
-            Math.cos(toRadians(lat2)) *
-            Math.sin(dLon / 2) *
-            Math.sin(dLon / 2);
+        Math.cos(toRadians(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
 
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
@@ -235,4 +251,3 @@ export const searchRide = async (req, res) => {
 
 
 
-  

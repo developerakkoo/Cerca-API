@@ -9,6 +9,8 @@ const connectDB = require('./db'); // Import MongoDB connection
 const app = express();
 const port = 3000;
 
+const initRideWorker = require('./src/workers/rideBooking.worker.js');
+
 // Connect to MongoDB
 connectDB();
 
@@ -17,6 +19,9 @@ const server = http.createServer(app);
 
 // Initialize Socket.IO
 initializeSocket(server);
+
+//  Initialize Redis Ride Booking Worker
+initRideWorker();
 
 // Middleware
 app.use(express.json());
@@ -79,7 +84,7 @@ const googleMapsRoutes = require('./Routes/googleMaps.routes.js');
 app.use('/users', userRoutes);
 app.use('/users', walletRoutes);
 app.use('/users', referralRoutes);
-app.use('/drivers',driverRoutes);
+app.use('/drivers', driverRoutes);
 app.use('/drivers', earningsRoutes);
 app.use('/drivers', payoutRoutes);
 app.use('/admin', adminRoutes);
