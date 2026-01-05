@@ -1,14 +1,25 @@
+console.log("🔥 Redis config file loaded");
+
 const IORedis = require("ioredis");
+
+if (!process.env.REDIS_HOST) {
+  console.warn("⚠️ REDIS_HOST not set. Redis will not connect.");
+}
 
 const redis = new IORedis({
   host: process.env.REDIS_HOST,
   port: process.env.REDIS_PORT || 6379,
-  tls: {},                 // 🔥 REQUIRED (because transit encryption is enabled)
+  tls: {}, // AWS ElastiCache TLS
   maxRetriesPerRequest: null,
+  enableReadyCheck: true,
 });
 
 redis.on("connect", () => {
   console.log("✅ Redis connected (ElastiCache TLS)");
+});
+
+redis.on("ready", () => {
+  console.log("🚀 Redis is ready to use");
 });
 
 redis.on("error", (err) => {
@@ -16,19 +27,3 @@ redis.on("error", (err) => {
 });
 
 module.exports = redis;
-
-
-// const IORedis = require("ioredis");
-//  const redis = new IORedis({
-//     host: process.env.REDIS_HOST || "127.0.0.1",
-//     port: process.env.REDIS_PORT || 
-//     6379, maxRetriesPerRequest: null, // 🔥 REQUIRED for BullMQ 
-//     });
-    
-    
-//     redis.on("connect", () => { 
-//       console.log("✅ Redis connected");
-//      });
-     
-     
-//      module.exports = redis;

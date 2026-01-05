@@ -1,15 +1,24 @@
-const express = require('express');
-const cors = require('cors');
-const http = require('http');
-const { initializeSocket } = require('./utils/socket'); // Import socket module
-const logger = require('./utils/logger'); // Import logger
-const multer = require('multer');
-const path = require('path');
-const connectDB = require('./db'); // Import MongoDB connection
-const app = express();
-const port = 3000;
+// index.js
+require("dotenv").config(); // 🔥 MUST BE FIRST
 
-const initRideWorker = require('./src/workers/rideBooking.worker.js');
+const express = require("express");
+const cors = require("cors");
+const http = require("http");
+const multer = require("multer");
+const path = require("path");
+
+const logger = require("./utils/logger");
+const { initializeSocket } = require("./utils/socket");
+const connectDB = require("./db");
+
+// 🔥 IMPORTANT: Initialize Redis at app startup
+require("./config/redis");
+
+// Workers
+const initRideWorker = require("./src/workers/rideBooking.worker");
+
+const app = express();
+const port = process.env.PORT || 3000;
 
 // Connect to MongoDB
 connectDB();
@@ -20,104 +29,103 @@ const server = http.createServer(app);
 // Initialize Socket.IO
 initializeSocket(server);
 
-//  Initialize Redis Ride Booking Worker
+// Start Ride Booking Worker (Redis required here)
 initRideWorker();
 
-// Middleware
+/* =======================
+   MIDDLEWARES
+======================= */
+
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-app.use(cors({
-    origin: '*', // Allow all origins
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], // Allowed HTTP methods
-    allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
-}));
-app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
-app.use(express.static('public')); // Serve static files from 'public' directory
-// Serve static files from the uploads directory
-app.use('/uploads', express.static('uploads'));
-app.use('/images', express.static('uploads/images'));
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
-// Configure multer for image uploads
+app.use(express.static("public"));
+app.use("/uploads", express.static("uploads"));
+app.use("/images", express.static("uploads/images"));
+
+/* =======================
+   MULTER CONFIG
+======================= */
+
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/'); // Directory to save uploaded files
-    },
-    filename: (req, file, cb) => {
-        cb(null, `${Date.now()}-${file.originalname}`); // Unique file name
-    },
+  destination: (req, file, cb) => {
+    cb(null, "uploads/");
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
 });
 
 const upload = multer({
-    storage: storage,
-    fileFilter: (req, file, cb) => {
-        const fileTypes = /jpeg|jpg|png/; // Allowed file types
-        const extname = fileTypes.test(path.extname(file.originalname).toLowerCase());
-        const mimeType = fileTypes.test(file.mimetype);
+  storage,
+  fileFilter: (req, file, cb) => {
+    const fileTypes = /jpeg|jpg|png/;
+    const extname = fileTypes.test(
+      path.extname(file.originalname).toLowerCase()
+    );
+    const mimeType = fileTypes.test(file.mimetype);
 
-        if (extname && mimeType) {
-            cb(null, true);
-        } else {
-            cb(new Error('Only images (jpeg, jpg, png) are allowed!'));
-        }
-    },
+    if (extname && mimeType) cb(null, true);
+    else cb(new Error("Only images (jpeg, jpg, png) are allowed"));
+  },
 });
 
+/* =======================
+   ROUTES
+======================= */
 
-//Routes
-const userRoutes = require('./Routes/User/user.routes.js');
-const walletRoutes = require('./Routes/User/wallet.routes.js');
-const referralRoutes = require('./Routes/User/referral.routes.js');
-const addressRoutes = require('./Routes/User/address.route.js');
-const driverRoutes = require('./Routes/Driver/driver.routes.js');
-const earningsRoutes = require('./Routes/Driver/earnings.routes.js');
-const payoutRoutes = require('./Routes/Driver/payout.routes.js');
-const adminRoutes = require('./Routes/admin.routes.js');
-const settingsRoutes = require('./Routes/admin.routes.js');
-const couponRoutes = require('./Routes/coupon.routes.js');
-const rideRoutes = require('./Routes/ride.routes.js');
-const messageRoutes = require('./Routes/Driver/message.routes.js');
-const ratingRoutes = require('./Routes/Driver/rating.routes.js');
-const notificationRoutes = require('./Routes/User/notification.routes.js');
-const emergencyRoutes = require('./Routes/User/emergency.routes.js');
-const paymentRoutes = require('./Routes/payment.route.js');
-const googleMapsRoutes = require('./Routes/googleMaps.routes.js');
-app.use('/users', userRoutes);
-app.use('/users', walletRoutes);
-app.use('/users', referralRoutes);
-app.use('/drivers', driverRoutes);
-app.use('/drivers', earningsRoutes);
-app.use('/drivers', payoutRoutes);
-app.use('/admin', adminRoutes);
-app.use('/settings', settingsRoutes);
-app.use('/coupons', couponRoutes);
-app.use('/address', addressRoutes);
-app.use('/rides', rideRoutes);
-app.use('/messages', messageRoutes);
-app.use('/ratings', ratingRoutes);
-app.use('/notifications', notificationRoutes);
-app.use('/emergencies', emergencyRoutes);
-app.use('/api/v1/payment', paymentRoutes);
-app.use('/api/google-maps', googleMapsRoutes);
-app.get('/', (req, res) => {
-    logger.info('GET / - Welcome route accessed');
-    res.send('Welcome to Cerca API!');
+app.use("/users", require("./Routes/User/user.routes"));
+app.use("/users", require("./Routes/User/wallet.routes"));
+app.use("/users", require("./Routes/User/referral.routes"));
+app.use("/drivers", require("./Routes/Driver/driver.routes"));
+app.use("/drivers", require("./Routes/Driver/earnings.routes"));
+app.use("/drivers", require("./Routes/Driver/payout.routes"));
+app.use("/admin", require("./Routes/admin.routes"));
+app.use("/settings", require("./Routes/admin.routes"));
+app.use("/coupons", require("./Routes/coupon.routes"));
+app.use("/address", require("./Routes/User/address.route"));
+app.use("/rides", require("./Routes/ride.routes"));
+app.use("/messages", require("./Routes/Driver/message.routes"));
+app.use("/ratings", require("./Routes/Driver/rating.routes"));
+app.use("/notifications", require("./Routes/User/notification.routes"));
+app.use("/emergencies", require("./Routes/User/emergency.routes"));
+app.use("/api/v1/payment", require("./Routes/payment.route"));
+app.use("/api/google-maps", require("./Routes/googleMaps.routes"));
+
+/* =======================
+   HEALTH & UPLOAD
+======================= */
+
+app.get("/", (req, res) => {
+  logger.info("GET / - Welcome route accessed");
+  res.send("Welcome to Cerca API!");
 });
 
-// Route for image upload
-app.post('/upload', upload.single('image'), (req, res) => {
-    if (!req.file) {
-        logger.warn('POST /upload - No file uploaded');
-        return res.status(400).send('No file uploaded.');
-    }
-    logger.info(`POST /upload - File uploaded: ${req.file.filename}`);
-    res.status(200).send({
-        message: 'File uploaded successfully!',
-        file: req.file,
-    });
+app.post("/upload", upload.single("image"), (req, res) => {
+  if (!req.file) {
+    logger.warn("POST /upload - No file uploaded");
+    return res.status(400).send("No file uploaded.");
+  }
+
+  logger.info(`POST /upload - File uploaded: ${req.file.filename}`);
+  res.status(200).json({
+    message: "File uploaded successfully",
+    file: req.file,
+  });
 });
 
-// Start server
+/* =======================
+   START SERVER
+======================= */
+
 server.listen(port, () => {
-    logger.info(`Server is running on http://localhost:${port}`);
-
+  logger.info(`🚀 Server running on http://localhost:${port}`);
 });
