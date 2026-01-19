@@ -306,6 +306,55 @@ function initializeSocket(server) {
     socket.on('newRideRequest', async (data) => {
       try {
         logger.info(`newRideRequest event - riderId: ${data?.rider || data?.riderId}, service: ${data?.service}`);
+        
+        // Verify Razorpay payment if payment method is RAZORPAY
+        if (data.paymentMethod === 'RAZORPAY' && data.razorpayPaymentId) {
+          try {
+            const Razorpay = require('razorpay');
+            const razorpayKey = process.env.RAZORPAY_ID || "rzp_test_Rp3ejYlVfY449V";
+            const razorpaySecret = process.env.RAZORPAY_SECRET || "FORM4hrZrQO8JFIiYsQSC83N";
+            const razorpayInstance = new Razorpay({
+              key_id: razorpayKey,
+              key_secret: razorpaySecret,
+            });
+
+            // Fetch payment details from Razorpay
+            const payment = await razorpayInstance.payments.fetch(data.razorpayPaymentId);
+            
+            // Verify payment status
+            if (payment.status !== 'captured' && payment.status !== 'authorized') {
+              logger.warn(`Razorpay payment not captured - Payment ID: ${data.razorpayPaymentId}, Status: ${payment.status}`);
+              socket.emit('rideError', {
+                message: 'Payment not verified. Please complete payment first.',
+                code: 'PAYMENT_NOT_VERIFIED'
+              });
+              return;
+            }
+
+            // Verify payment amount matches ride fare (allow 1 paise difference for rounding)
+            const paymentAmount = payment.amount / 100; // Convert from paise to rupees
+            const expectedAmount = data.razorpayAmountPaid || data.fare || 0;
+            
+            if (Math.abs(paymentAmount - expectedAmount) > 0.01) {
+              logger.warn(`Payment amount mismatch - Payment: ₹${paymentAmount}, Expected: ₹${expectedAmount}`);
+              socket.emit('rideError', {
+                message: 'Payment amount mismatch. Please try again.',
+                code: 'PAYMENT_AMOUNT_MISMATCH'
+              });
+              return;
+            }
+
+            logger.info(`Razorpay payment verified - Payment ID: ${data.razorpayPaymentId}, Amount: ₹${paymentAmount}`);
+          } catch (paymentError) {
+            logger.error(`Error verifying Razorpay payment:`, paymentError);
+            socket.emit('rideError', {
+              message: 'Payment verification failed. Please try again.',
+              code: 'PAYMENT_VERIFICATION_FAILED'
+            });
+            return;
+          }
+        }
+
         const ride = await createRide(data);
         logger.info(`Ride created - rideId: ${ride._id}, fare: ${ride.fare}, distance: ${ride.distanceInKm}km`);
 
@@ -1011,6 +1060,64 @@ function initializeSocket(server) {
         await updateRideEndTime(rideId);
 
         logger.info(`Ride completed successfully - rideId: ${rideId}, finalFare: ${completedRide.fare}`);
+
+        // Process WALLET payment deduction if payment method is WALLET
+        if (completedRide.paymentMethod === 'WALLET') {
+          try {
+            const User = require('../Models/User/user.model');
+            const WalletTransaction = require('../Models/User/walletTransaction.model');
+            const riderId = completedRide.rider._id || completedRide.rider;
+            const fareAmount = completedRide.fare || fare || 0;
+
+            if (fareAmount > 0) {
+              const rider = await User.findById(riderId);
+              if (!rider) {
+                logger.warn(`Rider not found for wallet deduction - Ride: ${rideId}, RiderId: ${riderId}`);
+              } else {
+                const balanceBefore = rider.walletBalance || 0;
+                
+                if (balanceBefore >= fareAmount) {
+                  const balanceAfter = balanceBefore - fareAmount;
+                  rider.walletBalance = balanceAfter;
+                  await rider.save();
+
+                  // Create wallet transaction
+                  await WalletTransaction.create({
+                    user: riderId,
+                    transactionType: 'DEBIT',
+                    amount: fareAmount,
+                    balanceBefore: balanceBefore,
+                    balanceAfter: balanceAfter,
+                    relatedRide: rideId,
+                    paymentMethod: 'WALLET',
+                    status: 'COMPLETED',
+                    description: `Ride payment of ₹${fareAmount}`,
+                  });
+
+                  // Update ride payment status
+                  completedRide.paymentStatus = 'completed';
+                  await completedRide.save();
+
+                  logger.info(`Wallet payment deducted - Ride: ${rideId}, Amount: ₹${fareAmount}, New Balance: ₹${balanceAfter}`);
+                } else {
+                  // Handle insufficient balance - mark payment as failed
+                  completedRide.paymentStatus = 'failed';
+                  await completedRide.save();
+                  logger.warn(`Insufficient wallet balance - Ride: ${rideId}, Required: ₹${fareAmount}, Available: ₹${balanceBefore}`);
+                }
+              }
+            }
+          } catch (walletError) {
+            logger.error(`Error processing wallet payment for ride ${rideId}:`, walletError);
+            // Don't fail ride completion if wallet deduction fails, but mark payment status appropriately
+            try {
+              completedRide.paymentStatus = 'failed';
+              await completedRide.save();
+            } catch (updateError) {
+              logger.error(`Error updating payment status for ride ${rideId}:`, updateError);
+            }
+          }
+        }
 
         // Store earnings for admin analytics (non-blocking)
         storeRideEarnings(completedRide).catch(err => {
