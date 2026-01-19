@@ -108,6 +108,10 @@ app.get("/", (req, res) => {
   logger.info("GET / - Welcome route accessed");
   res.send("Welcome to Cerca API!");
 });
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
+
 
 app.post("/upload", upload.single("image"), (req, res) => {
   if (!req.file) {
