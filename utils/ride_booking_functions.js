@@ -66,6 +66,9 @@ const updateDriverLocation = async (driverId, location) => {
             throw new Error('Coordinates out of range. Longitude: -180 to 180, Latitude: -90 to 90');
         }
 
+        // Log location update for debugging
+        logger.info(`📍 Updating driver location - driverId: ${driverId}, coordinates: [${longitude}, ${latitude}]`);
+
         const driver = await Driver.findByIdAndUpdate(
             driverId,
             {
@@ -81,8 +84,11 @@ const updateDriverLocation = async (driverId, location) => {
             throw new Error('Driver not found');
         }
 
+        logger.info(`✅ Driver location updated successfully - driverId: ${driverId}, saved location: [${driver.location.coordinates[0]}, ${driver.location.coordinates[1]}]`);
+
         return driver;
     } catch (error) {
+        logger.error(`❌ Error updating driver location - driverId: ${driverId}, error: ${error.message}`);
         throw new Error(`Error updating driver location: ${error.message}`);
     }
 }

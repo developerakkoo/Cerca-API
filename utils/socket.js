@@ -322,10 +322,11 @@ function initializeSocket (server) {
     // ============================
     socket.on('driverLocationUpdate', async data => {
       try {
+        const coords = data.location?.coordinates || [data.location?.longitude, data.location?.latitude]
         logger.info(
           `driverLocationUpdate - driverId: ${data?.driverId}, rideId: ${
             data?.rideId || 'none'
-          }`
+          }, coordinates: [${coords[0]}, ${coords[1]}]`
         )
         await updateDriverLocation(data.driverId, data.location)
         io.emit('driverLocationUpdate', data)
