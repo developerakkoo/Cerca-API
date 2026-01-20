@@ -28,9 +28,18 @@ const server = http.createServer(app);
 
 // Initialize Socket.IO
 initializeSocket(server);
+logger.info('✅ Socket.IO initialized');
 
 // Start Ride Booking Worker (Redis required here)
-initRideWorker();
+// Worker must be initialized AFTER socket.io to access getSocketIO()
+try {
+  initRideWorker();
+  logger.info('✅ Ride Booking Worker initialization completed');
+} catch (error) {
+  logger.error(`❌ Failed to start Ride Booking Worker: ${error.message}`);
+  logger.error(`   Stack: ${error.stack}`);
+  // Don't crash the server, but log the error
+}
 
 /* =======================
    MIDDLEWARES
