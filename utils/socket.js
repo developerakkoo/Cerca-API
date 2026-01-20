@@ -774,19 +774,28 @@ function initializeSocket (server) {
           `Ride assigned successfully - rideId: ${rideId}, driverId: ${driverId}, driver: ${assignedRide.driver.name}`
         )
 
+        // Check if this is a Full Day booking
+        const isFullDayBooking = assignedRide.bookingType === 'FULL_DAY'
+        
+        // Add metadata to ride object for client-side handling
+        const rideWithMetadata = {
+          ...assignedRide.toObject ? assignedRide.toObject() : assignedRide,
+          isFullDayBooking
+        }
+
         // Notify rider
         if (assignedRide.userSocketId) {
-          io.to(assignedRide.userSocketId).emit('rideAccepted', assignedRide)
+          io.to(assignedRide.userSocketId).emit('rideAccepted', rideWithMetadata)
           logger.info(
-            `Ride acceptance notification sent to rider: ${assignedRide.rider._id}`
+            `Ride acceptance notification sent to rider: ${assignedRide.rider._id} | isFullDayBooking: ${isFullDayBooking}`
           )
         }
 
         // Notify driver
         if (assignedRide.driverSocketId) {
-          io.to(assignedRide.driverSocketId).emit('rideAssigned', assignedRide)
+          io.to(assignedRide.driverSocketId).emit('rideAssigned', rideWithMetadata)
           logger.info(
-            `Ride assignment confirmation sent to driver: ${driverId}`
+            `Ride assignment confirmation sent to driver: ${driverId} | isFullDayBooking: ${isFullDayBooking}`
           )
         }
 
@@ -884,8 +893,8 @@ function initializeSocket (server) {
           )
         }
 
-        io.emit('rideAccepted', assignedRide)
-        logger.info(`rideAccepted completed successfully - rideId: ${rideId}`)
+        io.emit('rideAccepted', rideWithMetadata)
+        logger.info(`rideAccepted completed successfully - rideId: ${rideId} | isFullDayBooking: ${isFullDayBooking}`)
       } catch (err) {
         logger.error('rideAccepted error:', err)
         socket.emit('rideError', {

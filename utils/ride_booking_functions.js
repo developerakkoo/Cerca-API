@@ -505,11 +505,15 @@ const assignDriverToRide = async (rideId, driverId, driverSocketId) => {
       await Driver.findByIdAndUpdate(driverId, { isBusy: true })
     }
 
+    // For FULL_DAY and RENTAL bookings, don't mark driver as busy immediately
+    // Driver will be marked busy when the ride actually starts (on scheduled date/time)
+    // Only set busyUntil for tracking purposes, but keep isBusy false
     if (ride.bookingType === 'FULL_DAY' || ride.bookingType === 'RENTAL') {
       await Driver.findByIdAndUpdate(driverId, {
-        isBusy: true,
-        busyUntil: ride.bookingMeta.endTime
+        isBusy: false, // Don't mark busy immediately for scheduled bookings
+        busyUntil: ride.bookingMeta.endTime // Track when they'll be busy
       })
+      logger.info(`📅 Scheduled booking assigned - driver not marked busy until ${ride.bookingMeta.endTime}`)
     }
 
         // 🔁 STEP 4: Extend lock for long bookings OR cleanup for instant rides
