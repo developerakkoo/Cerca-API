@@ -1007,7 +1007,8 @@ const autoAssignDriver = async (rideId, pickupLocation, maxDistance = 5000) => {
 // Search drivers with progressive radius expansion
 const searchDriversWithProgressiveRadius = async (
   pickupLocation,
-  radii = [3000, 6000, 9000, 12000, 15000, 20000]
+  radii = [3000, 6000, 9000, 12000, 15000, 20000],
+  bookingType = null // Optional: 'INSTANT', 'FULL_DAY', 'RENTAL', 'DATE_WISE'
 ) => {
   try {
     // Ensure pickupLocation has coordinates array
@@ -1078,8 +1079,9 @@ const searchDriversWithProgressiveRadius = async (
         `   📊 Found ${allDriversInRadius.length} total drivers within ${radius}m radius (before filters)`
       )
 
-      // Now apply filters - including socketId to ensure only connected drivers
-      const drivers = await Driver.find({
+      // Build query - for Full Day/Rental bookings, also include drivers busy with future scheduled bookings
+      const now = new Date()
+      const driverQuery = {
         location: {
           $near: {
             $geometry: {
@@ -1090,15 +1092,35 @@ const searchDriversWithProgressiveRadius = async (
           }
         },
         isActive: true,
-        isBusy: false,
         isOnline: true,
         socketId: { $exists: true, $ne: null, $ne: '' } // Only drivers with valid socketId (connected)
-      })
+      }
+
+      // For Full Day/Rental bookings, allow drivers who are busy but only have future scheduled bookings
+      if (bookingType === 'FULL_DAY' || bookingType === 'RENTAL') {
+        driverQuery.$or = [
+          { isBusy: false }, // Not busy at all
+          {
+            // Busy but only with future scheduled bookings (busyUntil is in the future)
+            isBusy: true,
+            busyUntil: { $exists: true, $gt: now }
+          }
+        ]
+      } else {
+        // For instant rides, only include drivers who are not busy
+        driverQuery.isBusy = false
+      }
+
+      // Now apply filters - including socketId to ensure only connected drivers
+      const drivers = await Driver.find(driverQuery)
         .select('socketId') // Explicitly select socketId field
         .limit(10) // Limit to 10 drivers per radius
 
+      const filterDescription = bookingType === 'FULL_DAY' || bookingType === 'RENTAL'
+        ? 'isActive: true, isBusy: false OR (isBusy: true with future busyUntil), isOnline: true, socketId exists'
+        : 'isActive: true, isBusy: false, isOnline: true, socketId exists'
       logger.info(
-        `   ✅ Found ${drivers.length} drivers after applying filters (isActive: true, isBusy: false, isOnline: true, socketId exists)`
+        `   ✅ Found ${drivers.length} drivers after applying filters (${filterDescription})`
       )
 
       // Log how many drivers have socketId

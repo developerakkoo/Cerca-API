@@ -971,7 +971,8 @@ function initializeSocket (server) {
           const { drivers: newDrivers, radiusUsed } =
             await searchDriversWithProgressiveRadius(
               ride.pickupLocation,
-              [15000, 20000, 25000] // Larger radii in meters
+              [15000, 20000, 25000], // Larger radii in meters
+              ride.bookingType || null
             )
 
           // Filter out already rejected drivers

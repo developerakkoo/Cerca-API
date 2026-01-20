@@ -52,11 +52,12 @@ function initRideWorker () {
 
           logger.info(`📋 Processing ride ${ride._id}`)
 
-          // 2️⃣ Search drivers
+          // 2️⃣ Search drivers (pass bookingType to allow drivers with future scheduled bookings)
           const { drivers, radiusUsed } =
             await searchDriversWithProgressiveRadius(
               ride.pickupLocation,
-              [3000, 6000, 9000, 12000, 15000, 20000]
+              [3000, 6000, 9000, 12000, 15000, 20000],
+              ride.bookingType || null
             )
 
           logger.info(
