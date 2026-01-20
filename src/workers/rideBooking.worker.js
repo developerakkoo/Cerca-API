@@ -74,12 +74,12 @@ function initRideWorker () {
           return
         }
 
-        // Search drivers progressively (3km → 6km → 9km → 12km)
+        // Search drivers progressively (3km → 6km → 9km → 12km → 15km → 20km)
         logger.info(`🔎 Searching for drivers near pickup location: [${ride.pickupLocation.coordinates[0]}, ${ride.pickupLocation.coordinates[1]}]`)
         const { drivers, radiusUsed } =
           await searchDriversWithProgressiveRadius(
             ride.pickupLocation,
-            [3000, 6000, 9000, 12000]
+            [3000, 6000, 9000, 12000, 15000, 20000]
           )
 
         logger.info(
@@ -100,7 +100,7 @@ function initRideWorker () {
           if (ride.userSocketId) {
             io.to(ride.userSocketId).emit('noDriverFound', {
               rideId: ride._id,
-              message: 'No drivers available within 12km'
+              message: `No drivers available within ${Math.round(radiusUsed / 1000)}km`
             })
             logger.info(`📤 Sent noDriverFound event to rider: ${ride.userSocketId}`)
           }

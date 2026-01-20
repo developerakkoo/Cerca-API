@@ -887,7 +887,7 @@ const autoAssignDriver = async (rideId, pickupLocation, maxDistance = 5000) => {
 };
 
 // Search drivers with progressive radius expansion
-const searchDriversWithProgressiveRadius = async (pickupLocation, radii = [3000, 6000, 9000, 12000]) => {
+const searchDriversWithProgressiveRadius = async (pickupLocation, radii = [3000, 6000, 9000, 12000, 15000, 20000]) => {
     try {
         // Ensure pickupLocation has coordinates array
         const coordinates = pickupLocation.coordinates || [pickupLocation.longitude, pickupLocation.latitude];
