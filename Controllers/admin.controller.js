@@ -6,6 +6,94 @@ const bcrypt = require("bcryptjs");
 const jwt = require('jsonwebtoken');
 
 /**
+ * @desc    Create a new admin (main admin)
+ * @route   POST /admins/create-admin
+ * @access  Public (for initial setup) or ADMIN role required
+ */
+const createAdmin = async (req, res) => {
+    try {
+        const { fullName, email, phoneNumber, password } = req.body;
+
+        // Validate required fields
+        if (!fullName || !email || !password) {
+            return res.status(400).json({ 
+                message: 'Missing required fields',
+                required: ['fullName', 'email', 'password']
+            });
+        }
+
+        // Check if admin with this email already exists
+        const existingAdmin = await Admin.findOne({ email: email.toLowerCase() });
+        if (existingAdmin) {
+            return res.status(409).json({ 
+                message: 'Admin with this email already exists' 
+            });
+        }
+
+        // Check if phone number is provided and unique
+        if (phoneNumber) {
+            const existingPhone = await Admin.findOne({ phoneNumber });
+            if (existingPhone) {
+                return res.status(409).json({ 
+                    message: 'Admin with this phone number already exists' 
+                });
+            }
+        }
+
+        // Hash the password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Create a new admin
+        const admin = new Admin({
+            fullName,
+            email: email.toLowerCase(),
+            phoneNumber: phoneNumber || undefined,
+            password: hashedPassword,
+            role: 'ADMIN',
+            level: 0, // Main admin has level 0
+            createdBy: req.adminId || null, // Set if created by another admin, null for initial setup
+            isActive: true,
+        });
+
+        await admin.save();
+
+        // Remove password from response
+        const adminResponse = admin.toObject();
+        delete adminResponse.password;
+
+        logger.info(`Admin created successfully: ${admin.email}`);
+        res.status(201).json({
+            message: 'Admin created successfully',
+            admin: adminResponse
+        });
+    } catch (error) {
+        logger.error('Error creating admin:', error);
+        
+        // Handle validation errors
+        if (error.name === 'ValidationError') {
+            const errors = Object.values(error.errors).map(err => err.message);
+            return res.status(400).json({ 
+                message: 'Validation error', 
+                errors 
+            });
+        }
+
+        // Handle duplicate key errors
+        if (error.code === 11000) {
+            const field = Object.keys(error.keyPattern)[0];
+            return res.status(409).json({ 
+                message: `${field} already exists` 
+            });
+        }
+
+        res.status(500).json({ 
+            message: 'Error creating admin', 
+            error: error.message 
+        });
+    }
+};
+
+/**
  * @desc    Create a new sub-admin
  * @route   POST /admins
  */
@@ -227,11 +315,10 @@ const getAdminEarnings = async (req, res) => {
 };
 
 module.exports = {
-  
+    createAdmin,
     createSubAdmin,
     getAllSubAdmins,
     deleteSubAdmin,
     adminLogin,
     getAdminEarnings,
-
 };

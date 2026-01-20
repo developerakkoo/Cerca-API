@@ -1,5 +1,6 @@
 const express =  require('express');
 const {
+    createAdmin,
     createSubAdmin,
     getAllSubAdmins,
     deleteSubAdmin,
@@ -20,6 +21,10 @@ const router = express.Router();
 
 // Admin login (public)
 router.post('/login', adminLogin);
+
+// Create admin (public for initial setup, or protected for ADMIN role)
+// Note: For production, consider adding additional security (e.g., secret key check)
+router.post('/create-admin', createAdmin);
 
 // Protected admin routes
 router.use(authenticateAdmin);
