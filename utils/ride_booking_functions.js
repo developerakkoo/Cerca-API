@@ -1167,6 +1167,52 @@ const searchDriversWithProgressiveRadius = async (
 }
 
 // Exporting functions for use in other modules
+/**
+ * Get upcoming scheduled bookings for a driver
+ */
+const getUpcomingBookingsForDriver = async driverId => {
+  try {
+    const now = new Date()
+    const upcomingBookings = await Ride.find({
+      driver: driverId,
+      bookingType: { $ne: 'INSTANT' },
+      status: 'accepted',
+      'bookingMeta.startTime': { $gt: now }
+    })
+      .populate('rider', 'fullName name phone email')
+      .sort({ 'bookingMeta.startTime': 1 })
+
+    return upcomingBookings
+  } catch (error) {
+    logger.error('Error getting upcoming bookings:', error)
+    throw new Error(`Error getting upcoming bookings: ${error.message}`)
+  }
+}
+
+/**
+ * Get scheduled rides that need to start
+ */
+const getScheduledRidesToStart = async () => {
+  try {
+    const now = new Date()
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000)
+
+    const scheduledRides = await Ride.find({
+      bookingType: { $ne: 'INSTANT' },
+      status: 'accepted',
+      'bookingMeta.startTime': {
+        $lte: now,
+        $gte: fiveMinutesAgo
+      }
+    }).populate('driver rider')
+
+    return scheduledRides
+  } catch (error) {
+    logger.error('Error getting scheduled rides to start:', error)
+    throw new Error(`Error getting scheduled rides: ${error.message}`)
+  }
+}
+
 module.exports = {
   updateDriverStatus,
   updateDriverLocation,
@@ -1197,5 +1243,7 @@ module.exports = {
   createEmergencyAlert,
   resolveEmergency,
   autoAssignDriver,
+  getUpcomingBookingsForDriver,
+  getScheduledRidesToStart,
   searchDriversWithProgressiveRadius
 }

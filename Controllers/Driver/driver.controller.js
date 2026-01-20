@@ -316,6 +316,34 @@ const getAllRidesOfDriver = async (req, res) => {
 };
 
 /**
+ * @desc    Get upcoming scheduled bookings for a driver
+ * @route   GET /drivers/:id/upcoming-bookings
+ */
+const getUpcomingBookings = async (req, res) => {
+    try {
+        const { getUpcomingBookingsForDriver } = require('../../utils/ride_booking_functions');
+        
+        // Check if driver exists
+        const driver = await Driver.findById(req.params.id);
+        if (!driver) {
+            return res.status(404).json({ message: 'Driver not found' });
+        }
+
+        // Get upcoming bookings
+        const upcomingBookings = await getUpcomingBookingsForDriver(req.params.id);
+
+        res.status(200).json({
+            message: 'Upcoming bookings retrieved successfully',
+            bookings: upcomingBookings,
+            count: upcomingBookings.length
+        });
+    } catch (error) {
+        logger.error('Error fetching upcoming bookings:', error);
+        res.status(500).json({ message: 'Error fetching upcoming bookings', error: error.message });
+    }
+};
+
+/**
  * @desc    Update the location of a driver
  * @route   PATCH /drivers/:id/location
  */
@@ -604,6 +632,7 @@ module.exports = {
     updateDriverDocuments,
     updateDriverIsReadyForRides,
     getAllRidesOfDriver,
+    getUpcomingBookings,
     updateDriverLocation,
     updateDriverOnlineStatus,
     updateDriverVehicle,

@@ -17,6 +17,7 @@ const {
     getDriverStats,
     getNearbyDrivers,
     updateDriverBusyStatus,
+    getUpcomingBookings,
 } = require('../../Controllers/Driver/driver.controller.js');
 
 const router = express.Router();
@@ -49,6 +50,9 @@ router.put('/:id/documents', upload.array('documents', 10), updateDriverDocument
 
 // Route to get all rides of a driver
 router.get('/:id/rides', getAllRidesOfDriver);
+
+// Route to get upcoming scheduled bookings for a driver
+router.get('/:id/upcoming-bookings', getUpcomingBookings);
 
 // Route to update a driver's location
 router.patch('/:id/location', updateDriverLocation);

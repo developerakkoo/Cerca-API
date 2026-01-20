@@ -42,11 +42,10 @@ function initRideWorker () {
           const { rideId } = job.data
           if (!rideId) return
 
-          // 1️⃣ Fetch ride
-          const ride = await Ride.findById(rideId).populate(
-            'rider',
-            'fullName name phone email'
-          )
+          // 1️⃣ Fetch ride (include bookingType and bookingMeta)
+          const ride = await Ride.findById(rideId)
+            .populate('rider', 'fullName name phone email')
+            .select('+bookingType +bookingMeta')
 
           if (!ride) return
           if (ride.status !== 'requested') return
@@ -137,8 +136,20 @@ function initRideWorker () {
             }
 
             logger.info(`📡 Sending ride ${ride._id} to driver ${driver._id} | socketId: ${driver.socketId}`)
+            
+            // Log booking details if it's a scheduled booking
+            if (ride.bookingType && ride.bookingType !== 'INSTANT') {
+              logger.info(`   📅 Booking Type: ${ride.bookingType}`)
+              if (ride.bookingMeta?.startTime) {
+                logger.info(`   🕐 Start Time: ${ride.bookingMeta.startTime}`)
+              }
+              if (ride.bookingMeta?.endTime) {
+                logger.info(`   🕐 End Time: ${ride.bookingMeta.endTime}`)
+              }
+            }
 
             // ✅ Redis adapter will route this to the correct server
+            // Include bookingType and bookingMeta in the event
             io.to(driver.socketId).emit('newRideRequest', ride)
             notifiedCount++
 

@@ -16,6 +16,7 @@ require("./config/redis");
 
 // Workers
 const initRideWorker = require("./src/workers/rideBooking.worker");
+const initScheduledRideWorker = require("./src/workers/scheduledRide.worker");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -47,6 +48,19 @@ try {
   logger.error(`   Stack: ${error.stack}`);
   console.error(`❌ Failed to start Ride Booking Worker: ${error.message}`);
   console.error(`   Stack: ${error.stack}`);
+  // Don't crash the server, but log the error
+}
+
+// Start Scheduled Ride Worker (runs every 5 minutes)
+console.log('🔥 About to initialize Scheduled Ride Worker...')
+try {
+  initScheduledRideWorker();
+  logger.info('✅ Scheduled Ride Worker initialization completed');
+  console.log('✅ Scheduled Ride Worker initialization completed');
+} catch (error) {
+  logger.error(`❌ Failed to start Scheduled Ride Worker: ${error.message}`);
+  logger.error(`   Stack: ${error.stack}`);
+  console.error(`❌ Failed to start Scheduled Ride Worker: ${error.message}`);
   // Don't crash the server, but log the error
 }
 
