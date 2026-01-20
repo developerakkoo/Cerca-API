@@ -4,6 +4,9 @@ const { Worker } = require('bullmq')
 const redis = require('../../config/redis')
 const logger = require('../../utils/logger')
 
+// Log immediately when module is loaded
+console.log('🔥 rideBooking.worker.js - Module loaded, Redis:', !!redis)
+
 const Ride = require('../../Models/Driver/ride.model')
 const Driver = require('../../Models/Driver/driver.model')
 
@@ -17,15 +20,19 @@ const {
  * Initialize Ride Booking Worker
  */
 function initRideWorker () {
+  console.log('🔥 initRideWorker() called')
   try {
     logger.info('🚀 Initializing Ride Booking Worker...')
+    console.log('🚀 Initializing Ride Booking Worker... (console.log)')
     
     // Verify Redis connection
     if (!redis) {
       logger.error('❌ Redis connection not available for worker')
+      console.error('❌ Redis connection not available for worker')
       throw new Error('Redis connection required for worker')
     }
     logger.info('✅ Redis connection verified for worker')
+    console.log('✅ Redis connection verified for worker')
 
     // Get socket.io instance safely
     const io = getSocketIO()
@@ -41,6 +48,7 @@ function initRideWorker () {
     async job => {
       try {
         logger.info(`🔥 Worker picked job: ${job.id} | name: ${job.name} | data: ${JSON.stringify(job.data)}`)
+        console.log(`🔥 Worker picked job: ${job.id} | name: ${job.name} | data: ${JSON.stringify(job.data)}`)
 
         const { rideId } = job.data
         if (!rideId) {
@@ -208,6 +216,11 @@ function initRideWorker () {
     logger.info('   Concurrency: 5')
     logger.info('   Redis connection: active')
     logger.info('   Socket.IO: active')
+    console.log('🚀 Ride booking worker started successfully')
+    console.log('   Queue name: ride-booking')
+    console.log('   Concurrency: 5')
+    console.log('   Redis connection: active')
+    console.log('   Socket.IO: active')
     
     return worker
   } catch (error) {

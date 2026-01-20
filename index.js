@@ -32,12 +32,21 @@ logger.info('✅ Socket.IO initialized');
 
 // Start Ride Booking Worker (Redis required here)
 // Worker must be initialized AFTER socket.io to access getSocketIO()
+console.log('🔥 About to initialize Ride Booking Worker...')
 try {
-  initRideWorker();
+  const worker = initRideWorker();
   logger.info('✅ Ride Booking Worker initialization completed');
+  console.log('✅ Ride Booking Worker initialization completed (console.log)');
+  if (worker) {
+    console.log('✅ Worker instance returned:', !!worker);
+  } else {
+    console.warn('⚠️ Worker instance is null/undefined');
+  }
 } catch (error) {
   logger.error(`❌ Failed to start Ride Booking Worker: ${error.message}`);
   logger.error(`   Stack: ${error.stack}`);
+  console.error(`❌ Failed to start Ride Booking Worker: ${error.message}`);
+  console.error(`   Stack: ${error.stack}`);
   // Don't crash the server, but log the error
 }
 
