@@ -124,7 +124,8 @@ function initRideWorker () {
 
           try {
             // 🔒 STEP 1: Create Redis lock for driver to accept this ride
-            const lockKey = `driver_lock:${driver._id}`
+            // Lock key format: driver_lock:${driverId}:${rideId} (matches assignDriverToRide)
+            const lockKey = `driver_lock:${driver._id}:${ride._id}`
             const lockTTL = 60 // 60 seconds - driver has 60 seconds to accept
             
             try {
