@@ -359,15 +359,31 @@ const assignDriverToRide = async (rideId, driverId, driverSocketId) => {
         const lockKey = `driver_lock:${driverId}`;
 
         // 🔒 STEP 1: Verify Redis lock
+        logger.info(`🔒 Checking lock for driver ${driverId} | lockKey: ${lockKey} | rideId: ${rideId}`);
         const lockedRideId = await redis.get(lockKey);
 
         if (!lockedRideId) {
-            throw new Error("Driver lock expired or not found");
+            // Check if ride is still available before rejecting
+            const rideCheck = await Ride.findById(rideId).select('status driver');
+            if (!rideCheck) {
+                throw new Error("Ride not found");
+            }
+            if (rideCheck.status !== 'requested') {
+                throw new Error(`Ride is no longer available (status: ${rideCheck.status})`);
+            }
+            if (rideCheck.driver) {
+                throw new Error("Ride has already been assigned to another driver");
+            }
+            logger.warn(`⚠️ Driver lock expired or not found for driver ${driverId} | rideId: ${rideId} | ride still available: ${rideCheck.status === 'requested'}`);
+            throw new Error("Driver lock expired or not found. The ride request may have expired or you did not receive it.");
         }
 
         if (lockedRideId !== rideId.toString()) {
+            logger.warn(`⚠️ Lock mismatch for driver ${driverId} | expected rideId: ${rideId} | locked rideId: ${lockedRideId}`);
             throw new Error("Ride already taken by another driver");
         }
+
+        logger.info(`✅ Lock verified for driver ${driverId} | rideId: ${rideId}`);
 
         // =====================================
         // DATE-WISE AVAILABILITY CHECK
@@ -416,16 +432,23 @@ const assignDriverToRide = async (rideId, driverId, driverSocketId) => {
         if (!ride) {
             // Clean up redis lock if mongo failed
             await redis.del(lockKey);
+            logger.warn(`🔓 Lock cleaned up due to assignment failure | driverId: ${driverId} | rideId: ${rideId}`);
 
             const current = await Ride.findById(rideId).select("status driver");
-            if (!current) throw new Error("Ride not found");
+            if (!current) {
+                logger.error(`❌ Ride not found during assignment | rideId: ${rideId}`);
+                throw new Error("Ride not found");
+            }
 
             const reason = current.driver
                 ? "already_assigned"
                 : `bad_state_${current.status}`;
 
+            logger.warn(`⚠️ Ride cannot be accepted | driverId: ${driverId} | rideId: ${rideId} | reason: ${reason}`);
             throw new Error(`Ride cannot be accepted (${reason})`);
         }
+
+        logger.info(`✅ Driver ${driverId} successfully assigned to ride ${rideId}`);
 
         // 🚗 STEP 3: Mark driver busy
         // ===============================
@@ -443,7 +466,7 @@ const assignDriverToRide = async (rideId, driverId, driverSocketId) => {
         }
 
 
-        // 🔁 STEP 4: Extend lock for long bookings
+        // 🔁 STEP 4: Extend lock for long bookings OR cleanup for instant rides
         if (ride.bookingType && ride.bookingType !== "INSTANT") {
             const endTime = ride.bookingMeta?.endTime;
             if (endTime) {
@@ -458,7 +481,12 @@ const assignDriverToRide = async (rideId, driverId, driverSocketId) => {
                     "EX",
                     ttl
                 );
+                logger.info(`🔒 Lock extended for driver ${driverId} | TTL: ${ttl}s (long booking)`);
             }
+        } else {
+            // 🔓 STEP 5: Clean up lock for instant rides after successful assignment
+            await redis.del(lockKey);
+            logger.info(`🔓 Lock cleaned up for driver ${driverId} (instant ride accepted)`);
         }
 
         return ride;

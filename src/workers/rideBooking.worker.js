@@ -156,6 +156,18 @@ function initRideWorker () {
           }
 
           try {
+            // 🔒 STEP 1: Create Redis lock for driver to accept this ride
+            const lockKey = `driver_lock:${driver._id}`
+            const lockTTL = 60 // 60 seconds - driver has 60 seconds to accept
+            
+            try {
+              await redis.set(lockKey, ride._id.toString(), 'EX', lockTTL)
+              logger.info(`🔒 Lock created for driver ${driver._id} | lockKey: ${lockKey} | rideId: ${ride._id} | TTL: ${lockTTL}s`)
+            } catch (lockError) {
+              logger.error(`❌ Failed to create lock for driver ${driver._id}: ${lockError.message}`)
+              // Continue anyway - lock creation failure shouldn't prevent notification
+            }
+
             logger.info(`📡 Sending ride ${ride._id} to driver ${driver._id} | socketId: ${driver.socketId}`)
 
             // ✅ Redis adapter will route this to the correct server
