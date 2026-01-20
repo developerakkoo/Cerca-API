@@ -169,10 +169,16 @@ const adminLogin = async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        const admin = await Admin.findOne({ email });
+        // Explicitly select password field since it has select: false in schema
+        const admin = await Admin.findOne({ email }).select('+password');
 
         if (!admin) {
             return res.status(404).json({ message: 'Admin not found' });
+        }
+
+        // Check if password exists
+        if (!admin.password) {
+            return res.status(401).json({ message: 'Admin account has no password set. Please contact administrator.' });
         }
 
         // Check password
