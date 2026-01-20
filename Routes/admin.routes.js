@@ -14,14 +14,20 @@ const {
     addSettings,
 } = require('../Controllers/adminSettings.controller.js');
 
+const { authenticateAdmin, requireRole } = require('../utils/adminAuth');
+
 const router = express.Router();
 
+// Admin login (public)
+router.post('/login', adminLogin);
+
+// Protected admin routes
+router.use(authenticateAdmin);
+
 // Routes for admin management
-router.post('/', createSubAdmin); // Create a new sub-admin
-router.get('/', getAllSubAdmins); // Get all sub-admins
-router.delete('/:id', deleteSubAdmin); // Delete a s
-// Sub-admin by ID
-router.post('/login', adminLogin); // Admin login
+router.post('/', requireRole(['ADMIN']), createSubAdmin);
+router.get('/', requireRole(['ADMIN']), getAllSubAdmins);
+router.delete('/:id', requireRole(['ADMIN']), deleteSubAdmin);
 
 // Routes for settings
 router.post('/settings', addSettings);

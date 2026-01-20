@@ -109,8 +109,26 @@ const createRide = async (rideData) => {
         const riderId = rideData.riderId || rideData.rider;
         if (!riderId) throw new Error('riderId (or rider) is required');
 
-        const pickupLngLat = toLngLat(rideData.pickupLocation);
-        const dropoffLngLat = toLngLat(rideData.dropoffLocation);
+        // Validate locations
+        if (!rideData.pickupLocation) {
+            throw new Error('pickupLocation is required');
+        }
+        if (!rideData.dropoffLocation) {
+            throw new Error('dropoffLocation is required');
+        }
+
+        let pickupLngLat, dropoffLngLat;
+        try {
+            pickupLngLat = toLngLat(rideData.pickupLocation);
+        } catch (locError) {
+            throw new Error(`Invalid pickupLocation: ${locError.message}. Received: ${JSON.stringify(rideData.pickupLocation)}`);
+        }
+        
+        try {
+            dropoffLngLat = toLngLat(rideData.dropoffLocation);
+        } catch (locError) {
+            throw new Error(`Invalid dropoffLocation: ${locError.message}. Received: ${JSON.stringify(rideData.dropoffLocation)}`);
+        }
 
         // Calculate distance using Haversine formula
         const distance = calculateHaversineDistance(
@@ -128,12 +146,19 @@ const createRide = async (rideData) => {
 
         const { perKmRate, minimumFare } = settings.pricingConfigurations;
 
-        // Find the service
+        // Find the service (case-insensitive lookup)
         const selectedService = rideData.service;
-        const service = settings.services.find(s => s.name === selectedService);
+        if (!selectedService) {
+            throw new Error('Service is required. Available services: ' + settings.services.map(s => s.name).join(', '));
+        }
+        
+        const service = settings.services.find(s => 
+            s.name.toLowerCase() === selectedService.toLowerCase()
+        );
 
         if (!service) {
-            throw new Error(`Invalid service: ${selectedService}. Available services: ${settings.services.map(s => s.name).join(', ')}`);
+            const availableServices = settings.services.map(s => s.name).join(', ') || 'none';
+            throw new Error(`Invalid service: "${selectedService}". Available services: ${availableServices}`);
         }
 
         // Calculate fare: base price + (distance * per km rate)

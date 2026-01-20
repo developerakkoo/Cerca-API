@@ -714,7 +714,39 @@ function initializeSocket (server) {
         )
       } catch (err) {
         logger.error('newRideRequest error:', err)
-        socket.emit('rideError', { message: 'Failed to create ride' })
+        logger.error('Error details:', {
+          message: err.message,
+          stack: err.stack,
+          rideData: {
+            rider: data?.rider || data?.riderId,
+            service: data?.service,
+            bookingType: data?.bookingType,
+            hasBookingMeta: !!data?.bookingMeta,
+            bookingMetaKeys: data?.bookingMeta ? Object.keys(data.bookingMeta) : [],
+            hasPickupLocation: !!data?.pickupLocation,
+            hasDropoffLocation: !!data?.dropoffLocation,
+            pickupLocationFormat: data?.pickupLocation ? (data.pickupLocation.coordinates ? 'GeoJSON' : 'lat/lng') : 'missing',
+            dropoffLocationFormat: data?.dropoffLocation ? (data.dropoffLocation.coordinates ? 'GeoJSON' : 'lat/lng') : 'missing'
+          }
+        })
+        
+        // Extract error message - handle nested errors
+        let errorMessage = 'Failed to create ride'
+        if (err.message) {
+          errorMessage = err.message
+        } else if (err.toString && err.toString() !== '[object Object]') {
+          errorMessage = err.toString()
+        }
+        
+        // Extract error code if available
+        const errorCode = err.code || 'RIDE_CREATION_FAILED'
+        
+        // Send detailed error to client (always include details for debugging)
+        socket.emit('rideError', { 
+          message: errorMessage,
+          code: errorCode,
+          details: err.stack || err.toString()
+        })
       }
     })
 
