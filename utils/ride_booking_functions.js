@@ -570,10 +570,32 @@ const cancelRide = async (rideId, cancelledBy, cancellationReason = null) => {
       // If a driver was assigned, free them up and remove any locks for this ride
       try {
         if (ride.driver) {
-          await Driver.findByIdAndUpdate(ride.driver._id || ride.driver, {
-            isBusy: false,
-            busyUntil: null
-          })
+          const driverId = ride.driver._id || ride.driver
+          
+          // Ensure driver exists before updating
+          const driverExists = await Driver.findById(driverId)
+          if (!driverExists) {
+            logger.warn(`cancelRide: Driver ${driverId} not found, skipping isBusy reset`)
+          } else {
+            // Reset isBusy for this cancelled ride
+            await Driver.findByIdAndUpdate(driverId, {
+              isBusy: false,
+              busyUntil: null
+            })
+            
+            logger.info(
+              `✅ cancelRide: Driver ${driverId} isBusy reset to false after ride ${rideId} cancellation`
+            )
+
+            // Validate driver status to check for OTHER active rides
+            // This ensures if driver has multiple rides, we only set isBusy=false if no other active rides exist
+            const validationResult = await validateAndFixDriverStatus(driverId)
+            if (validationResult.corrected) {
+              logger.info(
+                `✅ cancelRide: Driver ${driverId} status validated and corrected: ${validationResult.reason}`
+              )
+            }
+          }
 
           // Clean any redis lock left for this driver+ride (multi-server safety)
           // try {
@@ -730,12 +752,142 @@ const updateRideEndTime = async rideId => {
 
     // Update driver status to not busy
     if (updatedRide.driver) {
-      await Driver.findByIdAndUpdate(updatedRide.driver._id, { isBusy: false })
+      const driverId = updatedRide.driver._id || updatedRide.driver
+      
+      // Ensure driver exists before updating
+      const driverExists = await Driver.findById(driverId)
+      if (!driverExists) {
+        logger.warn(`updateRideEndTime: Driver ${driverId} not found, skipping isBusy reset`)
+      } else {
+        // Reset isBusy for this completed ride
+        await Driver.findByIdAndUpdate(driverId, {
+          isBusy: false,
+          busyUntil: null
+        })
+        
+        logger.info(
+          `✅ updateRideEndTime: Driver ${driverId} isBusy reset to false after ride ${rideId} completion`
+        )
+
+        // Validate driver status to check for OTHER active rides
+        // This ensures if driver has multiple rides, we only set isBusy=false if no other active rides exist
+        const validationResult = await validateAndFixDriverStatus(driverId)
+        if (validationResult.corrected) {
+          logger.info(
+            `✅ updateRideEndTime: Driver ${driverId} status validated and corrected: ${validationResult.reason}`
+          )
+        }
+      }
     }
 
     return updatedRide
   } catch (error) {
     throw new Error(`Error updating ride end time: ${error.message}`)
+  }
+}
+
+// Driver Status Validation Function
+/**
+ * Validates and fixes driver isBusy status based on actual active rides
+ * Rule: isBusy should ONLY be true if driver has active rides
+ * Active ride statuses: requested, accepted, arrived, in_progress
+ * @param {string} driverId - Driver ID to validate
+ * @returns {Promise<Object>} Validation result with correction details
+ */
+const validateAndFixDriverStatus = async driverId => {
+  try {
+    if (!driverId) {
+      throw new Error('Driver ID is required')
+    }
+
+    // Get current driver status
+    const driver = await Driver.findById(driverId)
+    if (!driver) {
+      logger.warn(`validateAndFixDriverStatus: Driver not found - driverId: ${driverId}`)
+      return { corrected: false, reason: 'Driver not found' }
+    }
+
+    // Query for active rides assigned to this driver
+    const activeRides = await Ride.find({
+      driver: driverId,
+      status: { $in: ['requested', 'accepted', 'arrived', 'in_progress'] }
+    }).select('_id status bookingType').lean()
+
+    const hasActiveRides = activeRides.length > 0
+    const currentIsBusy = driver.isBusy || false
+
+    // Rule: isBusy should ONLY be true if driver has active rides
+    if (!hasActiveRides && currentIsBusy) {
+      // Driver is marked busy but has no active rides - reset to not busy
+      await Driver.findByIdAndUpdate(driverId, {
+        isBusy: false,
+        busyUntil: null
+      })
+
+      logger.info(
+        `✅ [Status Validation] Driver ${driverId} status corrected: isBusy ${currentIsBusy} → false (no active rides found)`
+      )
+
+      return {
+        corrected: true,
+        previousStatus: { isBusy: currentIsBusy },
+        newStatus: { isBusy: false },
+        reason: 'No active rides found but driver was marked as busy',
+        activeRidesCount: 0
+      }
+    } else if (hasActiveRides && !currentIsBusy) {
+      // Driver has active rides but is not marked busy - set to busy (for INSTANT rides)
+      // Check if any active ride is INSTANT type
+      const hasInstantRide = activeRides.some(
+        ride => ride.bookingType === 'INSTANT'
+      )
+
+      if (hasInstantRide) {
+        await Driver.findByIdAndUpdate(driverId, {
+          isBusy: true
+        })
+
+        logger.info(
+          `✅ [Status Validation] Driver ${driverId} status corrected: isBusy ${currentIsBusy} → true (has active INSTANT ride)`
+        )
+
+        return {
+          corrected: true,
+          previousStatus: { isBusy: currentIsBusy },
+          newStatus: { isBusy: true },
+          reason: 'Has active INSTANT ride but was not marked as busy',
+          activeRidesCount: activeRides.length
+        }
+      } else {
+        // FULL_DAY/RENTAL rides - driver might not need to be busy
+        logger.info(
+          `ℹ️ [Status Validation] Driver ${driverId} has active FULL_DAY/RENTAL rides but isBusy=false (expected behavior)`
+        )
+
+        return {
+          corrected: false,
+          reason: 'Has active FULL_DAY/RENTAL rides, isBusy=false is correct',
+          activeRidesCount: activeRides.length
+        }
+      }
+    } else {
+      // Status is consistent
+      logger.debug(
+        `✓ [Status Validation] Driver ${driverId} status is consistent: isBusy=${currentIsBusy}, activeRides=${activeRides.length}`
+      )
+
+      return {
+        corrected: false,
+        reason: 'Status is consistent',
+        activeRidesCount: activeRides.length,
+        isBusy: currentIsBusy
+      }
+    }
+  } catch (error) {
+    logger.error(
+      `❌ [Status Validation] Error validating driver status for ${driverId}: ${error.message}`
+    )
+    throw new Error(`Error validating driver status: ${error.message}`)
   }
 }
 
@@ -1070,7 +1222,9 @@ const searchDriversWithProgressiveRadius = async (
             $maxDistance: radius
           }
         }
-      }).limit(50) // Get more for debugging
+      })
+        .select('isActive isBusy isOnline socketId location') // Select fields needed for logging
+        .limit(50) // Get more for debugging
 
       logger.info(
         `   📊 Found ${allDriversInRadius.length} total drivers within ${radius}m radius (before filters)`
@@ -1144,18 +1298,38 @@ const searchDriversWithProgressiveRadius = async (
         const excludedByIsOnline = allDriversInRadius.filter(
           d => !d.isOnline
         ).length
+        const excludedBySocketId = allDriversInRadius.filter(
+          d => !d.socketId || d.socketId.trim() === ''
+        ).length
 
         logger.warn(`      - Excluded by isActive=false: ${excludedByIsActive}`)
         logger.warn(`      - Excluded by isBusy=true: ${excludedByIsBusy}`)
         logger.warn(`      - Excluded by isOnline=false: ${excludedByIsOnline}`)
+        logger.warn(`      - Excluded by socketId missing/empty: ${excludedBySocketId}`)
 
         // Show details of first few excluded drivers
         const excludedDrivers = allDriversInRadius.slice(0, 5)
         excludedDrivers.forEach((driver, index) => {
+          // Mask socketId for security (show first 8 chars and last 4 chars)
+          const socketIdDisplay = driver.socketId
+            ? `${driver.socketId.substring(0, 8)}...${driver.socketId.substring(driver.socketId.length - 4)}`
+            : 'MISSING'
+
+          // Determine which specific filter excluded this driver
+          const exclusionReasons = []
+          if (!driver.isActive) exclusionReasons.push('isActive=false')
+          if (driver.isBusy) exclusionReasons.push('isBusy=true')
+          if (!driver.isOnline) exclusionReasons.push('isOnline=false')
+          if (!driver.socketId || driver.socketId.trim() === '') {
+            exclusionReasons.push('socketId missing/empty')
+          }
+
           logger.warn(`      Driver ${index + 1} (${driver._id}):`)
+          logger.warn(`        - Excluded by: ${exclusionReasons.join(', ') || 'unknown'}`)
           logger.warn(`        - isActive: ${driver.isActive}`)
           logger.warn(`        - isBusy: ${driver.isBusy}`)
           logger.warn(`        - isOnline: ${driver.isOnline}`)
+          logger.warn(`        - socketId: ${socketIdDisplay}`)
           logger.warn(
             `        - Location: [${driver.location.coordinates[0]}, ${driver.location.coordinates[1]}]`
           )
@@ -1268,5 +1442,6 @@ module.exports = {
   autoAssignDriver,
   getUpcomingBookingsForDriver,
   getScheduledRidesToStart,
-  searchDriversWithProgressiveRadius
+  searchDriversWithProgressiveRadius,
+  validateAndFixDriverStatus
 }

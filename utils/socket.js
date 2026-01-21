@@ -36,7 +36,8 @@ const {
   createEmergencyAlert,
   resolveEmergency,
   autoAssignDriver,
-  searchDriversWithProgressiveRadius
+  searchDriversWithProgressiveRadius,
+  validateAndFixDriverStatus
 } = require('./ride_booking_functions')
 
 let io
@@ -232,15 +233,60 @@ function initializeSocket (server) {
     )
 
     // ============================
+    // VALIDATE AND FIX DRIVER STATUS
+    // ============================
+    // Ensure driver isBusy status matches actual active rides
+    let correctedDriver = driver
+    try {
+      const validationResult = await validateAndFixDriverStatus(driverId)
+      if (validationResult.corrected) {
+        logger.info(
+          `✅ [Socket] Driver ${driverId} status corrected on connection: ${validationResult.reason}`
+        )
+        // Refresh driver data after correction
+        correctedDriver = await Driver.findById(driverId)
+      }
+    } catch (validationError) {
+      logger.error(
+        `❌ [Socket] Error validating driver status for ${driverId}: ${validationError.message}`
+      )
+      // Continue with connection even if validation fails
+    }
+
+    // ============================
+    // VALIDATE SOCKET ID
+    // ============================
+    // Ensure socketId is properly set and not empty
+    const updatedDriver = await Driver.findById(driverId)
+    if (!updatedDriver?.socketId || updatedDriver.socketId.trim() === '') {
+      logger.warn(
+        `⚠️ [Socket] Driver ${driverId} socketId is missing or empty after connection. Setting to ${socket.id}`
+      )
+      await Driver.findByIdAndUpdate(driverId, {
+        socketId: socket.id
+      })
+    } else if (updatedDriver.socketId !== socket.id) {
+      logger.warn(
+        `⚠️ [Socket] Driver ${driverId} socketId mismatch. Expected: ${socket.id}, Found: ${updatedDriver.socketId}. Updating...`
+      )
+      await Driver.findByIdAndUpdate(driverId, {
+        socketId: socket.id
+      })
+    }
+
+    // ============================
     // FINAL CONFIRMATIONS
     // ============================
+    // Get final driver state after all corrections
+    const finalDriver = await Driver.findById(driverId)
+    
     logger.info(
-      `Driver connected successfully - driverId: ${driverId}, socketId: ${socket.id}, isActive: ${driver?.isActive}`
+      `Driver connected successfully - driverId: ${driverId}, socketId: ${socket.id}, isActive: ${finalDriver?.isActive}, isBusy: ${finalDriver?.isBusy}`
     )
 
-    if (driver) {
+    if (finalDriver) {
       io.to('admin').emit('driverConnected', {
-        driverId: driver._id,
+        driverId: finalDriver._id,
         isOnline: true
       })
     }
@@ -248,8 +294,8 @@ function initializeSocket (server) {
     socket.emit('driverStatusUpdate', {
       driverId,
       isOnline: true,
-      isActive: driver?.isActive || false,
-      isBusy: driver?.isBusy || false
+      isActive: finalDriver?.isActive || false,
+      isBusy: finalDriver?.isBusy || false
     })
   } catch (err) {
     logger.error('driverConnect error:', err)
