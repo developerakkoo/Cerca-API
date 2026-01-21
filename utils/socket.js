@@ -365,8 +365,10 @@ function initializeSocket (server) {
         }
 
         await clearDriverSocket(driverId, socket.id)
-        await updateDriverStatus(driverId, false, '')
-        await Driver.findByIdAndUpdate(driverId, { isOnline: false })
+        // await updateDriverStatus(driverId, false, '')
+        // await Driver.findByIdAndUpdate(driverId, { isOnline: false })
+        // Don't change `isActive` here; driver toggle should be explicit via `driverToggleStatus`.
+        // `clearDriverSocket` sets `isOnline:false` and clears `socketId` when appropriate.
         io.emit('driverDisconnect', { driverId })
         logger.info(`Driver disconnected successfully - driverId: ${driverId}`)
       } catch (err) {
@@ -947,6 +949,17 @@ function initializeSocket (server) {
         logger.info(
           `Driver ${driverId} rejected ride ${rideId}. Total rejections: ${updatedRide.rejectedDrivers.length}`
         )
+
+        // Clean up any redis lock and ensure driver is marked not busy
+        try {
+          const lockKey = `driver_lock:${driverId}:${rideId}`
+          await redis.del(lockKey)
+          // Also ensure driver is not stuck as busy
+          await Driver.findByIdAndUpdate(driverId, { isBusy: false, busyUntil: null })
+          logger.info(`Cleaned up lock and cleared isBusy for driver ${driverId} after rejection`) 
+        } catch (cleanupErr) {
+          logger.warn(`Failed to clean lock/isBusy for driver ${driverId} after rejection: ${cleanupErr.message}`)
+        }
 
         // Check if all notified drivers have rejected
         const notifiedCount = updatedRide.notifiedDrivers
@@ -2200,8 +2213,7 @@ function initializeSocket (server) {
 
         if (driverId) {
           await clearDriverSocket(driverId, socket.id)
-          await updateDriverStatus(driverId, false, '')
-          await Driver.findByIdAndUpdate(driverId, { isOnline: false })
+          // Do not toggle `isActive` on socket disconnect; driver should use toggle event to change availability.
           socketToDriver.delete(socket.id)
           io.emit('driverDisconnect', { driverId })
           logger.info(

@@ -589,7 +589,26 @@ const cancelRide = async (rideId, cancelledBy, cancellationReason = null) => {
       new: true
     }).populate('driver rider')
     if (!ride) throw new Error('Ride not found')
-    return ride
+      // If a driver was assigned, free them up and remove any locks for this ride
+      try {
+        if (ride.driver) {
+          await Driver.findByIdAndUpdate(ride.driver._id || ride.driver, {
+            isBusy: false,
+            busyUntil: null
+          })
+
+          // Clean any redis lock left for this driver+ride (multi-server safety)
+          try {
+            await redis.del(`driver_lock:${ride.driver._id || ride.driver}:${ride._id}`)
+          } catch (redisErr) {
+            logger.warn(`Failed to delete redis lock for cancelled ride ${ride._id}: ${redisErr.message}`)
+          }
+        }
+      } catch (err) {
+        logger.error(`Error cleaning driver state after cancellation: ${err.message}`)
+      }
+
+      return ride
   } catch (error) {
     throw new Error(`Error cancelling ride: ${error.message}`)
   }
