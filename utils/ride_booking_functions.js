@@ -698,7 +698,10 @@ const markDriverArrived = async rideId => {
     const ride = await Ride.findByIdAndUpdate(
       rideId,
       {
-        driverArrivedAt: new Date()
+        $set: {
+          driverArrivedAt: new Date(),
+          status: 'arrived' // Update status to 'arrived' so rider app UI updates
+        }
       },
       { new: true }
     ).populate('driver rider')
