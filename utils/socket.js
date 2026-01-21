@@ -974,14 +974,85 @@ function initializeSocket (server) {
         // io.emit('rideAccepted', rideWithMetadata)
         io.to(`ride_${rideId}`).emit('rideAccepted', rideWithMetadata)
 
+        // 🔥 Notify all other drivers that this ride is no longer available
+        try {
+          const rideWithNotifiedDrivers = await Ride.findById(rideId)
+            .select('notifiedDrivers driver')
+            .lean()
+
+          if (rideWithNotifiedDrivers && rideWithNotifiedDrivers.notifiedDrivers) {
+            const acceptingDriverId = assignedRide.driver._id || assignedRide.driver
+            const otherDriverIds = rideWithNotifiedDrivers.notifiedDrivers.filter(
+              (id) => id.toString() !== acceptingDriverId.toString()
+            )
+
+            if (otherDriverIds.length > 0) {
+              logger.info(
+                `📢 Notifying ${otherDriverIds.length} other drivers that ride ${rideId} is no longer available`
+              )
+
+              // Get socketIds for all other drivers
+              const Driver = require('../Models/Driver/driver.model')
+              const otherDrivers = await Driver.find({
+                _id: { $in: otherDriverIds }
+              }).select('socketId _id').lean()
+
+              let notifiedOtherDrivers = 0
+              for (const otherDriver of otherDrivers) {
+                if (otherDriver.socketId) {
+                  io.to(otherDriver.socketId).emit('rideNoLongerAvailable', {
+                    rideId: rideId,
+                    message: 'This ride has been accepted by another driver'
+                  })
+                  notifiedOtherDrivers++
+                }
+              }
+
+              logger.info(
+                `✅ Notified ${notifiedOtherDrivers} other drivers that ride ${rideId} is no longer available`
+              )
+            }
+          }
+        } catch (notifyError) {
+          logger.error(
+            `❌ Error notifying other drivers about ride removal: ${notifyError.message}`
+          )
+          // Don't fail the ride acceptance if notification fails
+        }
+
         logger.info(
           `rideAccepted completed successfully - rideId: ${rideId} | isFullDayBooking: ${isFullDayBooking}`
         )
       } catch (err) {
         logger.error('rideAccepted error:', err)
+        
+        // Provide specific error messages based on error type
+        let errorMessage = err.message || 'Failed to accept ride'
+        let errorCode = 'RIDE_ACCEPTANCE_FAILED'
+        
+        if (err.message && err.message.includes('already accepted')) {
+          errorMessage = 'This ride has already been accepted by another driver'
+          errorCode = 'RIDE_ALREADY_ACCEPTED'
+        } else if (err.message && err.message.includes('no longer available')) {
+          errorMessage = 'This ride is no longer available'
+          errorCode = 'RIDE_NO_LONGER_AVAILABLE'
+        } else if (err.message && err.message.includes('not found')) {
+          errorMessage = 'Ride not found'
+          errorCode = 'RIDE_NOT_FOUND'
+        } else if (err.message && err.message.includes('not available on selected dates')) {
+          errorMessage = 'You are not available on the selected dates'
+          errorCode = 'DRIVER_NOT_AVAILABLE'
+        }
+        
         socket.emit('rideError', {
-          message: err.message || 'Failed to accept ride'
+          message: errorMessage,
+          code: errorCode,
+          rideId: data?.rideId
         })
+        
+        logger.warn(
+          `Ride acceptance failed - rideId: ${data?.rideId}, driverId: ${data?.driverId}, error: ${errorMessage}`
+        )
       }
     })
 
@@ -2381,6 +2452,7 @@ async function storeRideEarnings (ride) {
       : grossFare - platformFee
 
     // Create earnings record
+    // Always set paymentStatus to 'pending' for new earnings - admin will mark as 'completed' after processing payment
     const earnings = await AdminEarnings.create({
       rideId: ride._id,
       driverId: ride.driver._id || ride.driver,
@@ -2389,7 +2461,7 @@ async function storeRideEarnings (ride) {
       platformFee: Math.round(platformFee * 100) / 100, // Round to 2 decimal places
       driverEarning: Math.round(driverEarning * 100) / 100, // Round to 2 decimal places
       rideDate: ride.actualEndTime || new Date(),
-      paymentStatus: ride.paymentStatus || 'completed'
+      paymentStatus: 'pending' // Always pending by default - admin controls completion
     })
 
     logger.info(

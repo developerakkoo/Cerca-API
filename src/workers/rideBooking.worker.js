@@ -72,6 +72,7 @@ async function processRideJob (rideId) {
 
     let notifiedCount = 0
     let skippedCount = 0
+    const notifiedDriverIds = []
 
     // 3️⃣ Notify drivers
     for (const driver of drivers) {
@@ -87,6 +88,7 @@ async function processRideJob (rideId) {
 
         io.to(driver.socketId).emit('newRideRequest', ride)
         notifiedCount++
+        notifiedDriverIds.push(driver._id)
 
         await createNotification({
           recipientId: driver._id,
@@ -101,6 +103,24 @@ async function processRideJob (rideId) {
           `❌ Error notifying driver ${driver._id}: ${notifyError.message}`
         )
         skippedCount++
+      }
+    }
+
+    // 4️⃣ Update ride with notified drivers for later use (when ride is accepted)
+    if (notifiedDriverIds.length > 0) {
+      try {
+        await Ride.findByIdAndUpdate(ride._id, {
+          $set: {
+            notifiedDrivers: notifiedDriverIds
+          }
+        })
+        logger.info(
+          `📝 Tracked ${notifiedDriverIds.length} notified drivers for ride ${ride._id}`
+        )
+      } catch (updateError) {
+        logger.error(
+          `❌ Error updating notifiedDrivers for ride ${ride._id}: ${updateError.message}`
+        )
       }
     }
 

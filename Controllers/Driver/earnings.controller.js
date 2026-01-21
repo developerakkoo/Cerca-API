@@ -95,6 +95,14 @@ const getDriverEarnings = async (req, res) => {
     const totalDriverEarnings = earnings.reduce((sum, e) => sum + (e.driverEarning || 0), 0);
     const totalRides = earnings.length;
     
+    // Calculate payment status totals
+    const pendingEarnings = earnings.filter(e => e.paymentStatus === 'pending');
+    const completedEarnings = earnings.filter(e => e.paymentStatus === 'completed');
+    const totalPendingEarnings = pendingEarnings.reduce((sum, e) => sum + (e.driverEarning || 0), 0);
+    const totalCompletedEarnings = completedEarnings.reduce((sum, e) => sum + (e.driverEarning || 0), 0);
+    const pendingEarningsCount = pendingEarnings.length;
+    const completedEarningsCount = completedEarnings.length;
+    
     // Calculate tips (from rides)
     const rideIds = earnings.map(e => e.rideId?._id || e.rideId).filter(Boolean);
     const rides = await Ride.find({ _id: { $in: rideIds } }).select('tips');
@@ -257,6 +265,7 @@ const getDriverEarnings = async (req, res) => {
       driverEarning: earning.driverEarning,
       platformFee: earning.platformFee,
       tips: rides.find(r => r._id.toString() === (earning.rideId?._id || earning.rideId).toString())?.tips || 0,
+      paymentStatus: earning.paymentStatus || 'pending',
       rider: earning.riderId ? {
         name: earning.riderId.fullName,
       } : null,
@@ -282,6 +291,11 @@ const getDriverEarnings = async (req, res) => {
           netEarnings: Math.round(netEarnings * 100) / 100,
           averageGrossPerRide: Math.round(averageGrossPerRide * 100) / 100,
           averageNetPerRide: Math.round(averageNetPerRide * 100) / 100,
+          // Payment status summary
+          totalPendingEarnings: Math.round(totalPendingEarnings * 100) / 100,
+          totalCompletedEarnings: Math.round(totalCompletedEarnings * 100) / 100,
+          pendingEarningsCount,
+          completedEarningsCount,
         },
         commission: {
           platformFeePercentage: platformFees || 0,

@@ -446,6 +446,14 @@ const assignDriverToRide = async (rideId, driverId, driverSocketId) => {
     }
 
     // 3️⃣ ATOMIC ASSIGN (THIS IS YOUR LOCK)
+    // This query ensures only ONE driver can successfully accept:
+    // - Ride must be in 'requested' status
+    // - Ride must not have a driver assigned yet
+    // MongoDB's findOneAndUpdate is atomic, preventing race conditions
+    logger.info(
+      `🔒 Attempting atomic assignment - rideId: ${rideId}, driverId: ${driverId}`
+    )
+    
     const ride = await Ride.findOneAndUpdate(
       {
         _id: rideId,
@@ -466,8 +474,31 @@ const assignDriverToRide = async (rideId, driverId, driverSocketId) => {
     ).populate('driver rider')
 
     if (!ride) {
+      // Check why assignment failed for better error message
+      const currentRide = await Ride.findById(rideId).select('status driver').lean()
+      if (currentRide) {
+        if (currentRide.status !== 'requested') {
+          logger.warn(
+            `⚠️ Atomic assignment failed - ride ${rideId} status is ${currentRide.status}, not 'requested'`
+          )
+          throw new Error(`Ride is no longer available (status: ${currentRide.status})`)
+        }
+        if (currentRide.driver) {
+          logger.warn(
+            `⚠️ Atomic assignment failed - ride ${rideId} already has driver: ${currentRide.driver}`
+          )
+          throw new Error('Ride already accepted by another driver')
+        }
+      }
+      logger.warn(
+        `⚠️ Atomic assignment failed - ride ${rideId} not found or conditions not met`
+      )
       throw new Error('Ride already accepted by another driver')
     }
+    
+    logger.info(
+      `✅ Atomic assignment successful - rideId: ${rideId}, driverId: ${driverId}`
+    )
 
     logger.info(`✅ Driver ${driverId} assigned to ride ${rideId}`)
 

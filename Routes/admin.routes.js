@@ -14,6 +14,13 @@ const {
     toggleForceUpdate,
     addSettings,
 } = require('../Controllers/adminSettings.controller.js');
+const {
+    listDriverEarnings,
+    getDriverEarningsById,
+    updateEarningStatus,
+    bulkUpdateEarningStatus,
+    getEarningsStats,
+} = require('../Controllers/Admin/driverEarnings.controller.js');
 
 const { authenticateAdmin, requireRole } = require('../utils/adminAuth');
 
@@ -43,5 +50,12 @@ router.patch('/settings/force-update', toggleForceUpdate);
 
 // Route for admin earnings analytics
 router.get('/earnings', getAdminEarnings);
+
+// Routes for driver earnings management
+router.get('/drivers/earnings', listDriverEarnings);
+router.get('/drivers/earnings/stats', getEarningsStats);
+router.get('/drivers/:driverId/earnings', getDriverEarningsById);
+router.patch('/drivers/earnings/:earningId/status', updateEarningStatus);
+router.patch('/drivers/earnings/bulk-status', bulkUpdateEarningStatus);
 
 module.exports = router;
