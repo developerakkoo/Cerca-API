@@ -13,7 +13,6 @@
   "dependencies": {
     "@socket.io/redis-adapter": "^8.3.0",
     "bcryptjs": "^3.0.3",
-    "bullmq": "^5.66.1",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
@@ -21,7 +20,6 @@
     "google-auth-library": "^9.15.1",
     "helmet": "^8.1.0",
     "i": "^0.3.7",
-    "ioredis": "^5.9.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.14.0",
     "morgan": "^1.10.0",

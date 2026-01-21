@@ -1,9 +1,9 @@
-const redis = require('../../config/redis')
 const logger = require('../../utils/logger')
 const cron = require('node-cron')
 
 const Ride = require('../../Models/Driver/ride.model')
-const { getSocketIO } = require('../../utils/socket')
+const socketUtils = require('../../utils/socket')
+
 const {
   startRide,
   updateRideStartTime,
@@ -14,23 +14,20 @@ const {
 /**
  * Initialize Scheduled Ride Worker
  * Runs every 5 minutes to check for scheduled rides that need to start
+ * (Single Server, No Redis)
  */
-function initScheduledRideWorker() {
+function initScheduledRideWorker () {
   console.log('🔥 initScheduledRideWorker() called')
 
   try {
-    logger.info('🚀 Initializing Scheduled Ride Worker...')
+    logger.info('🚀 Initializing Scheduled Ride Worker (single-server mode)...')
 
-    if (!redis) {
-      throw new Error('Redis connection required for scheduled worker')
-    }
-
-    const io = getSocketIO()
+    const io = socketUtils.getSocketIO()
     if (!io) {
       throw new Error('Socket.IO instance required for scheduled worker')
     }
 
-    // Schedule cron job to run every 5 minutes
+    // Run every 5 minutes
     cron.schedule('*/5 * * * *', async () => {
       try {
         logger.info('⏰ Scheduled ride check triggered (every 5 minutes)')
@@ -43,47 +40,51 @@ function initScheduledRideWorker() {
     logger.info('✅ Scheduled Ride Worker initialized - running every 5 minutes')
     console.log('✅ Scheduled Ride Worker initialized')
 
-    // Run immediately on startup (optional - for testing)
-    // setTimeout(() => checkAndStartScheduledRides(io), 10000)
-
     return { success: true }
   } catch (error) {
-    logger.error(`❌ Failed to initialize Scheduled Ride Worker: ${error.message}`)
+    logger.error(
+      `❌ Failed to initialize Scheduled Ride Worker: ${error.message}`
+    )
     logger.error(`   Stack: ${error.stack}`)
     throw error
   }
 }
 
 /**
- * Check for scheduled rides that need to start and auto-start them
+ * Check for scheduled rides that need to start
  */
-async function checkAndStartScheduledRides(io) {
+async function checkAndStartScheduledRides (io) {
   try {
     const now = new Date()
 
-    logger.info(`🔍 Checking for scheduled rides to start...`)
+    logger.info('🔍 Checking for scheduled rides to start...')
     logger.info(`   Current time: ${now.toISOString()}`)
 
-    // Use helper function to get scheduled rides
     const scheduledRides = await getScheduledRidesToStart()
 
-    if (scheduledRides.length === 0) {
+    if (!scheduledRides || scheduledRides.length === 0) {
       logger.info('✅ No scheduled rides to start at this time')
       return
     }
 
-    logger.info(`📋 Found ${scheduledRides.length} scheduled ride(s) to start`)
+    logger.info(
+      `📋 Found ${scheduledRides.length} scheduled ride(s) to start`
+    )
 
     for (const ride of scheduledRides) {
       try {
         await autoStartScheduledRide(ride, io)
       } catch (error) {
-        logger.error(`❌ Error auto-starting ride ${ride._id}:`, error)
-        // Continue with other rides even if one fails
+        logger.error(
+          `❌ Error auto-starting scheduled ride ${ride._id}:`,
+          error
+        )
       }
     }
 
-    logger.info(`✅ Completed scheduled ride check - processed ${scheduledRides.length} ride(s)`)
+    logger.info(
+      `✅ Completed scheduled ride check - processed ${scheduledRides.length} ride(s)`
+    )
   } catch (error) {
     logger.error('❌ Error checking scheduled rides:', error)
     throw error
@@ -93,7 +94,7 @@ async function checkAndStartScheduledRides(io) {
 /**
  * Auto-start a scheduled ride
  */
-async function autoStartScheduledRide(ride, io) {
+async function autoStartScheduledRide (ride, io) {
   try {
     logger.info(`🚀 Auto-starting scheduled ride ${ride._id}`)
     logger.info(`   Booking type: ${ride.bookingType}`)
@@ -101,26 +102,28 @@ async function autoStartScheduledRide(ride, io) {
     logger.info(`   Driver: ${ride.driver?._id}`)
     logger.info(`   Rider: ${ride.rider?._id}`)
 
-    // Update ride status to 'in_progress'
+    // Start ride
     const startedRide = await startRide(ride._id.toString())
-    
-    // Update actual start time
     await updateRideStartTime(ride._id.toString())
 
     logger.info(`✅ Ride ${ride._id} auto-started successfully`)
 
-    // Send socket notifications
+    // Socket notifications
     if (startedRide.userSocketId) {
       io.to(startedRide.userSocketId).emit('rideStarted', startedRide)
-      logger.info(`📤 Ride start notification sent to rider via socket ${startedRide.userSocketId}`)
+      logger.info(
+        `📤 Ride start sent to rider socket ${startedRide.userSocketId}`
+      )
     }
 
     if (startedRide.driverSocketId) {
       io.to(startedRide.driverSocketId).emit('rideStarted', startedRide)
-      logger.info(`📤 Ride start notification sent to driver via socket ${startedRide.driverSocketId}`)
+      logger.info(
+        `📤 Ride start sent to driver socket ${startedRide.driverSocketId}`
+      )
     }
 
-    // Create database notifications
+    // DB notifications
     await createNotification({
       recipientId: startedRide.rider._id,
       recipientModel: 'User',
@@ -134,33 +137,33 @@ async function autoStartScheduledRide(ride, io) {
       recipientId: startedRide.driver._id,
       recipientModel: 'Driver',
       title: 'Scheduled Booking Started',
-      message: 'Your scheduled booking has started. Please proceed to pickup location.',
+      message:
+        'Your scheduled booking has started. Please proceed to pickup location.',
       type: 'ride_started',
       relatedRide: ride._id.toString()
     })
 
     logger.info(`✅ Notifications created for ride ${ride._id}`)
 
-    // Also check for upcoming bookings and send reminder notifications
+    // Check reminders for upcoming bookings
     await checkAndSendReminderNotifications(io)
-
   } catch (error) {
-    logger.error(`❌ Error auto-starting scheduled ride ${ride._id}:`, error)
+    logger.error(
+      `❌ Error auto-starting scheduled ride ${ride._id}:`,
+      error
+    )
     throw error
   }
 }
 
 /**
- * Check for upcoming bookings and send reminder notifications
+ * Check for upcoming bookings and send reminders
  */
-async function checkAndSendReminderNotifications(io) {
+async function checkAndSendReminderNotifications (io) {
   try {
     const now = new Date()
     const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000)
-    const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60 * 1000)
-    const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000)
 
-    // Find rides starting in next hour
     const upcomingRides = await Ride.find({
       bookingType: { $ne: 'INSTANT' },
       status: 'accepted',
@@ -172,18 +175,15 @@ async function checkAndSendReminderNotifications(io) {
 
     for (const ride of upcomingRides) {
       const startTime = new Date(ride.bookingMeta.startTime)
-      const minutesUntilStart = Math.floor((startTime - now) / (60 * 1000))
+      const minutesUntilStart = Math.floor(
+        (startTime - now) / (60 * 1000)
+      )
 
-      // Send 1 hour reminder
       if (minutesUntilStart <= 60 && minutesUntilStart > 55) {
         await sendReminderNotification(ride, '1 hour', io)
-      }
-      // Send 30 minute reminder
-      else if (minutesUntilStart <= 30 && minutesUntilStart > 25) {
+      } else if (minutesUntilStart <= 30 && minutesUntilStart > 25) {
         await sendReminderNotification(ride, '30 minutes', io)
-      }
-      // Send 5 minute reminder
-      else if (minutesUntilStart <= 5 && minutesUntilStart > 0) {
+      } else if (minutesUntilStart <= 5 && minutesUntilStart > 0) {
         await sendReminderNotification(ride, '5 minutes', io)
       }
     }
@@ -193,9 +193,9 @@ async function checkAndSendReminderNotifications(io) {
 }
 
 /**
- * Send reminder notification for upcoming booking
+ * Send reminder notification
  */
-async function sendReminderNotification(ride, timeUntil, io) {
+async function sendReminderNotification (ride, timeUntil, io) {
   try {
     const startTime = new Date(ride.bookingMeta.startTime)
     const formattedTime = startTime.toLocaleString('en-IN', {
@@ -205,7 +205,7 @@ async function sendReminderNotification(ride, timeUntil, io) {
       minute: '2-digit'
     })
 
-    // Notify driver
+    // Driver socket reminder
     if (ride.driverSocketId) {
       io.to(ride.driverSocketId).emit('bookingReminder', {
         rideId: ride._id,
@@ -214,6 +214,7 @@ async function sendReminderNotification(ride, timeUntil, io) {
       })
     }
 
+    // DB notification
     await createNotification({
       recipientId: ride.driver._id,
       recipientModel: 'Driver',
@@ -223,11 +224,12 @@ async function sendReminderNotification(ride, timeUntil, io) {
       relatedRide: ride._id.toString()
     })
 
-    logger.info(`📢 Reminder sent to driver ${ride.driver._id} - booking starts in ${timeUntil}`)
+    logger.info(
+      `📢 Reminder sent to driver ${ride.driver._id} - starts in ${timeUntil}`
+    )
   } catch (error) {
-    logger.error(`❌ Error sending reminder notification:`, error)
+    logger.error('❌ Error sending reminder notification:', error)
   }
 }
 
 module.exports = initScheduledRideWorker
-

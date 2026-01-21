@@ -7,8 +7,6 @@ const Message = require('../Models/Driver/message.model')
 const AdminEarnings = require('../Models/Admin/adminEarnings.model')
 const Settings = require('../Models/Admin/settings.modal')
 const rideBookingQueue = require('../src/queues/rideBooking.queue')
-const { createAdapter } = require('@socket.io/redis-adapter')
-const redis = require('../config/redis')
 
 const {
   updateDriverStatus,
@@ -50,13 +48,11 @@ function initializeSocket (server) {
     cors: {
       origin: '*',
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
-    }
+    },
+    transports: ['websocket'],
+    pingInterval: 25000,
+    pingTimeout: 60000
   })
-
-  // 🔥(MULTI-SERVER SOCKET SUPPORT)
-  const pubClient = redis
-  const subClient = redis.duplicate()
-  io.adapter(createAdapter(pubClient, subClient))
 
   io.on('connection', socket => {
     logger.info(`Socket connected: ${socket.id}`)
@@ -141,7 +137,7 @@ function initializeSocket (server) {
         logger.info(
           `Rider connected successfully - userId: ${userId}, socketId: ${socket.id}`
         )
-        io.emit('riderConnect', { userId })
+        // io.emit('riderConnect', { userId })
       } catch (err) {
         logger.error('riderConnect error:', err)
         socket.emit('errorEvent', {
@@ -153,105 +149,116 @@ function initializeSocket (server) {
     // ============================
     // DRIVER CONNECTION
     // ============================
-    socket.on('driverConnect', async data => {
-      try {
-        logger.info(
-          `driverConnect event - driverId: ${data?.driverId}, socketId: ${socket.id}`
-        )
-        const { driverId } = data || {}
-        if (!driverId) {
-          logger.warn('driverConnect: driverId is missing')
-          return
-        }
+   socket.on('driverConnect', async data => {
+  try {
+    logger.info(
+      `driverConnect event - driverId: ${data?.driverId}, socketId: ${socket.id}`
+    )
 
-        // Check if driver already has a socketId (reconnection scenario)
-        const currentDriver = await Driver.findById(driverId)
-        if (currentDriver?.socketId && currentDriver.socketId !== socket.id) {
-          logger.info(
-            `Driver ${driverId} reconnecting. Old socketId: ${currentDriver.socketId}, New socketId: ${socket.id}`
-          )
+    const { driverId } = data || {}
+    if (!driverId) {
+      logger.warn('driverConnect: driverId is missing')
+      return
+    }
 
-          // // Check if old socket is still connected
-          // const oldSocket = io.sockets.sockets.get(currentDriver.socketId)
-          // if (oldSocket && oldSocket.connected) {
-          //   logger.warn(
-          //     `Driver ${driverId} reconnecting from new device/connection. Disconnecting old socket: ${currentDriver.socketId}`
-          //   )
-          //   oldSocket.disconnect()
-          // } else {
-          //   logger.info(
-          //     `Driver ${driverId} old socket ${currentDriver.socketId} is not connected, cleaning up stale socketId`
-          //   )
-          // }
+    // ============================
+    // RECONNECTION HANDLING
+    // ============================
+    const currentDriver = await Driver.findById(driverId)
 
-          // 🔥 MULTI-SERVER SAFE DRIVER RECONNECTION HANDLING
-          logger.info(
-            `Driver ${driverId} reconnecting. Clearing old socketId: ${currentDriver.socketId}`
-          )
+    if (currentDriver?.socketId && currentDriver.socketId !== socket.id) {
+      logger.info(
+        `Driver ${driverId} reconnecting. Old socketId: ${currentDriver.socketId}, New socketId: ${socket.id}`
+      )
 
-          // Just clear old socketId from DB
-          // Do NOT try to disconnect old socket (it may be on another server)
-          await clearDriverSocket(driverId, currentDriver.socketId)
+      // 🔥 MULTI-SERVER SAFE: only clean DB, do NOT disconnect old socket
+      await clearDriverSocket(driverId, currentDriver.socketId)
 
-          logger.info(`Cleaned up old socketId for driver ${driverId}`)
-        }
+      logger.info(`Cleaned up old socketId for driver ${driverId}`)
+    }
 
-        // Now set the new socketId
-        const driver = await setDriverSocket(driverId, socket.id)
-        // Only set isOnline, but don't change isActive status
-        // isActive (toggle) should be controlled separately by driverToggleStatus event
-        await Driver.findByIdAndUpdate(driverId, { isOnline: true })
-        socketToDriver.set(socket.id, String(driverId))
-        socket.join('driver')
-        socket.join(`driver_${driverId}`)
+    // ============================
+    // SET NEW SOCKET
+    // ============================
+    const driver = await setDriverSocket(driverId, socket.id)
 
-        // Auto-join all active ride rooms for this driver
-        logger.info(`🚪 [Socket] Auto-joining driver to active ride rooms...`)
-        const activeRides = await Ride.find({
-          driver: driverId,
-          status: { $in: ['requested', 'accepted', 'arrived', 'in_progress'] }
-        })
-          .select('_id status')
-          .lean()
-
-        if (!socket.data.rooms) {
-          socket.data.rooms = []
-        }
-
-        for (const ride of activeRides) {
-          const roomName = `ride_${ride._id}`
-          socket.join(roomName)
-          if (!socket.data.rooms.includes(roomName)) {
-            socket.data.rooms.push(roomName)
-          }
-          logger.info(
-            `✅ [Socket] Driver auto-joined room: ${roomName} (ride status: ${ride.status})`
-          )
-        }
-
-        logger.info(
-          `✅ [Socket] Driver auto-joined ${activeRides.length} active ride rooms`
-        )
-
-        logger.info(
-          `Driver connected successfully - driverId: ${driverId}, socketId: ${socket.id}, isActive: ${driver?.isActive}`
-        )
-        if (driver) io.emit('driverConnected', driver)
-
-        // Send back driver status to the connected driver
-        socket.emit('driverStatusUpdate', {
-          driverId,
-          isOnline: true,
-          isActive: driver?.isActive || false,
-          isBusy: driver?.isBusy || false
-        })
-      } catch (err) {
-        logger.error('driverConnect error:', err)
-        socket.emit('errorEvent', {
-          message: 'Failed to register driver socket'
-        })
-      }
+    // ✅ CHANGE: ensure driver is online
+    await Driver.findByIdAndUpdate(driverId, {
+      isOnline: true,
+      socketId: socket.id,
+      lastSeen: new Date()
     })
+
+    // ============================
+    // BIND SOCKET ↔ DRIVER (CRITICAL)
+    // ============================
+    socketToDriver.set(socket.id, String(driverId))
+    socket.data.driverId = driverId        // ✅ CHANGE (MOST IMPORTANT)
+
+    socket.join('driver')
+    socket.join(`driver_${driverId}`)
+
+    // ============================
+    // AUTO-JOIN ACTIVE RIDE ROOMS
+    // ============================
+    logger.info(`🚪 [Socket] Auto-joining driver to active ride rooms...`)
+
+    const activeRides = await Ride.find({
+      driver: driverId,
+      status: { $in: ['requested', 'accepted', 'arrived', 'in_progress'] }
+    })
+      .select('_id status')
+      .lean()
+
+    if (!socket.data.rooms) {
+      socket.data.rooms = []
+    }
+
+    for (const ride of activeRides) {
+      const roomName = `ride_${ride._id}`
+      socket.join(roomName)
+
+      if (!socket.data.rooms.includes(roomName)) {
+        socket.data.rooms.push(roomName)
+      }
+
+      logger.info(
+        `✅ [Socket] Driver auto-joined room: ${roomName} (ride status: ${ride.status})`
+      )
+    }
+
+    logger.info(
+      `✅ [Socket] Driver auto-joined ${activeRides.length} active ride rooms`
+    )
+
+    // ============================
+    // FINAL CONFIRMATIONS
+    // ============================
+    logger.info(
+      `Driver connected successfully - driverId: ${driverId}, socketId: ${socket.id}, isActive: ${driver?.isActive}`
+    )
+
+    if (driver) {
+      io.to('admin').emit('driverConnected', {
+        driverId: driver._id,
+        isOnline: true
+      })
+    }
+
+    socket.emit('driverStatusUpdate', {
+      driverId,
+      isOnline: true,
+      isActive: driver?.isActive || false,
+      isBusy: driver?.isBusy || false
+    })
+  } catch (err) {
+    logger.error('driverConnect error:', err)
+    socket.emit('errorEvent', {
+      message: 'Failed to register driver socket'
+    })
+  }
+})
+
 
     // ============================
     // DRIVER TOGGLE STATUS (ON/OFF for accepting rides)
@@ -306,7 +313,13 @@ function initializeSocket (server) {
         })
 
         // Broadcast status change to admin/monitoring systems if needed
-        io.emit('driverStatusChanged', {
+        // io.emit('driverStatusChanged', {
+        //   driverId,
+        //   isActive: driver.isActive,
+        //   isOnline: driver.isOnline
+        // })
+
+        io.to('admin').emit('driverStatusChanged', {
           driverId,
           isActive: driver.isActive,
           isOnline: driver.isOnline
@@ -322,24 +335,31 @@ function initializeSocket (server) {
     // ============================
     socket.on('driverLocationUpdate', async data => {
       try {
-        const coords = data.location?.coordinates || [data.location?.longitude, data.location?.latitude]
+        const coords = data.location?.coordinates || [
+          data.location?.longitude,
+          data.location?.latitude
+        ]
         logger.info(
           `driverLocationUpdate - driverId: ${data?.driverId}, rideId: ${
             data?.rideId || 'none'
           }, coordinates: [${coords[0]}, ${coords[1]}]`
         )
         await updateDriverLocation(data.driverId, data.location)
-        io.emit('driverLocationUpdate', data)
+        // io.emit('driverLocationUpdate', data)
+
+        if (data.rideId) {
+          io.to(`ride_${data.rideId}`).emit('driverLocationUpdate', data)
+        }
 
         // Notify specific rider if ride is in progress
         if (data.rideId) {
-          const ride = await Ride.findById(data.rideId)
-          if (ride && ride.userSocketId) {
-            io.to(ride.userSocketId).emit('driverLocationUpdate', data)
-            logger.info(
-              `Location update sent to rider - rideId: ${data.rideId}`
-            )
-          }
+          // const ride = await Ride.findById(data.rideId)
+          // if (ride && ride.userSocketId) {
+          //   io.to(ride.userSocketId).emit('driverLocationUpdate', data)
+          //   logger.info(
+          //     `Location update sent to rider - rideId: ${data.rideId}`
+          //   )
+          // }
         }
         logger.info(
           `Driver location updated successfully - driverId: ${data.driverId}`
@@ -369,7 +389,9 @@ function initializeSocket (server) {
         // await Driver.findByIdAndUpdate(driverId, { isOnline: false })
         // Don't change `isActive` here; driver toggle should be explicit via `driverToggleStatus`.
         // `clearDriverSocket` sets `isOnline:false` and clears `socketId` when appropriate.
-        io.emit('driverDisconnect', { driverId })
+        // io.emit('driverDisconnect', { driverId })
+        io.to('admin').emit('driverDisconnect', { driverId })
+
         logger.info(`Driver disconnected successfully - driverId: ${driverId}`)
       } catch (err) {
         logger.error('driverDisconnect error:', err)
@@ -381,58 +403,77 @@ function initializeSocket (server) {
     // ============================
     socket.on('newRideRequest', async data => {
       try {
-        logger.info(`newRideRequest event - riderId: ${data?.rider || data?.riderId}, service: ${data?.service}`);
-        
+        logger.info(
+          `newRideRequest event - riderId: ${
+            data?.rider || data?.riderId
+          }, service: ${data?.service}`
+        )
+
         // Verify Razorpay payment if payment method is RAZORPAY
         if (data.paymentMethod === 'RAZORPAY' && data.razorpayPaymentId) {
           try {
-            const Razorpay = require('razorpay');
-            const razorpayKey = process.env.RAZORPAY_ID || "rzp_test_Rp3ejYlVfY449V";
-            const razorpaySecret = process.env.RAZORPAY_SECRET || "FORM4hrZrQO8JFIiYsQSC83N";
+            const Razorpay = require('razorpay')
+            const razorpayKey =
+              process.env.RAZORPAY_ID || 'rzp_test_Rp3ejYlVfY449V'
+            const razorpaySecret =
+              process.env.RAZORPAY_SECRET || 'FORM4hrZrQO8JFIiYsQSC83N'
             const razorpayInstance = new Razorpay({
               key_id: razorpayKey,
-              key_secret: razorpaySecret,
-            });
+              key_secret: razorpaySecret
+            })
 
             // Fetch payment details from Razorpay
-            const payment = await razorpayInstance.payments.fetch(data.razorpayPaymentId);
-            
+            const payment = await razorpayInstance.payments.fetch(
+              data.razorpayPaymentId
+            )
+
             // Verify payment status
-            if (payment.status !== 'captured' && payment.status !== 'authorized') {
-              logger.warn(`Razorpay payment not captured - Payment ID: ${data.razorpayPaymentId}, Status: ${payment.status}`);
+            if (
+              payment.status !== 'captured' &&
+              payment.status !== 'authorized'
+            ) {
+              logger.warn(
+                `Razorpay payment not captured - Payment ID: ${data.razorpayPaymentId}, Status: ${payment.status}`
+              )
               socket.emit('rideError', {
                 message: 'Payment not verified. Please complete payment first.',
                 code: 'PAYMENT_NOT_VERIFIED'
-              });
-              return;
+              })
+              return
             }
 
             // Verify payment amount matches ride fare (allow 1 paise difference for rounding)
-            const paymentAmount = payment.amount / 100; // Convert from paise to rupees
-            const expectedAmount = data.razorpayAmountPaid || data.fare || 0;
-            
+            const paymentAmount = payment.amount / 100 // Convert from paise to rupees
+            const expectedAmount = data.razorpayAmountPaid || data.fare || 0
+
             if (Math.abs(paymentAmount - expectedAmount) > 0.01) {
-              logger.warn(`Payment amount mismatch - Payment: ₹${paymentAmount}, Expected: ₹${expectedAmount}`);
+              logger.warn(
+                `Payment amount mismatch - Payment: ₹${paymentAmount}, Expected: ₹${expectedAmount}`
+              )
               socket.emit('rideError', {
                 message: 'Payment amount mismatch. Please try again.',
                 code: 'PAYMENT_AMOUNT_MISMATCH'
-              });
-              return;
+              })
+              return
             }
 
-            logger.info(`Razorpay payment verified - Payment ID: ${data.razorpayPaymentId}, Amount: ₹${paymentAmount}`);
+            logger.info(
+              `Razorpay payment verified - Payment ID: ${data.razorpayPaymentId}, Amount: ₹${paymentAmount}`
+            )
           } catch (paymentError) {
-            logger.error(`Error verifying Razorpay payment:`, paymentError);
+            logger.error(`Error verifying Razorpay payment:`, paymentError)
             socket.emit('rideError', {
               message: 'Payment verification failed. Please try again.',
               code: 'PAYMENT_VERIFICATION_FAILED'
-            });
-            return;
+            })
+            return
           }
         }
 
-        const ride = await createRide(data);
-        logger.info(`Ride created - rideId: ${ride._id}, fare: ${ride.fare}, distance: ${ride.distanceInKm}km`);
+        const ride = await createRide(data)
+        logger.info(
+          `Ride created - rideId: ${ride._id}, fare: ${ride.fare}, distance: ${ride.distanceInKm}km`
+        )
 
         // Process hybrid payment if applicable
         if (
@@ -518,20 +559,17 @@ function initializeSocket (server) {
           .exec()
 
         // ============================
-        // PUSH RIDE TO REDIS QUEUE
+        // PUSH RIDE TO QUEUE (Redis or in-process fallback)
         // ============================
         logger.info(`📥 Queuing ride ${ride._id} for driver discovery`)
 
+        // If Redis is enabled we already export a real queue; otherwise the in-process
+        // queue implementation will call `processRideJob` immediately.
         await rideBookingQueue.add('process-ride', {
           rideId: ride._id.toString()
         })
 
-        logger.info(`✅ Ride ${ride._id} successfully added to Redis queue`)
-
-        // // Find nearby drivers using progressive radius expansion (3km → 6km → 9km → 12km)
-        // logger.info(`🔍 Searching for drivers for rideId: ${ride._id}`);
-        // logger.info(`   Pickup location: ${JSON.stringify(ride.pickupLocation)}`);
-        // logger.info(`   Pickup coordinates: [${ride.pickupLocation.coordinates[0]}, ${ride.pickupLocation.coordinates[1]}]`);
+        logger.info(`✅ Ride ${ride._id} queued for driver discovery`)
 
         // const { drivers: nearbyDrivers, radiusUsed } = await searchDriversWithProgressiveRadius(
         //   ride.pickupLocation,
@@ -725,14 +763,24 @@ function initializeSocket (server) {
             service: data?.service,
             bookingType: data?.bookingType,
             hasBookingMeta: !!data?.bookingMeta,
-            bookingMetaKeys: data?.bookingMeta ? Object.keys(data.bookingMeta) : [],
+            bookingMetaKeys: data?.bookingMeta
+              ? Object.keys(data.bookingMeta)
+              : [],
             hasPickupLocation: !!data?.pickupLocation,
             hasDropoffLocation: !!data?.dropoffLocation,
-            pickupLocationFormat: data?.pickupLocation ? (data.pickupLocation.coordinates ? 'GeoJSON' : 'lat/lng') : 'missing',
-            dropoffLocationFormat: data?.dropoffLocation ? (data.dropoffLocation.coordinates ? 'GeoJSON' : 'lat/lng') : 'missing'
+            pickupLocationFormat: data?.pickupLocation
+              ? data.pickupLocation.coordinates
+                ? 'GeoJSON'
+                : 'lat/lng'
+              : 'missing',
+            dropoffLocationFormat: data?.dropoffLocation
+              ? data.dropoffLocation.coordinates
+                ? 'GeoJSON'
+                : 'lat/lng'
+              : 'missing'
           }
         })
-        
+
         // Extract error message - handle nested errors
         let errorMessage = 'Failed to create ride'
         if (err.message) {
@@ -740,12 +788,12 @@ function initializeSocket (server) {
         } else if (err.toString && err.toString() !== '[object Object]') {
           errorMessage = err.toString()
         }
-        
+
         // Extract error code if available
         const errorCode = err.code || 'RIDE_CREATION_FAILED'
-        
+
         // Send detailed error to client (always include details for debugging)
-        socket.emit('rideError', { 
+        socket.emit('rideError', {
           message: errorMessage,
           code: errorCode,
           details: err.stack || err.toString()
@@ -778,16 +826,19 @@ function initializeSocket (server) {
 
         // Check if this is a Full Day booking
         const isFullDayBooking = assignedRide.bookingType === 'FULL_DAY'
-        
+
         // Add metadata to ride object for client-side handling
         const rideWithMetadata = {
-          ...assignedRide.toObject ? assignedRide.toObject() : assignedRide,
+          ...(assignedRide.toObject ? assignedRide.toObject() : assignedRide),
           isFullDayBooking
         }
 
         // Notify rider
         if (assignedRide.userSocketId) {
-          io.to(assignedRide.userSocketId).emit('rideAccepted', rideWithMetadata)
+          io.to(assignedRide.userSocketId).emit(
+            'rideAccepted',
+            rideWithMetadata
+          )
           logger.info(
             `Ride acceptance notification sent to rider: ${assignedRide.rider._id} | isFullDayBooking: ${isFullDayBooking}`
           )
@@ -795,7 +846,10 @@ function initializeSocket (server) {
 
         // Notify driver
         if (assignedRide.driverSocketId) {
-          io.to(assignedRide.driverSocketId).emit('rideAssigned', rideWithMetadata)
+          io.to(assignedRide.driverSocketId).emit(
+            'rideAssigned',
+            rideWithMetadata
+          )
           logger.info(
             `Ride assignment confirmation sent to driver: ${driverId} | isFullDayBooking: ${isFullDayBooking}`
           )
@@ -895,8 +949,12 @@ function initializeSocket (server) {
           )
         }
 
-        io.emit('rideAccepted', rideWithMetadata)
-        logger.info(`rideAccepted completed successfully - rideId: ${rideId} | isFullDayBooking: ${isFullDayBooking}`)
+        // io.emit('rideAccepted', rideWithMetadata)
+        io.to(`ride_${rideId}`).emit('rideAccepted', rideWithMetadata)
+
+        logger.info(
+          `rideAccepted completed successfully - rideId: ${rideId} | isFullDayBooking: ${isFullDayBooking}`
+        )
       } catch (err) {
         logger.error('rideAccepted error:', err)
         socket.emit('rideError', {
@@ -952,13 +1010,19 @@ function initializeSocket (server) {
 
         // Clean up any redis lock and ensure driver is marked not busy
         try {
-          const lockKey = `driver_lock:${driverId}:${rideId}`
-          await redis.del(lockKey)
-          // Also ensure driver is not stuck as busy
-          await Driver.findByIdAndUpdate(driverId, { isBusy: false, busyUntil: null })
-          logger.info(`Cleaned up lock and cleared isBusy for driver ${driverId} after rejection`) 
+          // Ensure driver is not stuck as busy after rejecting the ride
+          await Driver.findByIdAndUpdate(driverId, {
+            isBusy: false,
+            busyUntil: null
+          })
+
+          logger.info(
+            `Driver ${driverId} marked as available after rejecting ride ${rideId}`
+          )
         } catch (cleanupErr) {
-          logger.warn(`Failed to clean lock/isBusy for driver ${driverId} after rejection: ${cleanupErr.message}`)
+          logger.warn(
+            `Failed to clear busy state for driver ${driverId} after rejection: ${cleanupErr.message}`
+          )
         }
 
         // Check if all notified drivers have rejected
@@ -1257,7 +1321,8 @@ function initializeSocket (server) {
           relatedRide: rideId
         })
 
-        io.emit('rideStarted', startedRide)
+        // io.emit('rideStarted', startedRide)
+        io.to(`ride_${startedRide._id}`).emit('rideStarted', startedRide)
       } catch (err) {
         logger.error('rideStarted error:', err)
         socket.emit('rideError', { message: 'Failed to start ride' })
@@ -1270,7 +1335,8 @@ function initializeSocket (server) {
     socket.on('rideInProgress', data => {
       try {
         logger.info(`rideInProgress event - rideId: ${data?.rideId}`)
-        io.emit('rideInProgress', data)
+        // io.emit('rideInProgress', data)
+        io.to(`ride_${data.rideId}`).emit('rideInProgress', data)
       } catch (err) {
         logger.error('rideInProgress error:', err)
       }
@@ -1279,7 +1345,8 @@ function initializeSocket (server) {
     socket.on('rideLocationUpdate', data => {
       try {
         logger.info(`rideLocationUpdate event - rideId: ${data?.rideId}`)
-        io.emit('rideLocationUpdate', data)
+        // io.emit('rideLocationUpdate', data)
+        io.to(`ride_${data.rideId}`).emit('rideLocationUpdate', data)
 
         // Notify specific rider if rideId provided
         if (data.rideId && data.userSocketId) {
@@ -1347,27 +1414,31 @@ function initializeSocket (server) {
         const completedRide = await completeRide(rideId, fare)
         await updateRideEndTime(rideId)
 
-        logger.info(`Ride completed successfully - rideId: ${rideId}, finalFare: ${completedRide.fare}`);
+        logger.info(
+          `Ride completed successfully - rideId: ${rideId}, finalFare: ${completedRide.fare}`
+        )
 
         // Process WALLET payment deduction if payment method is WALLET
         if (completedRide.paymentMethod === 'WALLET') {
           try {
-            const User = require('../Models/User/user.model');
-            const WalletTransaction = require('../Models/User/walletTransaction.model');
-            const riderId = completedRide.rider._id || completedRide.rider;
-            const fareAmount = completedRide.fare || fare || 0;
+            const User = require('../Models/User/user.model')
+            const WalletTransaction = require('../Models/User/walletTransaction.model')
+            const riderId = completedRide.rider._id || completedRide.rider
+            const fareAmount = completedRide.fare || fare || 0
 
             if (fareAmount > 0) {
-              const rider = await User.findById(riderId);
+              const rider = await User.findById(riderId)
               if (!rider) {
-                logger.warn(`Rider not found for wallet deduction - Ride: ${rideId}, RiderId: ${riderId}`);
+                logger.warn(
+                  `Rider not found for wallet deduction - Ride: ${rideId}, RiderId: ${riderId}`
+                )
               } else {
-                const balanceBefore = rider.walletBalance || 0;
-                
+                const balanceBefore = rider.walletBalance || 0
+
                 if (balanceBefore >= fareAmount) {
-                  const balanceAfter = balanceBefore - fareAmount;
-                  rider.walletBalance = balanceAfter;
-                  await rider.save();
+                  const balanceAfter = balanceBefore - fareAmount
+                  rider.walletBalance = balanceAfter
+                  await rider.save()
 
                   // Create wallet transaction
                   await WalletTransaction.create({
@@ -1379,30 +1450,40 @@ function initializeSocket (server) {
                     relatedRide: rideId,
                     paymentMethod: 'WALLET',
                     status: 'COMPLETED',
-                    description: `Ride payment of ₹${fareAmount}`,
-                  });
+                    description: `Ride payment of ₹${fareAmount}`
+                  })
 
                   // Update ride payment status
-                  completedRide.paymentStatus = 'completed';
-                  await completedRide.save();
+                  completedRide.paymentStatus = 'completed'
+                  await completedRide.save()
 
-                  logger.info(`Wallet payment deducted - Ride: ${rideId}, Amount: ₹${fareAmount}, New Balance: ₹${balanceAfter}`);
+                  logger.info(
+                    `Wallet payment deducted - Ride: ${rideId}, Amount: ₹${fareAmount}, New Balance: ₹${balanceAfter}`
+                  )
                 } else {
                   // Handle insufficient balance - mark payment as failed
-                  completedRide.paymentStatus = 'failed';
-                  await completedRide.save();
-                  logger.warn(`Insufficient wallet balance - Ride: ${rideId}, Required: ₹${fareAmount}, Available: ₹${balanceBefore}`);
+                  completedRide.paymentStatus = 'failed'
+                  await completedRide.save()
+                  logger.warn(
+                    `Insufficient wallet balance - Ride: ${rideId}, Required: ₹${fareAmount}, Available: ₹${balanceBefore}`
+                  )
                 }
               }
             }
           } catch (walletError) {
-            logger.error(`Error processing wallet payment for ride ${rideId}:`, walletError);
+            logger.error(
+              `Error processing wallet payment for ride ${rideId}:`,
+              walletError
+            )
             // Don't fail ride completion if wallet deduction fails, but mark payment status appropriately
             try {
-              completedRide.paymentStatus = 'failed';
-              await completedRide.save();
+              completedRide.paymentStatus = 'failed'
+              await completedRide.save()
             } catch (updateError) {
-              logger.error(`Error updating payment status for ride ${rideId}:`, updateError);
+              logger.error(
+                `Error updating payment status for ride ${rideId}:`,
+                updateError
+              )
             }
           }
         }
@@ -1463,7 +1544,8 @@ function initializeSocket (server) {
           relatedRide: rideId
         })
 
-        io.emit('rideCompleted', completedRide)
+        // io.emit('rideCompleted', completedRide)
+        io.to(`ride_${completedRide._id}`).emit('rideCompleted', completedRide)
       } catch (err) {
         logger.error('rideCompleted error:', err)
         socket.emit('rideError', { message: 'Failed to complete ride' })
@@ -1542,7 +1624,9 @@ function initializeSocket (server) {
           })
         }
 
-        io.emit('rideCancelled', cancelledRide)
+        // io.emit('rideCancelled', cancelledRide)
+        io.to(`ride_${cancelledRide._id}`).emit('rideCancelled', cancelledRide)
+
         logger.info(`rideCancelled completed successfully - rideId: ${rideId}`)
       } catch (err) {
         logger.error('rideCancelled error:', err)
@@ -2137,7 +2221,9 @@ function initializeSocket (server) {
           }
 
           // Broadcast to admin/support (you can add admin sockets later)
-          io.emit('emergencyBroadcast', emergency)
+          // io.emit('emergencyBroadcast', emergency)
+          io.to('admin').emit('emergencyAlert', emergency)
+
           logger.warn(
             `Emergency broadcast sent to all admins - rideId: ${data.rideId}`
           )
@@ -2186,7 +2272,7 @@ function initializeSocket (server) {
         )
         await clearUserSocket(data.userId, socket.id)
         socketToUser.delete(socket.id)
-        io.emit('riderDisconnect', data)
+        // io.emit('riderDisconnect', data)
         logger.info(`Rider disconnected successfully - userId: ${data?.userId}`)
       } catch (err) {
         logger.error('riderDisconnect error:', err)
@@ -2205,17 +2291,17 @@ function initializeSocket (server) {
         if (userId) {
           await clearUserSocket(userId, socket.id)
           socketToUser.delete(socket.id)
-          io.emit('riderDisconnect', { userId })
-          logger.info(
-            `Rider socket cleanup completed - userId: ${userId}, socketId: ${socket.id}`
-          )
+          // io.emit('riderDisconnect', { userId })
+          // logger.info(
+          //   `Rider socket cleanup completed - userId: ${userId}, socketId: ${socket.id}`
+          // )
         }
 
         if (driverId) {
           await clearDriverSocket(driverId, socket.id)
           // Do not toggle `isActive` on socket disconnect; driver should use toggle event to change availability.
           socketToDriver.delete(socket.id)
-          io.emit('driverDisconnect', { driverId })
+          // io.emit('driverDisconnect', { driverId })
           logger.info(
             `Driver socket cleanup completed - driverId: ${driverId}, socketId: ${socket.id}`
           )

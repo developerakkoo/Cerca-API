@@ -1,8 +1,15 @@
-const { Queue } = require("bullmq");
-const redis = require("../../config/redis");
+const logger = require('../../utils/logger')
+const { processRideJob } = require('../workers/rideBooking.worker')
 
-const rideBookingQueue = new Queue("ride-booking", {
-  connection: redis,
-});
+module.exports = {
+  async add (jobName, data) {
+    if (jobName !== 'process-ride') return
 
-module.exports = rideBookingQueue;
+    logger.info(`📥 Ride job added (in-process) | rideId: ${data.rideId}`)
+
+    // Run async, non-blocking
+    setImmediate(() => {
+      processRideJob(data.rideId)
+    })
+  }
+}
