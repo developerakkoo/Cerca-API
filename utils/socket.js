@@ -470,6 +470,28 @@ function initializeSocket (server) {
           }
         }
 
+        // Check for existing active ride to prevent duplicates
+        const riderId = data.rider || data.riderId
+        if (riderId) {
+          const existingActiveRide = await Ride.findOne({
+            rider: riderId,
+            status: { $in: ['requested', 'accepted', 'in_progress'] }
+          })
+
+          if (existingActiveRide) {
+            logger.warn(
+              `Duplicate ride attempt prevented for rider ${riderId}. Active ride: ${existingActiveRide._id}`
+            )
+            socket.emit('rideError', {
+              message:
+                'You already have an active ride. Please cancel it before booking a new one.',
+              code: 'DUPLICATE_RIDE_ATTEMPT',
+              activeRideId: existingActiveRide._id
+            })
+            return
+          }
+        }
+
         const ride = await createRide(data)
         logger.info(
           `Ride created - rideId: ${ride._id}, fare: ${ride.fare}, distance: ${ride.distanceInKm}km`

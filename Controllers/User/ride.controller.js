@@ -11,6 +11,23 @@ import rideBookingQueue from '../../src/queues/rideBooking.queue.js'
 export const createRide = async (req, res) => {
   try {
     const rideData = req.body
+    const riderId = rideData.rider || rideData.riderId
+
+    // Check for existing active ride to prevent duplicates
+    if (riderId) {
+      const existingActiveRide = await Ride.findOne({
+        rider: riderId,
+        status: { $in: ['requested', 'accepted', 'in_progress'] }
+      })
+
+      if (existingActiveRide) {
+        logger.warn(`Duplicate ride attempt prevented for rider ${riderId}. Active ride: ${existingActiveRide._id}`)
+        return res.status(409).json({
+          message: 'You already have an active ride. Please cancel it before booking a new one.',
+          activeRideId: existingActiveRide._id
+        })
+      }
+    }
 
     // Fetch admin settings
     const settings = await Settings.findOne()
@@ -197,11 +214,9 @@ export const getRidesByUserId = async (req, res) => {
     const rides = await Ride.find({ rider: req.params.userId })
       .populate('driver', 'name phone rating totalTrips profilePic vehicleInfo')
       .populate('rider', 'name email phoneNumber')
-      .sort({ createdAt: -1 }) // Sort by newest first
-    if (!rides || rides.length === 0) {
-      return res.status(404).json({ message: 'No rides found for this user' })
-    }
-    res.status(200).json(rides)
+      .sort({ updatedAt: -1 }) // Sort by most recent activity first
+    // Return empty array instead of 404 when no rides found
+    res.status(200).json(rides || [])
   } catch (error) {
     logger.error('Error fetching rides for user:', error)
     res.status(500).json({ message: 'Error fetching rides for user', error })

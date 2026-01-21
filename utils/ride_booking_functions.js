@@ -143,6 +143,21 @@ const createRide = async rideData => {
     const riderId = rideData.riderId || rideData.rider
     if (!riderId) throw new Error('riderId (or rider) is required')
 
+    // Check for existing active ride to prevent duplicates
+    const existingActiveRide = await Ride.findOne({
+      rider: riderId,
+      status: { $in: ['requested', 'accepted', 'in_progress'] }
+    })
+
+    if (existingActiveRide) {
+      logger.warn(
+        `Duplicate ride attempt prevented in createRide for rider ${riderId}. Active ride: ${existingActiveRide._id}`
+      )
+      throw new Error(
+        'You already have an active ride. Please cancel it before booking a new one.'
+      )
+    }
+
     // Validate locations
     if (!rideData.pickupLocation) {
       throw new Error('pickupLocation is required')
