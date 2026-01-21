@@ -59,6 +59,7 @@ async function processRideJob (rideId) {
       )
 
     logger.info(`📍 Found ${drivers.length} drivers within ${radiusUsed}m`)
+    logger.info(`🔍 Ride status after driver search: ${ride.status}`)
 
     // ❌ No drivers - Cancel the ride
     if (!drivers.length) {
@@ -125,40 +126,97 @@ async function processRideJob (rideId) {
       return
     }
 
+    // 🔒 CRITICAL: Re-check ride status before notifying drivers
+    // This prevents race condition where ride is cancelled between search and notification
+    const rideStatusCheck = await Ride.findById(rideId).select('status')
+    if (!rideStatusCheck) {
+      logger.warn(`⚠️ Ride ${rideId} not found during status check before notification, aborting`)
+      return
+    }
+
+    if (rideStatusCheck.status !== 'requested') {
+      logger.warn(
+        `⚠️ Ride ${rideId} status changed to '${rideStatusCheck.status}' before driver notification. Skipping all notifications.`
+      )
+      return
+    }
+
+    logger.info(`✅ Ride ${rideId} status verified as 'requested' before driver notification`)
+
     let notifiedCount = 0
     let skippedCount = 0
+    let statusChangedCount = 0
     const notifiedDriverIds = []
 
-    // 3️⃣ Notify drivers
-    for (const driver of drivers) {
-      if (!driver.socketId) {
-        skippedCount++
-        continue
+    // 3️⃣ Notify drivers with comprehensive error handling
+    try {
+      for (const driver of drivers) {
+        if (!driver.socketId) {
+          logger.debug(`⚠️ Driver ${driver._id} has no socketId, skipping`)
+          skippedCount++
+          continue
+        }
+
+        try {
+          // 🔒 ATOMIC CHECK: Verify ride status before each notification
+          // This prevents sending requests for cancelled/accepted rides
+          const currentRideStatus = await Ride.findById(rideId).select('status')
+          if (!currentRideStatus) {
+            logger.warn(
+              `⚠️ Ride ${rideId} not found during notification to driver ${driver._id}, aborting remaining notifications`
+            )
+            skippedCount++
+            break // Break loop if ride doesn't exist
+          }
+
+          if (currentRideStatus.status !== 'requested') {
+            logger.warn(
+              `⚠️ Ride ${rideId} status changed to '${currentRideStatus.status}' before notifying driver ${driver._id}. Skipping notification and remaining drivers.`
+            )
+            statusChangedCount++
+            skippedCount++
+            break // Break loop if ride status changed
+          }
+
+          logger.info(
+            `📡 Sending ride ${ride._id} to driver ${driver._id} | socketId: ${driver.socketId} | Status: ${currentRideStatus.status}`
+          )
+
+          io.to(driver.socketId).emit('newRideRequest', ride)
+          notifiedCount++
+          notifiedDriverIds.push(driver._id)
+
+          // Create notification (non-blocking, don't fail if this fails)
+          try {
+            await createNotification({
+              recipientId: driver._id,
+              recipientModel: 'Driver',
+              title: 'New Ride Request',
+              message: 'Ride available near you',
+              type: 'ride_request',
+              relatedRide: ride._id
+            })
+          } catch (notificationError) {
+            // Log but don't fail the entire process if notification creation fails
+            logger.warn(
+              `⚠️ Failed to create notification for driver ${driver._id}: ${notificationError.message}`
+            )
+          }
+        } catch (driverNotifyError) {
+          logger.error(
+            `❌ Error notifying driver ${driver._id}: ${driverNotifyError.message}`,
+            { stack: driverNotifyError.stack }
+          )
+          skippedCount++
+          // Continue with next driver instead of breaking
+        }
       }
-
-      try {
-        logger.info(
-          `📡 Sending ride ${ride._id} to driver ${driver._id} | socketId: ${driver.socketId}`
-        )
-
-        io.to(driver.socketId).emit('newRideRequest', ride)
-        notifiedCount++
-        notifiedDriverIds.push(driver._id)
-
-        await createNotification({
-          recipientId: driver._id,
-          recipientModel: 'Driver',
-          title: 'New Ride Request',
-          message: 'Ride available near you',
-          type: 'ride_request',
-          relatedRide: ride._id
-        })
-      } catch (notifyError) {
-        logger.error(
-          `❌ Error notifying driver ${driver._id}: ${notifyError.message}`
-        )
-        skippedCount++
-      }
+    } catch (notificationBlockError) {
+      logger.error(
+        `❌ Critical error in driver notification block for ride ${rideId}: ${notificationBlockError.message}`,
+        { stack: notificationBlockError.stack }
+      )
+      // Don't throw - log and continue to update tracking
     }
 
     // 4️⃣ Update ride with notified drivers for later use (when ride is accepted)
@@ -180,8 +238,14 @@ async function processRideJob (rideId) {
     }
 
     logger.info(
-      `✅ Ride ${ride._id} processed | Notified: ${notifiedCount}, Skipped: ${skippedCount}`
+      `✅ Ride ${ride._id} processed | Notified: ${notifiedCount}, Skipped: ${skippedCount}, StatusChanged: ${statusChangedCount}`
     )
+
+    if (statusChangedCount > 0) {
+      logger.warn(
+        `⚠️ ${statusChangedCount} driver notification(s) skipped due to ride status change during processing`
+      )
+    }
   } catch (error) {
     logger.error(`❌ processRideJob failed | rideId: ${rideId}`)
     logger.error(error)
