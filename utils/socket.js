@@ -1180,6 +1180,27 @@ function initializeSocket (server) {
             `All ${notifiedCount} notified drivers have rejected ride ${rideId}`
           )
 
+          // 🔒 CRITICAL: Check ride status before retrying search
+          // This prevents retrying for cancelled rides
+          const rideStatusCheck = await Ride.findById(rideId).select('status')
+          if (!rideStatusCheck) {
+            logger.warn(
+              `⚠️ Ride ${rideId} not found during status check before retry, aborting retry`
+            )
+            return
+          }
+
+          if (rideStatusCheck.status !== 'requested') {
+            logger.warn(
+              `⚠️ Ride ${rideId} status changed to '${rideStatusCheck.status}' before retry search. Skipping retry.`
+            )
+            return
+          }
+
+          logger.info(
+            `✅ Ride ${rideId} status verified as 'requested' before retry search`
+          )
+
           // Try searching again with larger radius (15km, 20km, 25km)
           logger.info(
             `🔍 Retrying driver search with larger radius for rideId: ${rideId}`
@@ -1202,40 +1223,43 @@ function initializeSocket (server) {
           logger.info(
             `Found ${availableNewDrivers.length} new available drivers (excluding ${rejectedCount} rejected) within ${radiusUsed}m radius`
           )
+          logger.info(
+            `🔍 Retry search status - RideId: ${rideId}, New drivers found: ${availableNewDrivers.length}, Radius used: ${radiusUsed}m`
+          )
 
           if (availableNewDrivers.length > 0) {
             // Found new drivers, notify them
             let notifiedCount = 0
+            let skippedCount = 0
+            let statusChangedCount = 0
             const newNotifiedDriverIds = []
 
-            // availableNewDrivers.forEach(driver => {
-            //   if (driver.socketId) {
-            //     const socketConnection = io.sockets.sockets.get(driver.socketId)
-            //     if (socketConnection && socketConnection.connected) {
-            //       const populatedRide = {
-            //         ...ride.toObject(),
-            //         _id: ride._id
-            //       }
-            //       io.to(driver.socketId).emit('newRideRequest', populatedRide)
-            //       logger.info(
-            //         `✅ Retry: Ride request sent to driver: ${driver._id} (socketId: ${driver.socketId})`
-            //       )
-            //       notifiedCount++
-            //       newNotifiedDriverIds.push(driver._id)
-            //     } else {
-            //       logger.warn(
-            //         `⚠️ Retry: Driver ${driver._id} has socketId but socket is not connected`
-            //       )
-            //     }
-            //   } else {
-            //     logger.warn(`⚠️ Retry: Driver ${driver._id} has no socketId`)
-            //   }
-            // })
-
-            availableNewDrivers.forEach(driver => {
+            // Use for loop instead of forEach to allow breaking on status change
+            for (const driver of availableNewDrivers) {
               if (!driver.socketId) {
                 logger.warn(`⚠️ Retry: Driver ${driver._id} has no socketId`)
-                return
+                skippedCount++
+                continue
+              }
+
+              // 🔒 ATOMIC CHECK: Verify ride status before each retry notification
+              // This prevents sending requests for cancelled/accepted rides
+              const currentRideStatus = await Ride.findById(rideId).select('status')
+              if (!currentRideStatus) {
+                logger.warn(
+                  `⚠️ Retry: Ride ${rideId} not found during notification to driver ${driver._id}, aborting remaining notifications`
+                )
+                skippedCount++
+                break // Break loop if ride doesn't exist
+              }
+
+              if (currentRideStatus.status !== 'requested') {
+                logger.warn(
+                  `⚠️ Retry: Ride ${rideId} status changed to '${currentRideStatus.status}' before notifying driver ${driver._id}. Skipping notification and remaining drivers.`
+                )
+                statusChangedCount++
+                skippedCount++
+                break // Break loop if ride status changed
               }
 
               const populatedRide = {
@@ -1247,12 +1271,18 @@ function initializeSocket (server) {
               io.to(driver.socketId).emit('newRideRequest', populatedRide)
 
               logger.info(
-                `📡 Retry: Ride request sent to driver ${driver._id} (socketId: ${driver.socketId})`
+                `📡 Retry: Ride request sent to driver ${driver._id} (socketId: ${driver.socketId}) | Status: ${currentRideStatus.status}`
               )
 
               notifiedCount++
               newNotifiedDriverIds.push(driver._id)
-            })
+            }
+
+            if (statusChangedCount > 0) {
+              logger.warn(
+                `⚠️ Retry: ${statusChangedCount} driver notification(s) skipped due to ride status change during retry processing`
+              )
+            }
 
             // Update notifiedDrivers to include new drivers
             const allNotifiedDrivers = [
@@ -1267,10 +1297,40 @@ function initializeSocket (server) {
               `📝 Updated notifiedDrivers: ${allNotifiedDrivers.length} total drivers notified for rideId: ${rideId}`
             )
             logger.info(
-              `✅ Retry search successful - ${notifiedCount} new drivers notified for rideId: ${rideId}`
+              `✅ Retry search successful - ${notifiedCount} new drivers notified for rideId: ${rideId}, Skipped: ${skippedCount}, StatusChanged: ${statusChangedCount}`
             )
+
+            if (statusChangedCount > 0) {
+              logger.warn(
+                `⚠️ Retry: ${statusChangedCount} driver notification(s) skipped due to ride status change during retry processing for rideId: ${rideId}`
+              )
+            }
           } else {
             // No more drivers available, cancel the ride
+            // 🔒 CRITICAL: Check ride status before cancelling
+            // This prevents cancelling already-cancelled or accepted rides
+            const cancelStatusCheck = await Ride.findById(rideId).select('status')
+            if (!cancelStatusCheck) {
+              logger.warn(
+                `⚠️ Ride ${rideId} not found during status check before cancellation, aborting cancellation`
+              )
+              return
+            }
+
+            if (cancelStatusCheck.status !== 'requested') {
+              logger.warn(
+                `⚠️ Ride ${rideId} status changed to '${cancelStatusCheck.status}' before cancellation. Skipping cancellation (ride already ${cancelStatusCheck.status}).`
+              )
+              return
+            }
+
+            logger.info(
+              `✅ Ride ${rideId} status verified as 'requested' before cancellation`
+            )
+            logger.info(
+              `🔍 Retry cancellation status - RideId: ${rideId}, Status: ${cancelStatusCheck.status}, Reason: All drivers rejected or unavailable`
+            )
+
             logger.warn(
               `❌ No more drivers available for rideId: ${rideId} after all rejections. Cancelling ride.`
             )
