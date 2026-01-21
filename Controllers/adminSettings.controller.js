@@ -23,6 +23,38 @@ const getSettings = async (req, res) => {
  */
 const updateSettings = async (req, res) => {
     try {
+        // Validate vehicleServices if provided
+        if (req.body.vehicleServices) {
+            const vehicleServices = req.body.vehicleServices;
+            
+            // Validate cercaSmall
+            if (vehicleServices.cercaSmall) {
+                if (vehicleServices.cercaSmall.price !== undefined && vehicleServices.cercaSmall.price < 0) {
+                    return res.status(400).json({ 
+                        message: 'Invalid price for Cerca Small. Price must be a positive number.' 
+                    });
+                }
+            }
+            
+            // Validate cercaMedium
+            if (vehicleServices.cercaMedium) {
+                if (vehicleServices.cercaMedium.price !== undefined && vehicleServices.cercaMedium.price < 0) {
+                    return res.status(400).json({ 
+                        message: 'Invalid price for Cerca Medium. Price must be a positive number.' 
+                    });
+                }
+            }
+            
+            // Validate cercaLarge
+            if (vehicleServices.cercaLarge) {
+                if (vehicleServices.cercaLarge.price !== undefined && vehicleServices.cercaLarge.price < 0) {
+                    return res.status(400).json({ 
+                        message: 'Invalid price for Cerca Large. Price must be a positive number.' 
+                    });
+                }
+            }
+        }
+        
         const updatedSettings = await Settings.findOneAndUpdate({}, req.body, {
             new: true,
             runValidators: true,
@@ -110,10 +142,52 @@ const toggleForceUpdate = async (req, res) => {
     }
 };
 
+/**
+ * @desc    Get vehicle services configuration (Public endpoint for user app)
+ * @route   GET /settings/vehicle-services
+ */
+const getVehicleServices = async (req, res) => {
+    try {
+        const settings = await Settings.findOne().select('vehicleServices');
+        
+        if (!settings || !settings.vehicleServices) {
+            // Return default values if settings don't exist
+            return res.status(200).json({
+                cercaSmall: {
+                    name: 'Cerca Small',
+                    price: 299,
+                    seats: 4,
+                    enabled: true,
+                    imagePath: 'assets/cars/cerca-small.png'
+                },
+                cercaMedium: {
+                    name: 'Cerca Medium',
+                    price: 499,
+                    seats: 6,
+                    enabled: true,
+                    imagePath: 'assets/cars/Cerca-medium.png'
+                },
+                cercaLarge: {
+                    name: 'Cerca Large',
+                    price: 699,
+                    seats: 8,
+                    enabled: true,
+                    imagePath: 'assets/cars/cerca-large.png'
+                }
+            });
+        }
+        
+        res.status(200).json(settings.vehicleServices);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching vehicle services', error });
+    }
+};
+
 module.exports = {
     getSettings,
     updateSettings,
     toggleMaintenanceMode,
     toggleForceUpdate,
     addSettings,
+    getVehicleServices,
 };

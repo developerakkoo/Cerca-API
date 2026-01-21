@@ -13,6 +13,7 @@ const {
     toggleMaintenanceMode,
     toggleForceUpdate,
     addSettings,
+    getVehicleServices,
 } = require('../Controllers/adminSettings.controller.js');
 const {
     listDriverEarnings,
@@ -32,6 +33,9 @@ router.post('/login', adminLogin);
 // Create admin (public for initial setup, or protected for ADMIN role)
 // Note: For production, consider adding additional security (e.g., secret key check)
 router.post('/create-admin', createAdmin);
+
+// Public route for vehicle services (for user app)
+router.get('/settings/vehicle-services', getVehicleServices);
 
 // Protected admin routes
 router.use(authenticateAdmin);

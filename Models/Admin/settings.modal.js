@@ -36,6 +36,29 @@ const SettingsSchema = new mongoose.Schema({
         },
         processingDays: { type: Number, default: 3 }, // Business days
     },
+    vehicleServices: {
+        cercaSmall: {
+            name: { type: String, default: 'Cerca Small' },
+            price: { type: Number, required: true, default: 299 },
+            seats: { type: Number, default: 4 },
+            enabled: { type: Boolean, default: true },
+            imagePath: { type: String, default: 'assets/cars/cerca-small.png' }
+        },
+        cercaMedium: {
+            name: { type: String, default: 'Cerca Medium' },
+            price: { type: Number, required: true, default: 499 },
+            seats: { type: Number, default: 6 },
+            enabled: { type: Boolean, default: true },
+            imagePath: { type: String, default: 'assets/cars/Cerca-medium.png' }
+        },
+        cercaLarge: {
+            name: { type: String, default: 'Cerca Large' },
+            price: { type: Number, required: true, default: 699 },
+            seats: { type: Number, default: 8 },
+            enabled: { type: Boolean, default: true },
+            imagePath: { type: String, default: 'assets/cars/cerca-large.png' }
+        }
+    },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Settings', SettingsSchema);
