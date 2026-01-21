@@ -155,6 +155,52 @@ const CouponSchema = new Schema({
     ref: 'Admin',
     default: null,
   },
+
+  // Gift-related fields
+  isGift: {
+    type: Boolean,
+    default: false,
+  },
+
+  giftType: {
+    type: String,
+    enum: ['MANUAL', 'AUTO_NEW_USER', 'AUTO_FIRST_RIDE', 'AUTO_LOYALTY', 'AUTO_BIRTHDAY'],
+    default: 'MANUAL',
+  },
+
+  autoAssignConditions: {
+    // For AUTO_LOYALTY: minimum ride count
+    minRideCount: {
+      type: Number,
+      default: null,
+    },
+    // For AUTO_BIRTHDAY: birthday date check
+    birthdayCheck: {
+      type: Boolean,
+      default: false,
+    },
+    // Additional conditions can be added here
+  },
+
+  giftImage: {
+    type: String,
+    default: 'assets/gift-box.png',
+  },
+
+  giftTitle: {
+    type: String,
+    default: null,
+  },
+
+  giftDescription: {
+    type: String,
+    default: null,
+  },
+
+  priority: {
+    type: Number,
+    default: 0, // Higher priority shows first
+  },
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

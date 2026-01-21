@@ -183,6 +183,89 @@ const getVehicleServices = async (req, res) => {
     }
 };
 
+/**
+ * @desc    Get public settings (pricing configurations and vehicle services) - Public endpoint for user app
+ * @route   GET /admin/settings/public
+ */
+const getPublicSettings = async (req, res) => {
+    try {
+        const settings = await Settings.findOne().select('pricingConfigurations vehicleServices');
+        
+        if (!settings) {
+            // Return default values if settings don't exist
+            return res.status(200).json({
+                pricingConfigurations: {
+                    baseFare: 0,
+                    perKmRate: 12,
+                    minimumFare: 100,
+                    cancellationFees: 50,
+                    platformFees: 10,
+                    driverCommissions: 90
+                },
+                vehicleServices: {
+                    cercaSmall: {
+                        name: 'Cerca Small',
+                        price: 299,
+                        seats: 4,
+                        enabled: true,
+                        imagePath: 'assets/cars/cerca-small.png'
+                    },
+                    cercaMedium: {
+                        name: 'Cerca Medium',
+                        price: 499,
+                        seats: 6,
+                        enabled: true,
+                        imagePath: 'assets/cars/Cerca-medium.png'
+                    },
+                    cercaLarge: {
+                        name: 'Cerca Large',
+                        price: 699,
+                        seats: 8,
+                        enabled: true,
+                        imagePath: 'assets/cars/cerca-large.png'
+                    }
+                }
+            });
+        }
+        
+        res.status(200).json({
+            pricingConfigurations: settings.pricingConfigurations || {
+                baseFare: 0,
+                perKmRate: 12,
+                minimumFare: 100,
+                cancellationFees: 50,
+                platformFees: 10,
+                driverCommissions: 90
+            },
+            vehicleServices: settings.vehicleServices || {
+                cercaSmall: {
+                    name: 'Cerca Small',
+                    price: 299,
+                    seats: 4,
+                    enabled: true,
+                    imagePath: 'assets/cars/cerca-small.png'
+                },
+                cercaMedium: {
+                    name: 'Cerca Medium',
+                    price: 499,
+                    seats: 6,
+                    enabled: true,
+                    imagePath: 'assets/cars/Cerca-medium.png'
+                },
+                cercaLarge: {
+                    name: 'Cerca Large',
+                    price: 699,
+                    seats: 8,
+                    enabled: true,
+                    imagePath: 'assets/cars/cerca-large.png'
+                }
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching public settings', error });
+    }
+};
+
 module.exports = {
     getSettings,
     updateSettings,
@@ -190,4 +273,5 @@ module.exports = {
     toggleForceUpdate,
     addSettings,
     getVehicleServices,
+    getPublicSettings,
 };

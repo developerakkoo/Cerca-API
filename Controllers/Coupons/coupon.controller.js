@@ -1,7 +1,12 @@
 const Coupon = require('../../Models/Admin/coupon.modal');
 const User = require('../../Models/User/user.model');
 const Ride = require('../../Models/Driver/ride.model');
+const UserGift = require('../../Models/User/userGift.model');
 const logger = require('../../utils/logger');
+const {
+  getAvailableGiftsForUser,
+  assignGiftToUser,
+} = require('../../utils/giftAssignment');
 
 /**
  * @desc    Add a new coupon
@@ -465,6 +470,140 @@ const generateCouponCode = () => {
   return code;
 };
 
+/**
+ * @desc    Get available gifts for a user
+ * @route   GET /coupons/user/:userId/gifts
+ */
+const getUserGifts = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is required',
+      });
+    }
+
+    // Verify user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Get available gifts
+    const gifts = await getAvailableGiftsForUser(userId);
+
+    // Format response
+    const formattedGifts = gifts.map(gift => {
+      const coupon = gift.couponId || gift;
+      return {
+        id: coupon._id,
+        couponId: coupon._id,
+        couponCode: coupon.couponCode,
+        title: coupon.giftTitle || coupon.description,
+        description: coupon.giftDescription || coupon.description,
+        discount: coupon.type === 'percentage' 
+          ? `${coupon.discountValue}% OFF` 
+          : `₹${coupon.discountValue} OFF`,
+        discountValue: coupon.discountValue,
+        discountType: coupon.type,
+        expiryDate: coupon.validUntil,
+        isUnlocked: !gift.isVirtual, // Virtual gifts are not yet unlocked
+        isUsed: gift.isUsed || false,
+        code: coupon.couponCode,
+        image: coupon.giftImage || 'assets/gift-box.png',
+        assignedAt: gift.assignedAt,
+        usedAt: gift.usedAt,
+        priority: coupon.priority || 0,
+      };
+    });
+
+    // Sort by priority (higher first), then by assigned date
+    formattedGifts.sort((a, b) => {
+      if (b.priority !== a.priority) {
+        return b.priority - a.priority;
+      }
+      return new Date(b.assignedAt) - new Date(a.assignedAt);
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Gifts retrieved successfully',
+      data: formattedGifts,
+    });
+  } catch (error) {
+    logger.error('Error getting user gifts:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching user gifts',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * @desc    Manually assign gift to user
+ * @route   POST /coupons/:couponId/assign/:userId
+ */
+const assignGift = async (req, res) => {
+  try {
+    const { couponId, userId } = req.params;
+    const adminId = req.admin?._id || null;
+
+    if (!couponId || !userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Coupon ID and User ID are required',
+      });
+    }
+
+    // Verify coupon exists
+    const coupon = await Coupon.findById(couponId);
+    if (!coupon) {
+      return res.status(404).json({
+        success: false,
+        message: 'Coupon not found',
+      });
+    }
+
+    // Verify user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Assign gift
+    const result = await assignGiftToUser(userId, couponId, adminId);
+
+    if (!result.assigned) {
+      return res.status(400).json({
+        success: false,
+        message: result.reason || 'Failed to assign gift',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Gift assigned successfully',
+      data: { userGift: result.userGift },
+    });
+  } catch (error) {
+    logger.error('Error assigning gift:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error assigning gift',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   addCoupon,
   getAllCoupons,
@@ -475,4 +614,6 @@ module.exports = {
   updateCoupon,
   deleteCoupon,
   getCouponStatistics,
+  getUserGifts,
+  assignGift,
 };

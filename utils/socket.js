@@ -1570,6 +1570,32 @@ function initializeSocket (server) {
           // Don't fail ride completion if earnings storage fails
         })
 
+        // Assign gifts based on ride completion (first ride, loyalty, etc.)
+        if (completedRide.rider) {
+          const riderId = completedRide.rider._id || completedRide.rider
+          try {
+            const {
+              checkAndAssignFirstRideGift,
+              checkAndAssignLoyaltyGift,
+            } = require('./giftAssignment')
+            
+            // Check and assign first ride gift
+            const firstRideResult = await checkAndAssignFirstRideGift(riderId.toString())
+            if (firstRideResult.assigned) {
+              logger.info(`First ride gift assigned to rider ${riderId}: ${firstRideResult.couponCode}`)
+            }
+            
+            // Check and assign loyalty gift
+            const loyaltyResult = await checkAndAssignLoyaltyGift(riderId.toString())
+            if (loyaltyResult.assigned) {
+              logger.info(`Loyalty gift assigned to rider ${riderId}: ${loyaltyResult.couponCode}`)
+            }
+          } catch (giftError) {
+            logger.error(`Error assigning gifts to rider ${riderId} after ride completion:`, giftError)
+            // Don't fail ride completion if gift assignment fails
+          }
+        }
+
         // Process WALLET payment deduction if payment method is WALLET
         if (completedRide.paymentMethod === 'WALLET') {
           try {

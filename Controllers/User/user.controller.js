@@ -43,6 +43,19 @@ export const createUser = async (req, res) => {
         await user.save();
 
         logger.info(`User created successfully: ${user.email}`);
+
+        // Assign new user gift automatically
+        try {
+            const { checkAndAssignNewUserGift } = require('../../utils/giftAssignment');
+            const giftResult = await checkAndAssignNewUserGift(user._id.toString());
+            if (giftResult.assigned) {
+                logger.info(`New user gift assigned to ${user.email}: ${giftResult.couponCode}`);
+            }
+        } catch (giftError) {
+            logger.error(`Error assigning new user gift to ${user.email}:`, giftError);
+            // Don't fail user creation if gift assignment fails
+        }
+
         res.status(201).json(user);
     } catch (error) {
         logger.error('Error creating user:', error);
