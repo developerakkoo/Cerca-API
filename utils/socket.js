@@ -49,7 +49,7 @@ function initializeSocket (server) {
       origin: '*',
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
     },
-    transports: ['websocket'],
+    transports: ['polling', 'websocket'], // Allow both transports for better compatibility with reverse proxies
     pingInterval: 25000,
     pingTimeout: 60000
   })

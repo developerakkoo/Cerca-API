@@ -2,6 +2,8 @@ const User = require('../../Models/User/user.model');
 const Ride = require('../../Models/Driver/ride.model');
 const WalletTransaction = require('../../Models/User/walletTransaction.model');
 const logger = require('../../utils/logger');
+const fs = require('fs');
+const path = require('path');
 
 const parseBoolean = (value) => {
   if (value === undefined) return undefined;
@@ -12,7 +14,7 @@ const parseBoolean = (value) => {
 
 const listUsers = async (req, res) => {
   try {
-    const { page = 1, limit = 20, search, isActive, isVerified } = req.query;
+    const { page = 1, limit = 20, search, isActive, isVerified, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
     const query = {};
 
     const activeValue = parseBoolean(isActive);
@@ -26,9 +28,14 @@ const listUsers = async (req, res) => {
       query.$or = [{ fullName: regex }, { email: regex }, { phoneNumber: regex }];
     }
 
+    // Validate sortBy field
+    const allowedSortFields = ['fullName', 'email', 'createdAt', 'walletBalance', 'lastLogin'];
+    const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
+    const sortDirection = sortOrder === 'asc' ? 1 : -1;
+
     const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
     const [users, total] = await Promise.all([
-      User.find(query).sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit, 10)),
+      User.find(query).sort({ [sortField]: sortDirection }).skip(skip).limit(parseInt(limit, 10)),
       User.countDocuments(query),
     ]);
 
@@ -177,11 +184,95 @@ const adjustWallet = async (req, res) => {
   }
 };
 
+const updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if a new profile picture is uploaded
+    if (req.file) {
+      // Generate the URL for the new profile picture
+      const profilePicUrl = `${req.protocol}://${req.get('host')}/uploads/profilePics/${req.file.filename}`;
+
+      // Delete the previous profile picture if it exists
+      if (user.profilePic) {
+        const previousPicPath = path.join(
+          'uploads/profilePics',
+          path.basename(user.profilePic)
+        );
+        fs.unlink(previousPicPath, (err) => {
+          if (err) {
+            logger.warn(`Failed to delete previous profile picture: ${previousPicPath}`);
+          } else {
+            logger.info(`Deleted previous profile picture: ${previousPicPath}`);
+          }
+        });
+      }
+
+      // Update the profile picture URL in the request body
+      req.body.profilePic = profilePicUrl;
+    }
+
+    // Update the user with the new data
+    const updatedUser = await User.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+
+    logger.info(`Admin ${req.adminId} updated user ${id}`);
+    res.status(200).json({ message: 'User updated successfully', user: updatedUser });
+  } catch (error) {
+    logger.error('Error updating user:', error);
+    res.status(400).json({ message: 'Error updating user', error: error.message });
+  }
+};
+
+const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Delete the profile picture if it exists
+    if (user.profilePic) {
+      const profilePicPath = path.join(
+        'uploads/profilePics',
+        path.basename(user.profilePic)
+      );
+      fs.unlink(profilePicPath, (err) => {
+        if (err) {
+          logger.warn(`Failed to delete profile picture: ${profilePicPath}`);
+        } else {
+          logger.info(`Deleted profile picture: ${profilePicPath}`);
+        }
+      });
+    }
+
+    // Hard delete the user
+    await User.findByIdAndDelete(id);
+
+    logger.info(`Admin ${req.adminId} deleted user ${id}`);
+    res.status(200).json({ message: 'User deleted successfully' });
+  } catch (error) {
+    logger.error('Error deleting user:', error);
+    res.status(500).json({ message: 'Error deleting user', error: error.message });
+  }
+};
+
 module.exports = {
   listUsers,
   getUserDetails,
   blockUser,
   verifyUser,
   adjustWallet,
+  updateUser,
+  deleteUser,
 };
 
