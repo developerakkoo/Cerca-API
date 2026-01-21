@@ -2304,16 +2304,28 @@ function initializeSocket (server) {
         const ride = await Ride.findById(data.rideId).populate('rider driver')
 
         if (ride) {
+          // Emit rideCancelled event since emergency cancels the ride
+          // This ensures frontend clears ride state properly
+          const cancellationReason = `Emergency: ${data.reason || 'Emergency alert triggered'}`
+          
           if (ride.userSocketId) {
+            io.to(ride.userSocketId).emit('rideCancelled', {
+              ride: ride,
+              reason: cancellationReason
+            })
             io.to(ride.userSocketId).emit('emergencyAlert', emergency)
             logger.warn(
-              `Emergency alert sent to rider - rideId: ${data.rideId}`
+              `Ride cancelled and emergency alert sent to rider - rideId: ${data.rideId}`
             )
           }
           if (ride.driverSocketId) {
+            io.to(ride.driverSocketId).emit('rideCancelled', {
+              ride: ride,
+              reason: cancellationReason
+            })
             io.to(ride.driverSocketId).emit('emergencyAlert', emergency)
             logger.warn(
-              `Emergency alert sent to driver - rideId: ${data.rideId}`
+              `Ride cancelled and emergency alert sent to driver - rideId: ${data.rideId}`
             )
           }
 

@@ -7,7 +7,8 @@ const Driver = require('../../Models/Driver/driver.model')
 
 const {
   searchDriversWithProgressiveRadius,
-  createNotification
+  createNotification,
+  cancelRide
 } = require('../../utils/ride_booking_functions')
 
 /**
@@ -59,14 +60,68 @@ async function processRideJob (rideId) {
 
     logger.info(`📍 Found ${drivers.length} drivers within ${radiusUsed}m`)
 
-    // ❌ No drivers
+    // ❌ No drivers - Cancel the ride
     if (!drivers.length) {
-      if (ride.userSocketId) {
-        io.to(ride.userSocketId).emit('noDriverFound', {
-          rideId: ride._id,
-          message: `No drivers available within ${Math.round(radiusUsed / 1000)}km`
+      logger.warn(`❌ No drivers found for ride ${ride._id} within ${radiusUsed}m radius. Cancelling ride.`)
+      
+      try {
+        // Cancel the ride
+        const cancelledRide = await cancelRide(
+          ride._id,
+          'system',
+          `No drivers found within ${Math.round(radiusUsed / 1000)}km radius`
+        )
+        
+        logger.info(`✅ Ride ${ride._id} cancelled due to no drivers found`)
+        
+        // Emit events to notify the rider
+        if (ride.userSocketId) {
+          // Emit noDriverFound event (for backward compatibility)
+          io.to(ride.userSocketId).emit('noDriverFound', {
+            rideId: ride._id,
+            message: `No drivers available within ${Math.round(radiusUsed / 1000)}km. Please try again later.`
+          })
+          
+          // Emit rideError event
+          io.to(ride.userSocketId).emit('rideError', {
+            message: `No drivers found within ${Math.round(radiusUsed / 1000)}km radius. Please try again later.`,
+            code: 'NO_DRIVERS_FOUND',
+            rideId: ride._id
+          })
+          
+          // Emit rideCancelled event to ensure frontend clears state
+          io.to(ride.userSocketId).emit('rideCancelled', {
+            ride: cancelledRide,
+            reason: `No drivers found within ${Math.round(radiusUsed / 1000)}km radius`,
+            cancelledBy: 'system'
+          })
+          
+          logger.info(`📢 No driver found events sent to rider: ${ride.rider._id || ride.rider}`)
+        } else {
+          logger.warn(`⚠️ Cannot send no driver found events: userSocketId is missing for ride ${ride._id}`)
+        }
+        
+        // Create notification for rider
+        await createNotification({
+          recipientId: ride.rider._id || ride.rider,
+          recipientModel: 'User',
+          title: 'Ride Cancelled',
+          message: `No drivers found within ${Math.round(radiusUsed / 1000)}km radius. Please try again later.`,
+          type: 'ride_cancelled',
+          relatedRide: ride._id
         })
+      } catch (cancelError) {
+        logger.error(`❌ Error cancelling ride ${ride._id} due to no drivers: ${cancelError.message}`)
+        // Still emit error event even if cancellation fails
+        if (ride.userSocketId) {
+          io.to(ride.userSocketId).emit('rideError', {
+            message: `No drivers found within ${Math.round(radiusUsed / 1000)}km radius. Please try again later.`,
+            code: 'NO_DRIVERS_FOUND',
+            rideId: ride._id
+          })
+        }
       }
+      
       return
     }
 

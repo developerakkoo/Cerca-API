@@ -164,6 +164,15 @@ export const loginUserByMobile = async (req, res) => {
         const user = await User.findOne({ phoneNumber });
 
         if (user) {
+            // Check if user is blocked
+            if (user.isActive === false) {
+                logger.warn(`Blocked user attempted login: ${user.phoneNumber}`);
+                return res.status(403).json({
+                    message: 'Your account has been blocked',
+                    isBlocked: true,
+                });
+            }
+
             // Generate a JWT token
             const token = jwt.sign(
                 { id: user._id, phoneNumber: user.phoneNumber },
