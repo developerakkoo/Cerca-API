@@ -336,7 +336,8 @@ const getDriverEarnings = async (req, res) => {
     
     logger.info(`getDriverEarnings: Successfully returned earnings data for driverId: ${driverId}`);
   } catch (error) {
-    logger.error(`getDriverEarnings: Error fetching driver earnings for driverId: ${driverId}`, {
+    const errorDriverId = req.params?.driverId || 'unknown';
+    logger.error(`getDriverEarnings: Error fetching driver earnings for driverId: ${errorDriverId}`, {
       error: error.message,
       stack: error.stack
     });

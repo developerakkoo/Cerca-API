@@ -1510,6 +1510,19 @@ function initializeSocket (server) {
         logger.info(
           `Ride completed successfully - rideId: ${rideId}, finalFare: ${completedRide.fare}`
         )
+        
+        // Log ride data for debugging
+        logger.info(`storeRideEarnings: Ride data check - rideId: ${rideId}, driver: ${completedRide.driver ? (completedRide.driver._id || completedRide.driver) : 'missing'}, rider: ${completedRide.rider ? (completedRide.rider._id || completedRide.rider) : 'missing'}, fare: ${completedRide.fare}`)
+
+        // Store earnings IMMEDIATELY after completing ride (before any saves that might lose populated fields)
+        // This ensures driver/rider are still populated from completeRide()
+        storeRideEarnings(completedRide).catch(err => {
+          logger.error(
+            `Error storing ride earnings for rideId: ${rideId}:`,
+            err
+          )
+          // Don't fail ride completion if earnings storage fails
+        })
 
         // Process WALLET payment deduction if payment method is WALLET
         if (completedRide.paymentMethod === 'WALLET') {
@@ -1580,15 +1593,6 @@ function initializeSocket (server) {
             }
           }
         }
-
-        // Store earnings for admin analytics (non-blocking)
-        storeRideEarnings(completedRide).catch(err => {
-          logger.error(
-            `Error storing ride earnings for rideId: ${rideId}:`,
-            err
-          )
-          // Don't fail ride completion if earnings storage fails
-        })
 
         // Process referral reward if this is user's first completed ride (non-blocking)
         processReferralRewardIfFirstRide(
