@@ -659,8 +659,10 @@ const verifyStartOtp = async (rideId, providedOtp) => {
     const ride = await Ride.findById(rideId)
     if (!ride) throw new Error('Ride not found')
 
-    if (ride.status !== 'accepted') {
-      throw new Error('Ride is not in accepted state')
+    // Allow OTP verification when ride is in 'accepted' or 'arrived' status
+    // Driver can verify OTP after marking as arrived
+    if (ride.status !== 'accepted' && ride.status !== 'arrived') {
+      throw new Error('Ride is not in accepted or arrived state')
     }
 
     if (ride.startOtp !== providedOtp) {
