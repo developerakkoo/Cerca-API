@@ -184,6 +184,35 @@ const getVehicleServices = async (req, res) => {
 };
 
 /**
+ * @desc    Get system settings (maintenance mode, force update, app versions) - Public endpoint for user app
+ * @route   GET /admin/settings/system
+ */
+const getSystemSettings = async (req, res) => {
+    try {
+        const settings = await Settings.findOne().select('systemSettings appVersions');
+        
+        if (!settings) {
+            // Return default values if settings don't exist
+            return res.status(200).json({
+                maintenanceMode: false,
+                forceUpdate: false,
+                maintenanceMessage: null,
+                userAppVersion: null
+            });
+        }
+        
+        res.status(200).json({
+            maintenanceMode: settings.systemSettings?.maintenanceMode || false,
+            forceUpdate: settings.systemSettings?.forceUpdate || false,
+            maintenanceMessage: settings.systemSettings?.maintenanceMessage || null,
+            userAppVersion: settings.appVersions?.userAppVersion || null
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching system settings', error });
+    }
+};
+
+/**
  * @desc    Get public settings (pricing configurations and vehicle services) - Public endpoint for user app
  * @route   GET /admin/settings/public
  */
@@ -274,4 +303,5 @@ module.exports = {
     addSettings,
     getVehicleServices,
     getPublicSettings,
+    getSystemSettings,
 };

@@ -15,6 +15,7 @@ const {
     addSettings,
     getVehicleServices,
     getPublicSettings,
+    getSystemSettings,
 } = require('../Controllers/adminSettings.controller.js');
 const {
     listDriverEarnings,
@@ -38,6 +39,7 @@ router.post('/create-admin', createAdmin);
 // Public routes for user app (no authentication required)
 router.get('/settings/vehicle-services', getVehicleServices);
 router.get('/settings/public', getPublicSettings);
+router.get('/settings/system', getSystemSettings);
 
 // Protected admin routes
 router.use(authenticateAdmin);

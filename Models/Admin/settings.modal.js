@@ -22,6 +22,7 @@ const SettingsSchema = new mongoose.Schema({
     systemSettings: {
         maintenanceMode: { type: Boolean, default: false },
         forceUpdate: { type: Boolean, default: false },
+        maintenanceMessage: { type: String, required: false },
     },
     appVersions: {
         driverAppVersion: { type: String, required: false },
