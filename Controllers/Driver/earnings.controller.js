@@ -17,18 +17,28 @@ const getDriverEarnings = async (req, res) => {
       endDate,
     } = req.query;
     
+    logger.info(`getDriverEarnings: Fetching earnings for driverId: ${driverId}`, {
+      period,
+      startDate,
+      endDate
+    });
+    
     // Verify driver exists
     const driver = await Driver.findById(driverId);
     if (!driver) {
+      logger.warn(`getDriverEarnings: Driver not found - driverId: ${driverId}`);
       return res.status(404).json({
         success: false,
         message: 'Driver not found',
       });
     }
     
+    logger.info(`getDriverEarnings: Driver found - driverId: ${driverId}, name: ${driver.fullName || 'N/A'}`);
+    
     // Get settings for commission calculation
     const settings = await Settings.findOne();
     if (!settings) {
+      logger.error('getDriverEarnings: Settings not found');
       return res.status(500).json({
         success: false,
         message: 'Settings not found',
@@ -36,6 +46,7 @@ const getDriverEarnings = async (req, res) => {
     }
     
     const { platformFees, driverCommissions } = settings.pricingConfigurations;
+    logger.info(`getDriverEarnings: Settings loaded - platformFees: ${platformFees}%, driverCommissions: ${driverCommissions}%`);
     
     // Build date filter
     const dateFilter = { driverId };
@@ -48,6 +59,7 @@ const getDriverEarnings = async (req, res) => {
       };
       periodStart = new Date(startDate);
       periodEnd = new Date(endDate);
+      logger.info(`getDriverEarnings: Custom date range - start: ${periodStart.toISOString()}, end: ${periodEnd.toISOString()}`);
     } else {
       const now = new Date();
       switch (period) {
@@ -79,9 +91,15 @@ const getDriverEarnings = async (req, res) => {
           break;
         default:
           // 'all' - no date filter
+          logger.info(`getDriverEarnings: No date filter applied (period: ${period})`);
           break;
       }
+      if (periodStart && periodEnd) {
+        logger.info(`getDriverEarnings: Period filter - start: ${periodStart.toISOString()}, end: ${periodEnd.toISOString()}`);
+      }
     }
+    
+    logger.info(`getDriverEarnings: Query filter:`, JSON.stringify(dateFilter, null, 2));
     
     // Get earnings from AdminEarnings
     const earnings = await AdminEarnings.find(dateFilter)
@@ -89,11 +107,15 @@ const getDriverEarnings = async (req, res) => {
       .populate('riderId', 'fullName')
       .sort({ rideDate: -1 });
     
+    logger.info(`getDriverEarnings: Found ${earnings.length} earnings records for driverId: ${driverId}`);
+    
     // Calculate totals
     const totalGrossEarnings = earnings.reduce((sum, e) => sum + (e.grossFare || 0), 0);
     const totalPlatformFees = earnings.reduce((sum, e) => sum + (e.platformFee || 0), 0);
     const totalDriverEarnings = earnings.reduce((sum, e) => sum + (e.driverEarning || 0), 0);
     const totalRides = earnings.length;
+    
+    logger.info(`getDriverEarnings: Calculated totals - totalRides: ${totalRides}, totalGrossEarnings: ₹${totalGrossEarnings}, totalDriverEarnings: ₹${totalDriverEarnings}`);
     
     // Calculate payment status totals
     const pendingEarnings = earnings.filter(e => e.paymentStatus === 'pending');
@@ -102,6 +124,8 @@ const getDriverEarnings = async (req, res) => {
     const totalCompletedEarnings = completedEarnings.reduce((sum, e) => sum + (e.driverEarning || 0), 0);
     const pendingEarningsCount = pendingEarnings.length;
     const completedEarningsCount = completedEarnings.length;
+    
+    logger.info(`getDriverEarnings: Payment status breakdown - pending: ${pendingEarningsCount} (₹${totalPendingEarnings}), completed: ${completedEarningsCount} (₹${totalCompletedEarnings})`);
     
     // Calculate tips (from rides)
     const rideIds = earnings.map(e => e.rideId?._id || e.rideId).filter(Boolean);
@@ -309,8 +333,13 @@ const getDriverEarnings = async (req, res) => {
         recentRides,
       },
     });
+    
+    logger.info(`getDriverEarnings: Successfully returned earnings data for driverId: ${driverId}`);
   } catch (error) {
-    logger.error('Error fetching driver earnings:', error);
+    logger.error(`getDriverEarnings: Error fetching driver earnings for driverId: ${driverId}`, {
+      error: error.message,
+      stack: error.stack
+    });
     res.status(500).json({
       success: false,
       message: 'Error fetching driver earnings',

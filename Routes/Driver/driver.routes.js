@@ -13,7 +13,6 @@ const {
     updateDriverLocation,
     updateDriverOnlineStatus,
     updateDriverVehicle,
-    getDriverEarnings,
     getDriverStats,
     getNearbyDrivers,
     updateDriverBusyStatus,
@@ -65,9 +64,6 @@ router.patch('/:id/vehicle', updateDriverVehicle);
 
 // Route to update driver busy status
 router.patch('/:id/busy-status', updateDriverBusyStatus);
-
-// Route to get driver earnings
-router.get('/:id/earnings', getDriverEarnings);
 
 // Route to get driver statistics
 router.get('/:id/stats', getDriverStats);

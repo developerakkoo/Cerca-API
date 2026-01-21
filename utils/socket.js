@@ -2419,31 +2419,93 @@ function getSocketIO () {
 }
 
 // Store ride earnings for admin analytics (non-blocking)
-async function storeRideEarnings (ride) {
+async function storeRideEarnings (ride, retryCount = 0) {
+  const maxRetries = 3
+  const retryDelay = 1000 // 1 second
+
   try {
-    if (!ride || !ride._id || !ride.driver || !ride.rider) {
-      logger.warn('storeRideEarnings: Invalid ride data, skipping')
+    // Validate ride data
+    if (!ride) {
+      logger.warn('storeRideEarnings: Ride object is null or undefined')
       return
     }
 
+    if (!ride._id) {
+      logger.warn('storeRideEarnings: Ride ID is missing', { ride: JSON.stringify(ride) })
+      return
+    }
+
+    const rideId = ride._id.toString()
+    logger.info(`storeRideEarnings: Processing rideId: ${rideId}`)
+
+    // Validate driver
+    let driverId = null
+    if (ride.driver) {
+      driverId = ride.driver._id ? ride.driver._id.toString() : ride.driver.toString()
+    } else {
+      logger.warn(`storeRideEarnings: Driver missing for rideId: ${rideId}`)
+      // Try to fetch ride with populated driver
+      const Ride = require('../Models/Driver/ride.model')
+      const populatedRide = await Ride.findById(rideId).populate('driver', '_id')
+      if (populatedRide && populatedRide.driver) {
+        driverId = populatedRide.driver._id.toString()
+        ride.driver = populatedRide.driver
+        logger.info(`storeRideEarnings: Fetched driver for rideId: ${rideId}, driverId: ${driverId}`)
+      } else {
+        logger.error(`storeRideEarnings: Cannot find driver for rideId: ${rideId}`)
+        return
+      }
+    }
+
+    // Validate rider
+    let riderId = null
+    if (ride.rider) {
+      riderId = ride.rider._id ? ride.rider._id.toString() : ride.rider.toString()
+    } else {
+      logger.warn(`storeRideEarnings: Rider missing for rideId: ${rideId}`)
+      // Try to fetch ride with populated rider
+      const Ride = require('../Models/Driver/ride.model')
+      const populatedRide = await Ride.findById(rideId).populate('rider', '_id')
+      if (populatedRide && populatedRide.rider) {
+        riderId = populatedRide.rider._id.toString()
+        ride.rider = populatedRide.rider
+        logger.info(`storeRideEarnings: Fetched rider for rideId: ${rideId}, riderId: ${riderId}`)
+      } else {
+        logger.error(`storeRideEarnings: Cannot find rider for rideId: ${rideId}`)
+        return
+      }
+    }
+
     // Check if earnings already stored (prevent duplicates)
-    const existing = await AdminEarnings.findOne({ rideId: ride._id })
+    const existing = await AdminEarnings.findOne({ rideId: rideId })
     if (existing) {
-      logger.info(`Earnings already stored for rideId: ${ride._id}`)
+      logger.info(`storeRideEarnings: Earnings already stored for rideId: ${rideId}`)
       return
     }
 
     // Get settings for commission calculation
     const settings = await Settings.findOne()
     if (!settings) {
-      logger.warn(
-        'storeRideEarnings: Settings not found, skipping earnings storage'
+      logger.error(
+        `storeRideEarnings: Settings not found, skipping earnings storage for rideId: ${rideId}`
+      )
+      return
+    }
+
+    if (!settings.pricingConfigurations) {
+      logger.error(
+        `storeRideEarnings: pricingConfigurations missing in settings for rideId: ${rideId}`
       )
       return
     }
 
     const { platformFees, driverCommissions } = settings.pricingConfigurations
     const grossFare = ride.fare || 0
+
+    if (grossFare <= 0) {
+      logger.warn(`storeRideEarnings: Invalid fare amount (${grossFare}) for rideId: ${rideId}`)
+      return
+    }
 
     // Calculate platform fee and driver earning
     const platformFee = platformFees ? grossFare * (platformFees / 100) : 0
@@ -2454,22 +2516,40 @@ async function storeRideEarnings (ride) {
     // Create earnings record
     // Always set paymentStatus to 'pending' for new earnings - admin will mark as 'completed' after processing payment
     const earnings = await AdminEarnings.create({
-      rideId: ride._id,
-      driverId: ride.driver._id || ride.driver,
-      riderId: ride.rider._id || ride.rider,
+      rideId: rideId,
+      driverId: driverId,
+      riderId: riderId,
       grossFare: grossFare,
       platformFee: Math.round(platformFee * 100) / 100, // Round to 2 decimal places
       driverEarning: Math.round(driverEarning * 100) / 100, // Round to 2 decimal places
-      rideDate: ride.actualEndTime || new Date(),
+      rideDate: ride.actualEndTime || ride.updatedAt || new Date(),
       paymentStatus: 'pending' // Always pending by default - admin controls completion
     })
 
     logger.info(
-      `Earnings stored for rideId: ${ride._id}, platformFee: ${earnings.platformFee}, driverEarning: ${earnings.driverEarning}`
+      `storeRideEarnings: Earnings stored successfully - rideId: ${rideId}, driverId: ${driverId}, grossFare: ₹${grossFare}, platformFee: ₹${earnings.platformFee}, driverEarning: ₹${earnings.driverEarning}`
     )
   } catch (error) {
-    logger.error('Error storing ride earnings:', error)
+    logger.error(`storeRideEarnings: Error storing ride earnings for rideId: ${ride?._id || 'unknown'}`, {
+      error: error.message,
+      stack: error.stack,
+      retryCount
+    })
+
+    // Retry logic for transient failures (network, database connection issues)
+    if (retryCount < maxRetries && (
+      error.message.includes('timeout') ||
+      error.message.includes('connection') ||
+      error.message.includes('ECONNREFUSED') ||
+      error.message.includes('network')
+    )) {
+      logger.info(`storeRideEarnings: Retrying (${retryCount + 1}/${maxRetries}) after ${retryDelay}ms`)
+      await new Promise(resolve => setTimeout(resolve, retryDelay * (retryCount + 1)))
+      return storeRideEarnings(ride, retryCount + 1)
+    }
+
     // Don't throw - this is a background operation
+    logger.error(`storeRideEarnings: Failed to store earnings after ${retryCount} retries`)
   }
 }
 
