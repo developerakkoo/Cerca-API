@@ -2,6 +2,7 @@ const Ride = require('../../Models/Driver/ride.model');
 const User = require('../../Models/User/user.model');
 const WalletTransaction = require('../../Models/User/walletTransaction.model');
 const Payout = require('../../Models/Driver/payout.model');
+const AdminEarnings = require('../../Models/Admin/adminEarnings.model');
 const logger = require('../../utils/logger');
 
 const listPayments = async (req, res) => {
@@ -135,6 +136,22 @@ const processPayout = async (req, res) => {
       return res.status(404).json({ message: 'Payout not found' });
     }
 
+    if (status === 'COMPLETED' && payout.relatedEarnings?.length) {
+      const alreadyPaid = await AdminEarnings.find({
+        _id: { $in: payout.relatedEarnings },
+        paymentStatus: 'completed'
+      }).select('_id');
+
+      if (alreadyPaid.length > 0) {
+        return res.status(400).json({
+          message: 'Some earnings are already marked as completed for this payout',
+          data: {
+            earningIds: alreadyPaid.map((earning) => earning._id)
+          }
+        });
+      }
+    }
+
     payout.status = status;
     payout.processedAt = new Date();
     payout.processedBy = req.adminId;
@@ -144,6 +161,13 @@ const processPayout = async (req, res) => {
     if (notes) payout.notes = notes;
 
     await payout.save();
+
+    if (status === 'COMPLETED' && payout.relatedEarnings?.length) {
+      await AdminEarnings.updateMany(
+        { _id: { $in: payout.relatedEarnings } },
+        { $set: { paymentStatus: 'completed' } }
+      );
+    }
 
     res.status(200).json({ message: 'Payout updated', payout });
   } catch (error) {

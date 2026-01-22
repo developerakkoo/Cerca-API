@@ -24,8 +24,10 @@ const getAvailableBalance = async (req, res) => {
     const settings = await Settings.findOne();
     const minPayoutThreshold = settings?.payoutConfigurations?.minPayoutThreshold || 500;
     
-    // Get all unpaid earnings (not in any completed payout)
-    const allEarnings = await AdminEarnings.find({ driverId });
+    const allEarnings = await AdminEarnings.find({
+      driverId,
+      paymentStatus: 'pending'
+    });
     const allPayouts = await Payout.find({ 
       driver: driverId, 
       status: { $in: ['COMPLETED', 'PROCESSING'] } 
@@ -34,6 +36,7 @@ const getAvailableBalance = async (req, res) => {
     // Get earnings already paid out
     const paidEarningIds = new Set();
     allPayouts.forEach(payout => {
+      if (!Array.isArray(payout.relatedEarnings)) return;
       payout.relatedEarnings.forEach(earningId => {
         paidEarningIds.add(earningId.toString());
       });
@@ -51,7 +54,9 @@ const getAvailableBalance = async (req, res) => {
     
     // Get tips from unpaid rides
     const Ride = require('../../Models/Driver/ride.model');
-    const unpaidRideIds = unpaidEarnings.map(e => e.rideId).filter(Boolean);
+    const unpaidRideIds = unpaidEarnings
+      .map((earning) => earning.rideId)
+      .filter(Boolean);
     const unpaidRides = await Ride.find({ _id: { $in: unpaidRideIds } }).select('tips');
     const totalTips = unpaidRides.reduce((sum, ride) => sum + (ride.tips || 0), 0);
     
@@ -117,7 +122,10 @@ const requestPayout = async (req, res) => {
     const minPayoutThreshold = settings?.payoutConfigurations?.minPayoutThreshold || 500;
     
     // Check available balance
-    const allEarnings = await AdminEarnings.find({ driverId });
+    const allEarnings = await AdminEarnings.find({
+      driverId,
+      paymentStatus: 'pending'
+    });
     const allPayouts = await Payout.find({ 
       driver: driverId, 
       status: { $in: ['COMPLETED', 'PROCESSING', 'PENDING'] } 
@@ -125,6 +133,7 @@ const requestPayout = async (req, res) => {
     
     const paidEarningIds = new Set();
     allPayouts.forEach(payout => {
+      if (!Array.isArray(payout.relatedEarnings)) return;
       payout.relatedEarnings.forEach(earningId => {
         paidEarningIds.add(earningId.toString());
       });
@@ -140,7 +149,9 @@ const requestPayout = async (req, res) => {
     );
     
     const Ride = require('../../Models/Driver/ride.model');
-    const unpaidRideIds = unpaidEarnings.map(e => e.rideId).filter(Boolean);
+    const unpaidRideIds = unpaidEarnings
+      .map((earning) => earning.rideId)
+      .filter(Boolean);
     const unpaidRides = await Ride.find({ _id: { $in: unpaidRideIds } }).select('tips');
     const totalTips = unpaidRides.reduce((sum, ride) => sum + (ride.tips || 0), 0);
     const totalAvailable = availableBalance + totalTips;
@@ -176,27 +187,53 @@ const requestPayout = async (req, res) => {
       });
     }
     
+    const getRideIdString = (earning) => {
+      const rideIdValue = earning?.rideId?._id || earning?.rideId;
+      if (!rideIdValue) return null;
+      try {
+        return rideIdValue.toString();
+      } catch (err) {
+        return null;
+      }
+    };
+
     // Select earnings to include in payout (up to requested amount)
     let remainingAmount = amount;
     const selectedEarnings = [];
+    const selectedEarningsDetails = [];
     
     for (const earning of unpaidEarnings) {
       if (remainingAmount <= 0) break;
       
       const earningAmount = earning.driverEarning || 0;
-      const ride = unpaidRides.find(r => r._id.toString() === (earning.rideId?._id || earning.rideId).toString());
+      const rideIdString = getRideIdString(earning);
+      const ride = rideIdString
+        ? unpaidRides.find(r => r._id && r._id.toString() === rideIdString)
+        : null;
       const tips = ride?.tips || 0;
       const totalEarning = earningAmount + tips;
       
-      if (totalEarning <= remainingAmount) {
-        selectedEarnings.push(earning._id);
-        remainingAmount -= totalEarning;
-      } else {
-        // Partial payout - for simplicity, we'll include full earnings
-        selectedEarnings.push(earning._id);
-        remainingAmount -= totalEarning;
-        break;
-      }
+      selectedEarnings.push(earning._id);
+      selectedEarningsDetails.push({
+        earningId: earning._id,
+        rideId: rideIdString,
+        driverEarning: Math.round(earningAmount * 100) / 100,
+        tips: Math.round(tips * 100) / 100,
+        total: Math.round(totalEarning * 100) / 100
+      });
+      remainingAmount -= totalEarning;
+    }
+
+    const selectedTotal = selectedEarningsDetails.reduce((sum, item) => sum + (item.total || 0), 0);
+    if (selectedTotal < amount) {
+      return res.status(400).json({
+        success: false,
+        message: 'Selected earnings do not cover the requested amount',
+        data: {
+          requested: amount,
+          selectedTotal: Math.round(selectedTotal * 100) / 100
+        }
+      });
     }
     
     // Generate transaction reference
@@ -232,6 +269,10 @@ const requestPayout = async (req, res) => {
           transactionReference: payout.transactionReference,
           requestedAt: payout.requestedAt,
         },
+        earningsBreakdown: {
+          selectedEarnings: selectedEarningsDetails,
+          totalSelected: Math.round(selectedTotal * 100) / 100
+        }
       },
     });
   } catch (error) {

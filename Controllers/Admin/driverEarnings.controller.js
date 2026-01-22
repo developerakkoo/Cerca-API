@@ -1,6 +1,7 @@
 const AdminEarnings = require('../../Models/Admin/adminEarnings.model');
 const Driver = require('../../Models/Driver/driver.model');
 const Ride = require('../../Models/Driver/ride.model');
+const Payout = require('../../Models/Driver/payout.model');
 const logger = require('../../utils/logger');
 
 /**
@@ -451,11 +452,109 @@ const getEarningsStats = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Get driver earnings analytics for admin dashboard
+ * @route   GET /api/admin/drivers/earnings/analytics
+ */
+const getEarningsAnalytics = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    const dateFilter = {};
+    if (startDate || endDate) {
+      dateFilter.rideDate = {};
+      if (startDate) dateFilter.rideDate.$gte = new Date(startDate);
+      if (endDate) dateFilter.rideDate.$lte = new Date(endDate);
+    }
+
+    const [earnings, payoutSummary, topDrivers] = await Promise.all([
+      AdminEarnings.find(dateFilter).select('platformFee driverEarning'),
+      Payout.aggregate([
+        {
+          $group: {
+            _id: '$status',
+            totalAmount: { $sum: '$amount' },
+            count: { $sum: 1 }
+          }
+        }
+      ]),
+      AdminEarnings.aggregate([
+        { $match: dateFilter },
+        {
+          $group: {
+            _id: '$driverId',
+            totalEarnings: { $sum: '$driverEarning' },
+            rideCount: { $sum: 1 }
+          }
+        },
+        { $sort: { totalEarnings: -1 } },
+        { $limit: 10 },
+        {
+          $lookup: {
+            from: 'drivers',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'driver'
+          }
+        },
+        { $unwind: { path: '$driver', preserveNullAndEmptyArrays: true } },
+        {
+          $project: {
+            driverId: '$_id',
+            totalEarnings: 1,
+            rideCount: 1,
+            name: '$driver.name',
+            phone: '$driver.phone'
+          }
+        }
+      ])
+    ]);
+
+    const totalPlatformRevenue = earnings.reduce((sum, e) => sum + (e.platformFee || 0), 0);
+    const totalDriverEarnings = earnings.reduce((sum, e) => sum + (e.driverEarning || 0), 0);
+
+    const payoutMap = payoutSummary.reduce((acc, item) => {
+      acc[item._id] = item;
+      return acc;
+    }, {});
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totals: {
+          totalPlatformRevenue: Math.round(totalPlatformRevenue * 100) / 100,
+          totalDriverEarnings: Math.round(totalDriverEarnings * 100) / 100,
+          totalDriverPayouts: Math.round((payoutMap.COMPLETED?.totalAmount || 0) * 100) / 100
+        },
+        payouts: {
+          pendingCount: (payoutMap.PENDING?.count || 0) + (payoutMap.PROCESSING?.count || 0),
+          pendingAmount: Math.round(((payoutMap.PENDING?.totalAmount || 0) + (payoutMap.PROCESSING?.totalAmount || 0)) * 100) / 100
+        },
+        topDrivers: topDrivers.map((driver) => ({
+          driverId: driver.driverId,
+          name: driver.name || 'Unknown',
+          phone: driver.phone || '',
+          totalEarnings: Math.round((driver.totalEarnings || 0) * 100) / 100,
+          rideCount: driver.rideCount || 0
+        }))
+      }
+    });
+  } catch (error) {
+    logger.error('Error fetching earnings analytics:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching earnings analytics',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   listDriverEarnings,
   getDriverEarningsById,
   updateEarningStatus,
   bulkUpdateEarningStatus,
   getEarningsStats,
+  getEarningsAnalytics,
 };
 

@@ -127,9 +127,61 @@ const getDriverEarnings = async (req, res) => {
     
     logger.info(`getDriverEarnings: Payment status breakdown - pending: ${pendingEarningsCount} (₹${totalPendingEarnings}), completed: ${completedEarningsCount} (₹${totalCompletedEarnings})`);
     
+    const getRideIdString = (earning) => {
+      // Handle null/undefined earning
+      if (!earning) {
+        logger.warn('getDriverEarnings: Earning is null or undefined');
+        return null;
+      }
+      
+      // Try to get rideId value with multiple fallbacks
+      let rideIdValue = null;
+      if (earning.rideId) {
+        if (earning.rideId._id) {
+          rideIdValue = earning.rideId._id;
+        } else if (earning.rideId.toString) {
+          rideIdValue = earning.rideId;
+        }
+      }
+      
+      // If still no rideId, return null
+      if (!rideIdValue) {
+        logger.debug('getDriverEarnings: No rideId found for earning', {
+          earningId: earning._id?.toString() || 'unknown',
+        });
+        return null;
+      }
+      
+      // Safely convert to string
+      try {
+        if (typeof rideIdValue === 'string') {
+          return rideIdValue;
+        }
+        if (rideIdValue && typeof rideIdValue.toString === 'function') {
+          return rideIdValue.toString();
+        }
+        logger.warn('getDriverEarnings: rideIdValue is not stringifiable', {
+          rideIdValue,
+          type: typeof rideIdValue,
+        });
+        return null;
+      } catch (err) {
+        logger.warn('getDriverEarnings: Failed to stringify rideId', {
+          rideIdValue,
+          error: err?.message,
+          earningId: earning._id?.toString() || 'unknown',
+        });
+        return null;
+      }
+    };
+
     // Calculate tips (from rides)
-    const rideIds = earnings.map(e => e.rideId?._id || e.rideId).filter(Boolean);
-    const rides = await Ride.find({ _id: { $in: rideIds } }).select('tips');
+    const rideIds = earnings
+      .map(getRideIdString)
+      .filter(Boolean);
+    const rides = rideIds.length > 0 
+      ? await Ride.find({ _id: { $in: rideIds } }).select('tips')
+      : [];
     const totalTips = rides.reduce((sum, ride) => sum + (ride.tips || 0), 0);
     
     // Calculate bonuses (if any - can be added later)
@@ -167,7 +219,29 @@ const getDriverEarnings = async (req, res) => {
       dayData.driverEarnings += earning.driverEarning || 0;
       
       // Get tips for this ride
-      const ride = rides.find(r => r._id.toString() === (earning.rideId?._id || earning.rideId).toString());
+      const rideIdString = getRideIdString(earning);
+      let ride = null;
+      if (rideIdString) {
+        try {
+          ride = rides.find(r => {
+            if (!r || !r._id) return false;
+            try {
+              return r._id.toString() === rideIdString;
+            } catch (err) {
+              logger.warn('getDriverEarnings: Failed to compare rideId in daily breakdown', {
+                rideId: r._id,
+                error: err?.message,
+              });
+              return false;
+            }
+          });
+        } catch (err) {
+          logger.warn('getDriverEarnings: Error finding ride in daily breakdown', {
+            rideIdString,
+            error: err?.message,
+          });
+        }
+      }
       if (ride) {
         dayData.tips += ride.tips || 0;
       }
@@ -215,7 +289,29 @@ const getDriverEarnings = async (req, res) => {
       weekData.grossEarnings += earning.grossFare || 0;
       weekData.driverEarnings += earning.driverEarning || 0;
       
-      const ride = rides.find(r => r._id.toString() === (earning.rideId?._id || earning.rideId).toString());
+      const rideIdString = getRideIdString(earning);
+      let ride = null;
+      if (rideIdString) {
+        try {
+          ride = rides.find(r => {
+            if (!r || !r._id) return false;
+            try {
+              return r._id.toString() === rideIdString;
+            } catch (err) {
+              logger.warn('getDriverEarnings: Failed to compare rideId in weekly breakdown', {
+                rideId: r._id,
+                error: err?.message,
+              });
+              return false;
+            }
+          });
+        } catch (err) {
+          logger.warn('getDriverEarnings: Error finding ride in weekly breakdown', {
+            rideIdString,
+            error: err?.message,
+          });
+        }
+      }
       if (ride) {
         weekData.tips += ride.tips || 0;
       }
@@ -260,7 +356,29 @@ const getDriverEarnings = async (req, res) => {
       monthData.grossEarnings += earning.grossFare || 0;
       monthData.driverEarnings += earning.driverEarning || 0;
       
-      const ride = rides.find(r => r._id.toString() === (earning.rideId?._id || earning.rideId).toString());
+      const rideIdString = getRideIdString(earning);
+      let ride = null;
+      if (rideIdString) {
+        try {
+          ride = rides.find(r => {
+            if (!r || !r._id) return false;
+            try {
+              return r._id.toString() === rideIdString;
+            } catch (err) {
+              logger.warn('getDriverEarnings: Failed to compare rideId in monthly breakdown', {
+                rideId: r._id,
+                error: err?.message,
+              });
+              return false;
+            }
+          });
+        } catch (err) {
+          logger.warn('getDriverEarnings: Error finding ride in monthly breakdown', {
+            rideIdString,
+            error: err?.message,
+          });
+        }
+      }
       if (ride) {
         monthData.tips += ride.tips || 0;
       }
@@ -282,20 +400,46 @@ const getDriverEarnings = async (req, res) => {
     monthlyBreakdown.sort((a, b) => a.month.localeCompare(b.month));
     
     // Recent rides (last 10)
-    const recentRides = earnings.slice(0, 10).map(earning => ({
-      rideId: earning.rideId?._id || earning.rideId,
-      date: earning.rideDate,
-      grossFare: earning.grossFare,
-      driverEarning: earning.driverEarning,
-      platformFee: earning.platformFee,
-      tips: rides.find(r => r._id.toString() === (earning.rideId?._id || earning.rideId).toString())?.tips || 0,
-      paymentStatus: earning.paymentStatus || 'pending',
-      rider: earning.riderId ? {
-        name: earning.riderId.fullName,
-      } : null,
-      pickupAddress: earning.rideId?.pickupAddress,
-      dropoffAddress: earning.rideId?.dropoffAddress,
-    }));
+    const recentRides = earnings.slice(0, 10).map(earning => {
+      const rideIdString = getRideIdString(earning);
+      let ride = null;
+      if (rideIdString) {
+        try {
+          ride = rides.find(r => {
+            if (!r || !r._id) return false;
+            try {
+              return r._id.toString() === rideIdString;
+            } catch (err) {
+              logger.warn('getDriverEarnings: Failed to compare rideId in recent rides', {
+                rideId: r._id,
+                error: err?.message,
+              });
+              return false;
+            }
+          });
+        } catch (err) {
+          logger.warn('getDriverEarnings: Error finding ride in recent rides', {
+            rideIdString,
+            error: err?.message,
+          });
+        }
+      }
+      
+      return {
+        rideId: rideIdString,
+        date: earning.rideDate,
+        grossFare: earning.grossFare,
+        driverEarning: earning.driverEarning,
+        platformFee: earning.platformFee,
+        tips: ride?.tips || 0,
+        paymentStatus: earning.paymentStatus || 'pending',
+        rider: earning.riderId ? {
+          name: earning.riderId.fullName,
+        } : null,
+        pickupAddress: earning.rideId?.pickupAddress,
+        dropoffAddress: earning.rideId?.dropoffAddress,
+      };
+    });
     
     res.status(200).json({
       success: true,

@@ -23,6 +23,7 @@ const {
     updateEarningStatus,
     bulkUpdateEarningStatus,
     getEarningsStats,
+    getEarningsAnalytics,
 } = require('../Controllers/Admin/driverEarnings.controller.js');
 
 const { authenticateAdmin, requireRole } = require('../utils/adminAuth');
@@ -62,6 +63,7 @@ router.get('/earnings', getAdminEarnings);
 // Routes for driver earnings management
 router.get('/drivers/earnings', listDriverEarnings);
 router.get('/drivers/earnings/stats', getEarningsStats);
+router.get('/drivers/earnings/analytics', getEarningsAnalytics);
 router.get('/drivers/:driverId/earnings', getDriverEarningsById);
 router.patch('/drivers/earnings/:earningId/status', updateEarningStatus);
 router.patch('/drivers/earnings/bulk-status', bulkUpdateEarningStatus);

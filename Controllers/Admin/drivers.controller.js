@@ -1,6 +1,7 @@
 const Driver = require('../../Models/Driver/driver.model');
 const Ride = require('../../Models/Driver/ride.model');
 const Payout = require('../../Models/Driver/payout.model');
+const AdminEarnings = require('../../Models/Admin/adminEarnings.model');
 const logger = require('../../utils/logger');
 
 const parseBoolean = (value) => {
@@ -35,8 +36,29 @@ const listDrivers = async (req, res) => {
       Driver.countDocuments(query),
     ]);
 
+    const driverIds = drivers.map((driver) => driver._id);
+    const earningsSummary = await AdminEarnings.aggregate([
+      { $match: { driverId: { $in: driverIds } } },
+      {
+        $group: {
+          _id: '$driverId',
+          totalEarnings: { $sum: '$driverEarning' }
+        }
+      }
+    ]);
+
+    const earningsMap = earningsSummary.reduce((acc, item) => {
+      acc[item._id.toString()] = item.totalEarnings || 0;
+      return acc;
+    }, {});
+
+    const driversWithEarnings = drivers.map((driver) => ({
+      ...driver.toObject(),
+      totalEarnings: Math.round((earningsMap[driver._id.toString()] || 0) * 100) / 100
+    }));
+
     res.status(200).json({
-      drivers,
+      drivers: driversWithEarnings,
       pagination: {
         currentPage: parseInt(page, 10),
         totalPages: Math.ceil(total / parseInt(limit, 10)),

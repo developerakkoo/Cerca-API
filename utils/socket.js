@@ -2835,6 +2835,24 @@ async function storeRideEarnings (ride, retryCount = 0) {
     logger.info(
       `storeRideEarnings: Earnings stored successfully - rideId: ${rideId}, driverId: ${driverId}, grossFare: ₹${grossFare}, platformFee: ₹${earnings.platformFee}, driverEarning: ₹${earnings.driverEarning}`
     )
+
+    try {
+      const socket = getSocketIO()
+      socket.to(`driver_${driverId}`).emit('driverEarningAdded', {
+        driverId,
+        rideId,
+        driverEarning: earnings.driverEarning,
+        grossFare: earnings.grossFare,
+        platformFee: earnings.platformFee
+      })
+      logger.info(`storeRideEarnings: Emitted driverEarningAdded for driverId: ${driverId}`)
+    } catch (emitError) {
+      logger.warn('storeRideEarnings: Failed to emit driverEarningAdded', {
+        driverId,
+        rideId,
+        error: emitError?.message
+      })
+    }
   } catch (error) {
     logger.error(`storeRideEarnings: Error storing ride earnings for rideId: ${ride?._id || 'unknown'}`, {
       error: error.message,
