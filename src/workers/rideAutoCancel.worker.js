@@ -2,6 +2,7 @@ const logger = require('../../utils/logger')
 const cron = require('node-cron')
 
 const Ride = require('../../Models/Driver/ride.model')
+const User = require('../../Models/User/user.model')
 const socketUtils = require('../../utils/socket')
 
 const {
@@ -157,31 +158,54 @@ async function autoCancelExpiredRide (ride, io, waitTimeMinutes) {
 
     logger.info(`✅ Ride ${ride._id} auto-cancelled successfully`)
 
-    // Send socket events to rider
-    if (ride.userSocketId) {
-      // Emit noDriverFound event (for backward compatibility)
-      io.to(ride.userSocketId).emit('noDriverFound', {
-        rideId: ride._id,
-        message: `No driver accepted within ${waitTimeMinutes} minutes. Please try again later.`
-      })
+    // Get current socket ID from User model (may be different from ride.userSocketId if user reconnected)
+    const riderId = ride.rider._id || ride.rider
+    const currentUser = await User.findById(riderId).select('socketId').lean()
+    const currentSocketId = currentUser?.socketId || ride.userSocketId
 
-      // Emit rideError event
-      io.to(ride.userSocketId).emit('rideError', {
-        message: `No driver accepted within ${waitTimeMinutes} minutes. Please try again later.`,
-        code: 'NO_DRIVER_ACCEPTED_TIMEOUT',
-        rideId: ride._id
-      })
+    // Prepare event data
+    const noDriverFoundData = {
+      rideId: ride._id,
+      message: `No driver accepted within ${waitTimeMinutes} minutes. Please try again later.`
+    }
 
-      // Emit rideCancelled event to ensure frontend clears state
-      io.to(ride.userSocketId).emit('rideCancelled', {
-        ride: cancelledRide,
-        reason: cancellationReason,
-        cancelledBy: 'system'
-      })
+    const rideErrorData = {
+      message: `No driver accepted within ${waitTimeMinutes} minutes. Please try again later.`,
+      code: 'NO_DRIVER_ACCEPTED_TIMEOUT',
+      rideId: ride._id
+    }
 
-      logger.info(`📢 Auto-cancellation events sent to rider socket ${ride.userSocketId}`)
-    } else {
-      logger.warn(`⚠️ Cannot send auto-cancellation events: userSocketId is missing for ride ${ride._id}`)
+    const rideCancelledData = {
+      ride: cancelledRide,
+      reason: cancellationReason,
+      cancelledBy: 'system'
+    }
+
+    // Send socket events to rider using multiple methods for reliability
+    if (currentSocketId) {
+      // Method 1: Send to current socket ID (most reliable)
+      io.to(currentSocketId).emit('noDriverFound', noDriverFoundData)
+      io.to(currentSocketId).emit('rideError', rideErrorData)
+      io.to(currentSocketId).emit('rideCancelled', rideCancelledData)
+      logger.info(`📢 Auto-cancellation events sent to rider socket ${currentSocketId}`)
+    }
+
+    // Method 2: Also send to user room as fallback (works even if socket ID changed)
+    io.to(`user_${riderId}`).emit('noDriverFound', noDriverFoundData)
+    io.to(`user_${riderId}`).emit('rideError', rideErrorData)
+    io.to(`user_${riderId}`).emit('rideCancelled', rideCancelledData)
+    logger.info(`📢 Auto-cancellation events also sent to user room user_${riderId}`)
+
+    // Method 3: If ride has old userSocketId and it's different, send there too (for backward compatibility)
+    if (ride.userSocketId && ride.userSocketId !== currentSocketId) {
+      io.to(ride.userSocketId).emit('noDriverFound', noDriverFoundData)
+      io.to(ride.userSocketId).emit('rideError', rideErrorData)
+      io.to(ride.userSocketId).emit('rideCancelled', rideCancelledData)
+      logger.info(`📢 Auto-cancellation events also sent to old rider socket ${ride.userSocketId} (backward compatibility)`)
+    }
+
+    if (!currentSocketId && !ride.userSocketId) {
+      logger.warn(`⚠️ Cannot send auto-cancellation events: no socket ID found for rider ${riderId}`)
     }
 
     // Create notification for rider
