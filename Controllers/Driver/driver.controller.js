@@ -472,6 +472,10 @@ const getDriverEarnings = async (req, res) => {
         const totalGrossEarnings = completedRides.reduce((sum, ride) => sum + (ride.fare || 0), 0);
         const totalRides = completedRides.length;
 
+        logger.info(
+          `[Fare Tracking] getDriverEarnings - driverId: ${req.params.id}, totalRides: ${totalRides}, totalGrossEarnings: ₹${totalGrossEarnings}, platformFees: ${platformFees}%, driverCommissions: ${driverCommissions}%`
+        );
+
         // Calculate platform fees (amount platform takes)
         const totalPlatformFees = platformFees ? totalGrossEarnings * (platformFees / 100) : 0;
 

@@ -538,9 +538,18 @@ function initializeSocket (server) {
           }
         }
 
+        // Log fare information from frontend
+        logger.info(
+          `[Fare Tracking] newRideRequest - fare from frontend: ₹${data.fare || 'not provided'}, distance: ${data.distanceInKm || 'not provided'}km, service: ${data.service || 'not provided'}`
+        )
+
         const ride = await createRide(data)
         logger.info(
-          `Ride created - rideId: ${ride._id}, fare: ${ride.fare}, distance: ${ride.distanceInKm}km`
+          `Ride created - rideId: ${ride._id}, fare stored: ₹${ride.fare}, distance: ${ride.distanceInKm}km`
+        )
+        
+        logger.info(
+          `[Fare Tracking] Ride creation complete - rideId: ${ride._id}, fare from frontend: ₹${data.fare || 'not provided'}, fare stored in ride: ₹${ride.fare}`
         )
 
         // Process hybrid payment if applicable
@@ -1610,11 +1619,21 @@ function initializeSocket (server) {
           logger.info(`OTP verified, completing ride - rideId: ${rideId}`)
         }
 
+        // Log fare information before completing ride
+        logger.info(
+          `[Fare Tracking] rideCompleted event - rideId: ${rideId}, fare from event: ₹${fare || 'not provided'}`
+        )
+
         const completedRide = await completeRide(rideId, fare)
         await updateRideEndTime(rideId)
 
         logger.info(
-          `Ride completed successfully - rideId: ${rideId}, finalFare: ${completedRide.fare}`
+          `Ride completed successfully - rideId: ${rideId}, finalFare stored in ride: ₹${completedRide.fare}`
+        )
+        
+        // Log fare tracking for debugging
+        logger.info(
+          `[Fare Tracking] Ride completion - rideId: ${rideId}, fare from event: ₹${fare || 'not provided'}, fare in ride: ₹${completedRide.fare}, paymentMethod: ${completedRide.paymentMethod || 'not set'}`
         )
         
         // Log ride data for debugging
@@ -1662,7 +1681,12 @@ function initializeSocket (server) {
             const User = require('../Models/User/user.model')
             const WalletTransaction = require('../Models/User/walletTransaction.model')
             const riderId = completedRide.rider._id || completedRide.rider
+            // Use fare from completed ride (which should be the correct fare after completeRide)
             const fareAmount = completedRide.fare || fare || 0
+
+            logger.info(
+              `[Fare Tracking] Wallet deduction - rideId: ${rideId}, fareAmount: ₹${fareAmount}, fare from ride: ₹${completedRide.fare}, fare from event: ₹${fare || 'not provided'}`
+            )
 
             if (fareAmount > 0) {
               const rider = await User.findById(riderId)
@@ -1672,6 +1696,10 @@ function initializeSocket (server) {
                 )
               } else {
                 const balanceBefore = rider.walletBalance || 0
+
+                logger.info(
+                  `[Fare Tracking] Wallet balance check - rideId: ${rideId}, balanceBefore: ₹${balanceBefore}, fareAmount: ₹${fareAmount}`
+                )
 
                 if (balanceBefore >= fareAmount) {
                   const balanceAfter = balanceBefore - fareAmount
@@ -1696,7 +1724,7 @@ function initializeSocket (server) {
                   await completedRide.save()
 
                   logger.info(
-                    `Wallet payment deducted - Ride: ${rideId}, Amount: ₹${fareAmount}, New Balance: ₹${balanceAfter}`
+                    `[Fare Tracking] Wallet payment deducted successfully - Ride: ${rideId}, Amount: ₹${fareAmount}, Balance Before: ₹${balanceBefore}, Balance After: ₹${balanceAfter}`
                   )
                 } else {
                   // Handle insufficient balance - mark payment as failed
@@ -2710,6 +2738,10 @@ async function storeRideEarnings (ride, retryCount = 0) {
     const { platformFees, driverCommissions } = settings.pricingConfigurations
     const grossFare = ride.fare || 0
 
+    logger.info(
+      `[Fare Tracking] storeRideEarnings - rideId: ${rideId}, grossFare: ₹${grossFare}, platformFees: ${platformFees}%, driverCommissions: ${driverCommissions}%`
+    )
+
     if (grossFare <= 0) {
       logger.warn(`storeRideEarnings: Invalid fare amount (${grossFare}) for rideId: ${rideId}`)
       return
@@ -2720,6 +2752,10 @@ async function storeRideEarnings (ride, retryCount = 0) {
     const driverEarning = driverCommissions
       ? grossFare * (driverCommissions / 100)
       : grossFare - platformFee
+
+    logger.info(
+      `[Fare Tracking] Earnings calculation - rideId: ${rideId}, grossFare: ₹${grossFare}, platformFee: ₹${platformFee}, driverEarning: ₹${driverEarning}`
+    )
 
     // Create earnings record
     // Always set paymentStatus to 'pending' for new earnings - admin will mark as 'completed' after processing payment

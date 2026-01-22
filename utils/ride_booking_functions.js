@@ -227,9 +227,44 @@ const createRide = async rideData => {
       )
     }
 
-    // Calculate fare: base price + (distance * per km rate)
-    let fare = service.price + distance * perKmRate
-    fare = Math.max(fare, minimumFare) // Ensure minimum fare
+    // Calculate fare: Use frontend fare if provided, otherwise calculate
+    let fare
+    if (rideData.fare && rideData.fare > 0) {
+      // Use frontend fare, but validate it's reasonable
+      fare = rideData.fare
+      logger.info(
+        `Using frontend fare: ₹${fare} for ride (service: ${service.name}, distance: ${distance}km)`
+      )
+      
+      // Validate: fare should be >= minimumFare
+      if (fare < minimumFare) {
+        logger.warn(
+          `Frontend fare ₹${fare} below minimum ₹${minimumFare}, using minimum`
+        )
+        fare = minimumFare
+      }
+      
+      // Validate: fare should not be unreasonably high (allow up to 3x calculated fare for safety)
+      const calculatedFare = service.price + distance * perKmRate
+      const maxReasonableFare = Math.max(
+        calculatedFare * 3,
+        service.price * 2
+      )
+      if (fare > maxReasonableFare) {
+        logger.warn(
+          `Frontend fare ₹${fare} seems too high (max reasonable: ₹${maxReasonableFare}), recalculating`
+        )
+        fare = service.price + distance * perKmRate
+        fare = Math.max(fare, minimumFare)
+      }
+    } else {
+      // No fare provided, calculate it
+      fare = service.price + distance * perKmRate
+      fare = Math.max(fare, minimumFare) // Ensure minimum fare
+      logger.info(
+        `Calculated fare: ₹${fare} for ride (service: ${service.name}, distance: ${distance}km, base: ₹${service.price})`
+      )
+    }
     fare = Math.round(fare * 100) / 100 // Round to 2 decimal places
 
     // Apply promo code if provided
@@ -540,12 +575,31 @@ const startRide = async rideId => {
 
 const completeRide = async (rideId, fare) => {
   try {
+    // Log fare information
+    logger.info(
+      `[Fare Tracking] completeRide called - rideId: ${rideId}, fare parameter: ₹${fare || 'not provided'}`
+    )
+
+    // Get current ride to compare fare
+    const Ride = require('../Models/Driver/ride.model')
+    const currentRide = await Ride.findById(rideId)
+    if (currentRide) {
+      logger.info(
+        `[Fare Tracking] Current ride fare before completion: ₹${currentRide.fare || 'not set'}`
+      )
+    }
+
     const ride = await Ride.findByIdAndUpdate(
       rideId,
       { status: 'completed', fare },
       { new: true }
     ).populate('driver rider')
     if (!ride) throw new Error('Ride not found')
+
+    logger.info(
+      `[Fare Tracking] Ride completed - rideId: ${rideId}, fare stored: ₹${ride.fare}`
+    )
+
     return ride
   } catch (error) {
     throw new Error(`Error completing ride: ${error.message}`)
