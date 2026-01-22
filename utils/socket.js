@@ -1681,7 +1681,7 @@ function initializeSocket (server) {
                   // Create wallet transaction
                   await WalletTransaction.create({
                     user: riderId,
-                    transactionType: 'DEBIT',
+                    transactionType: 'RIDE_PAYMENT',
                     amount: fareAmount,
                     balanceBefore: balanceBefore,
                     balanceAfter: balanceAfter,
@@ -1851,6 +1851,66 @@ function initializeSocket (server) {
             type: 'ride_cancelled',
             relatedRide: rideId
           })
+        }
+
+        // 🔥 CRITICAL: Notify all notified drivers that ride is no longer available
+        // This ensures drivers viewing the ride or have it in their pending list get notified
+        try {
+          const rideWithNotifiedDrivers = await Ride.findById(rideId)
+            .select('notifiedDrivers driver')
+            .lean()
+
+          if (rideWithNotifiedDrivers?.notifiedDrivers?.length > 0) {
+            const Driver = require('../Models/Driver/driver.model')
+            const acceptingDriverId = cancelledRide.driver
+              ? cancelledRide.driver._id || cancelledRide.driver
+              : null
+
+            // Get all notified drivers except the one who accepted (if any)
+            const otherDriverIds = rideWithNotifiedDrivers.notifiedDrivers.filter(
+              (id) => {
+                if (!acceptingDriverId) return true
+                return id.toString() !== acceptingDriverId.toString()
+              }
+            )
+
+            if (otherDriverIds.length > 0) {
+              logger.info(
+                `📢 Notifying ${otherDriverIds.length} notified drivers that ride ${rideId} is cancelled`
+              )
+
+              const notifiedDrivers = await Driver.find({
+                _id: { $in: otherDriverIds }
+              })
+                .select('socketId _id')
+                .lean()
+
+              let notifiedCount = 0
+              for (const driver of notifiedDrivers) {
+                if (driver.socketId) {
+                  io.to(driver.socketId).emit('rideNoLongerAvailable', {
+                    rideId: rideId,
+                    message: `Ride cancelled by ${cancelledBy}`,
+                    reason: cancellationReason,
+                    cancelledBy: cancelledBy
+                  })
+                  notifiedCount++
+                  logger.info(
+                    `✅ Notified driver ${driver._id} that ride ${rideId} is cancelled`
+                  )
+                }
+              }
+
+              logger.info(
+                `✅ Successfully notified ${notifiedCount} drivers about ride cancellation`
+              )
+            }
+          }
+        } catch (notifyError) {
+          logger.error(
+            `❌ Error notifying drivers about ride cancellation: ${notifyError.message}`
+          )
+          // Don't fail cancellation if notification fails
         }
 
         // io.emit('rideCancelled', cancelledRide)
