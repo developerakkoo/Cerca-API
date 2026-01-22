@@ -210,7 +210,7 @@ export const loginUserByMobile = async (req, res) => {
                 // Using placeholder values for required fields that will be updated in profile-details
                 const newUser = new User({
                     phoneNumber: phoneNumber,
-                    fullName: '', // Will be filled in profile-details
+                    fullName: 'Pending', // Placeholder - will be updated in profile-details
                     email: `temp_${phoneNumber}@cerca.temp`, // Temporary email, will be updated
                     isActive: true,
                     lastLogin: new Date(),
