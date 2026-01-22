@@ -2,8 +2,8 @@ const razorpay = require("razorpay");
 const crypto = require("crypto");
 const logger = require('../utils/logger');
 
-const key = process.env.RAZORPAY_ID || "rzp_test_Rp3ejYlVfY449V";
-const secret = process.env.RAZORPAY_SECRET || "FORM4hrZrQO8JFIiYsQSC83N";
+const key = process.env.RAZORPAY_ID || "rzp_live_S6q5OGF0WYChTn";
+const secret = process.env.RAZORPAY_SECRET || "EZv5VecWiWi0FLyffYLDTM3H";
 
 var instance = new razorpay({
     key_id: key,
