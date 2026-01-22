@@ -55,7 +55,7 @@ const httpsGet = (url) => {
  */
 const getPlacePredictions = async (req, res) => {
   try {
-    const { query, lat, lng, radius = 50000 } = req.query;
+    const { query, lat, lng, radius = 10000 } = req.query; // Reduced from 50000 to 10000 (10km)
 
     // Validate required parameters
     if (!query || query.trim().length === 0) {
@@ -68,6 +68,9 @@ const getPlacePredictions = async (req, res) => {
 
     // Build Google Places API URL
     let url = `${AUTocomplete_API_URL}?input=${encodeURIComponent(query)}&key=${GOOGLE_MAPS_API_KEY}`;
+    
+    // Add component restrictions to limit results to India only
+    url += '&components=country:in';
     
     // Add location bias if provided
     if (lat && lng) {
@@ -82,7 +85,8 @@ const getPlacePredictions = async (req, res) => {
         });
       }
       
-      const searchRadius = parseInt(radius) || 50000;
+      // Use stricter radius - max 10km, ensure it doesn't exceed 10km
+      const searchRadius = Math.min(parseInt(radius) || 10000, 10000); // Max 10km
       url += `&location=${latitude},${longitude}&radius=${searchRadius}`;
     }
     
