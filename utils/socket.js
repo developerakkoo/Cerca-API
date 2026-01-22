@@ -488,9 +488,23 @@ function initializeSocket (server) {
               return
             }
 
-            // Verify payment amount matches ride fare (allow 1 paise difference for rounding)
+            // Verify payment amount matches expected Razorpay amount (allow 1 paise difference for rounding)
             const paymentAmount = payment.amount / 100 // Convert from paise to rupees
-            const expectedAmount = data.razorpayAmountPaid || data.fare || 0
+            const expectedAmount =
+              data.razorpayAmountPaid !== undefined
+                ? Number(data.razorpayAmountPaid)
+                : Number(data.fare || 0)
+
+            if (!expectedAmount || expectedAmount <= 0) {
+              logger.warn(
+                `Invalid expected Razorpay amount - Expected: ₹${expectedAmount}`
+              )
+              socket.emit('rideError', {
+                message: 'Invalid payment amount. Please try again.',
+                code: 'PAYMENT_AMOUNT_INVALID'
+              })
+              return
+            }
 
             if (Math.abs(paymentAmount - expectedAmount) > 0.01) {
               logger.warn(
@@ -563,12 +577,54 @@ function initializeSocket (server) {
             const User = require('../Models/User/user.model')
             const WalletTransaction = require('../Models/User/walletTransaction.model')
             const riderId = data.rider || data.riderId
+            const walletAmount = Number(data.walletAmountUsed || 0)
+            const razorpayAmountPaid = Number(data.razorpayAmountPaid || 0)
+
+            if (walletAmount <= 0 || walletAmount > ride.fare) {
+              logger.warn(
+                `Invalid wallet amount for hybrid payment - Ride: ${ride._id}, Wallet: ₹${walletAmount}, Fare: ₹${ride.fare}`
+              )
+              ride.paymentStatus = 'failed'
+              await ride.save()
+              return
+            }
+
+            if (razorpayAmountPaid > 0 && razorpayAmountPaid < 10) {
+              logger.warn(
+                `Invalid Razorpay amount for hybrid payment (min ₹10) - Ride: ${ride._id}, Razorpay: ₹${razorpayAmountPaid}`
+              )
+              ride.paymentStatus = 'failed'
+              await ride.save()
+              return
+            }
+
+            if (Math.abs(walletAmount + razorpayAmountPaid - ride.fare) > 0.01) {
+              logger.warn(
+                `Hybrid payment total mismatch - Ride: ${ride._id}, Wallet: ₹${walletAmount}, Razorpay: ₹${razorpayAmountPaid}, Fare: ₹${ride.fare}`
+              )
+              ride.paymentStatus = 'failed'
+              await ride.save()
+              return
+            }
 
             // Get user
             const user = await User.findById(riderId)
             if (user) {
               const balanceBefore = user.walletBalance || 0
-              const walletAmount = data.walletAmountUsed
+
+              // Idempotency: prevent double deduction for the same ride
+              const existingTransaction = await WalletTransaction.findOne({
+                relatedRide: ride._id,
+                transactionType: 'RIDE_PAYMENT',
+                'metadata.hybridPayment': true
+              })
+
+              if (existingTransaction) {
+                logger.warn(
+                  `Hybrid payment already processed - Ride: ${ride._id}, Transaction: ${existingTransaction._id}`
+                )
+                return
+              }
 
               // Check sufficient balance
               if (balanceBefore >= walletAmount) {
@@ -600,8 +656,7 @@ function initializeSocket (server) {
 
                 // Update ride with payment details
                 ride.walletAmountUsed = walletAmount
-                ride.razorpayAmountPaid =
-                  data.razorpayAmountPaid || ride.fare - walletAmount
+                ride.razorpayAmountPaid = razorpayAmountPaid || ride.fare - walletAmount
                 ride.razorpayPaymentId = data.razorpayPaymentId
                 ride.paymentStatus = 'completed'
                 ride.transactionId = data.razorpayPaymentId
@@ -1689,6 +1744,13 @@ function initializeSocket (server) {
             )
 
             if (fareAmount > 0) {
+              if (completedRide.paymentStatus === 'completed') {
+                logger.warn(
+                  `Wallet payment already completed - Ride: ${rideId}, skipping deduction`
+                )
+                return
+              }
+
               const rider = await User.findById(riderId)
               if (!rider) {
                 logger.warn(
