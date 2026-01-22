@@ -202,12 +202,47 @@ export const loginUserByMobile = async (req, res) => {
                 isNewUser: false,
             });
         } else {
-            // If the user is not found, return isNewUser: false
-            logger.warn(`Login attempt with unregistered phone number: ${phoneNumber}`);
-            return res.status(200).json({
-                message: 'User not found',
-                isNewUser: true,
-            });
+            // Auto-create user if not found
+            try {
+                logger.info(`Auto-creating new user with phone number: ${phoneNumber}`);
+                
+                // Create new user with minimal data
+                // Using placeholder values for required fields that will be updated in profile-details
+                const newUser = new User({
+                    phoneNumber: phoneNumber,
+                    fullName: '', // Will be filled in profile-details
+                    email: `temp_${phoneNumber}@cerca.temp`, // Temporary email, will be updated
+                    isActive: true,
+                    lastLogin: new Date(),
+                    isVerified: false,
+                });
+
+                await newUser.save();
+                logger.info(`New user created successfully: ${newUser._id}`);
+
+                // Generate JWT token for the newly created user
+                const token = jwt.sign(
+                    { id: newUser._id, phoneNumber: newUser.phoneNumber },
+                    "@#@!#@dasd4234jkdh3874#$@#$#$@#$#$dkjashdlk$#442343%#$%f34234T$vtwefcEC$%",
+                    { expiresIn: '7d' }
+                );
+
+                logger.info(`New user logged in: ${newUser.phoneNumber}`);
+                return res.status(200).json({
+                    message: 'Login successful',
+                    token,
+                    userId: newUser._id,
+                    phoneNumber: newUser.phoneNumber,
+                    isNewUser: true, // true for newly created users
+                });
+            } catch (createError) {
+                logger.error('Error auto-creating user:', createError);
+                // If user creation fails (e.g., duplicate phone number), return error
+                return res.status(500).json({
+                    message: 'An error occurred during user creation',
+                    error: createError.message,
+                });
+            }
         }
     } catch (error) {
         logger.error('Error during login:', error);
