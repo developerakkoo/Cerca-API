@@ -5,6 +5,7 @@ const Rating = require('../Models/Driver/rating.model')
 const Message = require('../Models/Driver/message.model')
 const Notification = require('../Models/User/notification.model')
 const Emergency = require('../Models/User/emergency.model')
+const WalletTransaction = require('../Models/User/walletTransaction.model')
 const logger = require('./logger')
 const redis = require('../config/redis')
 
@@ -551,8 +552,190 @@ const completeRide = async (rideId, fare) => {
   }
 }
 
+/**
+ * Process wallet refund for a cancelled ride
+ * @param {Object} ride - The ride document (must be populated with rider)
+ * @param {String} originalStatus - The original ride status before cancellation
+ * @param {String} cancelledBy - Who cancelled the ride ('rider', 'driver', 'system')
+ * @param {String} cancellationReason - Reason for cancellation
+ * @returns {Promise<Object>} Refund information or null if no refund needed
+ */
+const processWalletRefund = async (ride, originalStatus, cancelledBy, cancellationReason = null) => {
+  try {
+    // 1. Check if payment method is WALLET
+    if (ride.paymentMethod !== 'WALLET') {
+      logger.debug(`processWalletRefund: Skipping refund - payment method is ${ride.paymentMethod}, not WALLET`)
+      return null
+    }
+
+    // 2. Check if already refunded (prevent double refunds)
+    if (ride.paymentStatus === 'refunded') {
+      logger.warn(`processWalletRefund: Ride ${ride._id} already refunded, skipping duplicate refund`)
+      return null
+    }
+
+    // 3. Check if ride is completed (shouldn't refund completed rides)
+    if (originalStatus === 'completed') {
+      logger.warn(`processWalletRefund: Ride ${ride._id} is completed, skipping refund`)
+      return null
+    }
+
+    // 4. Find the RIDE_PAYMENT transaction for this ride
+    const paymentTransaction = await WalletTransaction.findOne({
+      relatedRide: ride._id,
+      transactionType: 'RIDE_PAYMENT',
+      status: 'COMPLETED'
+    })
+
+    if (!paymentTransaction) {
+      logger.warn(`processWalletRefund: No RIDE_PAYMENT transaction found for ride ${ride._id}, payment may not have been deducted`)
+      return null
+    }
+
+    // 5. Check if refund transaction already exists (additional double-refund check)
+    const existingRefund = await WalletTransaction.findOne({
+      relatedRide: ride._id,
+      transactionType: 'REFUND',
+      status: 'COMPLETED'
+    })
+
+    if (existingRefund) {
+      logger.warn(`processWalletRefund: Refund transaction already exists for ride ${ride._id}, skipping duplicate refund`)
+      return null
+    }
+
+    // 6. Determine cancellation fee based on ride status, cancellation reason, and admin settings
+    const Settings = require('../Models/Admin/settings.modal.js')
+    const settings = await Settings.findOne()
+    
+    let cancellationFee = 0
+    const shouldApplyCancellationFee = 
+      // Fee applies only if:
+      // - Original ride status is 'accepted' or 'arrived' (driver was assigned)
+      // - AND cancelled by rider (not system or driver)
+      // - AND not a system cancellation reason
+      (originalStatus === 'accepted' || originalStatus === 'arrived') &&
+      cancelledBy === 'rider' &&
+      cancellationReason !== 'NO_DRIVER_FOUND' &&
+      cancellationReason !== 'NO_DRIVER_ACCEPTED_TIMEOUT' &&
+      cancellationReason !== 'ALL_DRIVERS_REJECTED'
+
+    if (shouldApplyCancellationFee) {
+      cancellationFee = settings?.pricingConfigurations?.cancellationFees || 50 // Default ₹50 if not configured
+      logger.info(`processWalletRefund: Cancellation fee applies - ₹${cancellationFee} (original ride status: ${originalStatus}, cancelled by: ${cancelledBy})`)
+    } else {
+      logger.info(`processWalletRefund: No cancellation fee - original ride status: ${originalStatus}, cancelled by: ${cancelledBy}, reason: ${cancellationReason || 'none'}`)
+    }
+
+    // 7. Calculate refund amount (fare - cancellation fee)
+    const refundAmount = Math.max(0, ride.fare - cancellationFee)
+
+    if (refundAmount === 0) {
+      logger.info(`processWalletRefund: Refund amount is ₹0 (fare: ₹${ride.fare}, cancellation fee: ₹${cancellationFee}), skipping transaction creation`)
+      
+      // Still update ride with cancellation fee and refund amount (0)
+      await Ride.findByIdAndUpdate(ride._id, {
+        cancellationFee,
+        refundAmount: 0,
+        paymentStatus: 'refunded'
+      })
+
+      return {
+        refunded: true,
+        refundAmount: 0,
+        cancellationFee,
+        originalFare: ride.fare,
+        reason: 'Cancellation fee equals fare'
+      }
+    }
+
+    // 8. Get rider user document to update wallet balance
+    const riderId = ride.rider?._id || ride.rider
+    const user = await User.findById(riderId)
+    
+    if (!user) {
+      logger.error(`processWalletRefund: User not found for rider ${riderId}`)
+      throw new Error(`User not found for rider ${riderId}`)
+    }
+
+    // 9. Calculate new wallet balance
+    const balanceBefore = user.walletBalance || 0
+    const balanceAfter = balanceBefore + refundAmount
+
+    // 10. Create REFUND transaction
+    const refundTransaction = await WalletTransaction.create({
+      user: riderId,
+      transactionType: 'REFUND',
+      amount: refundAmount,
+      balanceBefore,
+      balanceAfter,
+      relatedRide: ride._id,
+      paymentMethod: 'WALLET',
+      status: 'COMPLETED',
+      description: `Refund for cancelled ride${cancellationFee > 0 ? ` (cancellation fee: ₹${cancellationFee} deducted)` : ''}${cancellationReason ? ` - ${cancellationReason}` : ''}`,
+      metadata: {
+        originalFare: ride.fare,
+        cancellationFee,
+        cancelledBy,
+        cancellationReason: cancellationReason || null,
+        originalPaymentTransactionId: paymentTransaction._id
+      }
+    })
+
+    // 11. Update user wallet balance
+    user.walletBalance = balanceAfter
+    await user.save()
+
+    // 12. Update ride with refund details
+    await Ride.findByIdAndUpdate(ride._id, {
+      refundAmount,
+      cancellationFee,
+      paymentStatus: 'refunded'
+    })
+
+    // 13. Log refund details
+    logger.info(`💰 Wallet refund processed successfully:`)
+    logger.info(`   Ride ID: ${ride._id}`)
+    logger.info(`   Rider: ${riderId}`)
+    logger.info(`   Original Fare: ₹${ride.fare}`)
+    logger.info(`   Cancellation Fee: ₹${cancellationFee}`)
+    logger.info(`   Refund Amount: ₹${refundAmount}`)
+    logger.info(`   Wallet Balance: ₹${balanceBefore} → ₹${balanceAfter}`)
+    logger.info(`   Cancelled By: ${cancelledBy}`)
+    logger.info(`   Cancellation Reason: ${cancellationReason || 'none'}`)
+    logger.info(`   Refund Transaction ID: ${refundTransaction._id}`)
+
+    return {
+      refunded: true,
+      refundAmount,
+      cancellationFee,
+      originalFare: ride.fare,
+      balanceBefore,
+      balanceAfter,
+      refundTransactionId: refundTransaction._id,
+      cancelledBy,
+      cancellationReason: cancellationReason || null
+    }
+  } catch (error) {
+    logger.error(`❌ Error processing wallet refund for ride ${ride._id}: ${error.message}`)
+    logger.error(`   Stack: ${error.stack}`)
+    // Don't throw error - refund failure shouldn't prevent cancellation
+    // Log error for manual review
+    return {
+      refunded: false,
+      error: error.message
+    }
+  }
+}
+
 const cancelRide = async (rideId, cancelledBy, cancellationReason = null) => {
   try {
+    // Fetch ride BEFORE updating to get original status for refund calculation
+    const originalRide = await Ride.findById(rideId).populate('driver rider')
+    if (!originalRide) throw new Error('Ride not found')
+
+    const originalStatus = originalRide.status
+
     const updateData = {
       status: 'cancelled',
       cancelledBy
@@ -606,6 +789,20 @@ const cancelRide = async (rideId, cancelledBy, cancellationReason = null) => {
         }
       } catch (err) {
         logger.error(`Error cleaning driver state after cancellation: ${err.message}`)
+      }
+
+      // Process wallet refund if payment method is WALLET
+      // Use originalRide with originalStatus for accurate cancellation fee calculation
+      try {
+        const refundResult = await processWalletRefund(originalRide, originalStatus, cancelledBy, cancellationReason)
+        if (refundResult && refundResult.refunded) {
+          logger.info(`✅ Wallet refund processed for cancelled ride ${rideId}`)
+        } else if (refundResult && !refundResult.refunded) {
+          logger.warn(`⚠️ Wallet refund failed for cancelled ride ${rideId}: ${refundResult.error || 'Unknown error'}`)
+        }
+      } catch (refundError) {
+        // Don't fail cancellation if refund fails - log for manual review
+        logger.error(`❌ Error processing wallet refund during cancellation: ${refundError.message}`)
       }
 
       return ride
@@ -1424,6 +1621,7 @@ module.exports = {
   startRide,
   completeRide,
   cancelRide,
+  processWalletRefund,
   setUserSocket,
   clearUserSocket,
   setDriverSocket,
