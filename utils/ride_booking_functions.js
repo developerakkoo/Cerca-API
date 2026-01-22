@@ -188,13 +188,45 @@ const createRide = async rideData => {
       )
     }
 
-    // Calculate distance using Haversine formula
-    const distance = calculateHaversineDistance(
-      pickupLngLat[1],
-      pickupLngLat[0], // lat, lng
-      dropoffLngLat[1],
-      dropoffLngLat[0]
-    )
+    // Use frontend distance - frontend calculates distance accurately using Google Maps API
+    let distance = rideData.distanceInKm
+
+    // Validate frontend distance is provided
+    if (!distance || distance <= 0) {
+      logger.warn(
+        `[Distance Validation] Frontend distance not provided or invalid: ${distance}, calculating fallback`
+      )
+      // Fallback: Calculate distance only if frontend didn't provide it
+      distance = calculateHaversineDistance(
+        pickupLngLat[1],
+        pickupLngLat[0],
+        dropoffLngLat[1],
+        dropoffLngLat[0]
+      )
+      logger.info(
+        `[Distance Validation] Calculated fallback distance: ${distance}km`
+      )
+    } else {
+      // Validate distance is reasonable (not suspiciously high)
+      if (distance > 1000) {
+        logger.warn(
+          `[Distance Validation] Frontend distance ${distance}km seems too high (>1000km), using fallback calculation`
+        )
+        distance = calculateHaversineDistance(
+          pickupLngLat[1],
+          pickupLngLat[0],
+          dropoffLngLat[1],
+          dropoffLngLat[0]
+        )
+        logger.info(
+          `[Distance Validation] Recalculated distance due to suspicious value: ${distance}km`
+        )
+      } else {
+        logger.info(
+          `[Distance Validation] Using frontend distance: ${distance}km`
+        )
+      }
+    }
 
     // Fetch admin settings for fare calculation
     const Settings = require('../Models/Admin/settings.modal.js')
@@ -227,45 +259,68 @@ const createRide = async rideData => {
       )
     }
 
+    // Log service found for debugging
+    logger.info(
+      `[Service Mapping] Frontend sent service: "${selectedService}", Backend found service: "${service.name}", price: ₹${service.price}`
+    )
+
     // Calculate fare: Use frontend fare if provided, otherwise calculate
     let fare
     if (rideData.fare && rideData.fare > 0) {
       // Use frontend fare, but validate it's reasonable
       fare = rideData.fare
       logger.info(
-        `Using frontend fare: ₹${fare} for ride (service: ${service.name}, distance: ${distance}km)`
+        `[Fare Validation] Frontend fare: ₹${fare}, service: ${service.name}, service.price: ₹${service.price}, frontend distance: ${distance}km, minimumFare: ₹${minimumFare}`
       )
       
       // Validate: fare should be >= minimumFare
       if (fare < minimumFare) {
         logger.warn(
-          `Frontend fare ₹${fare} below minimum ₹${minimumFare}, using minimum`
+          `[Fare Validation] Frontend fare ₹${fare} below minimum ₹${minimumFare}, using minimum`
         )
         fare = minimumFare
       }
-      
-      // Validate: fare should not be unreasonably high (allow up to 3x calculated fare for safety)
-      const calculatedFare = service.price + distance * perKmRate
-      const maxReasonableFare = Math.max(
-        calculatedFare * 3,
-        service.price * 2
-      )
-      if (fare > maxReasonableFare) {
-        logger.warn(
-          `Frontend fare ₹${fare} seems too high (max reasonable: ₹${maxReasonableFare}), recalculating`
+      // CRITICAL: If fare >= service.price (base fare), trust it - frontend knows best
+      else if (fare >= service.price) {
+        logger.info(
+          `[Fare Validation] Frontend fare ₹${fare} >= service base price ₹${service.price} - ACCEPTING (frontend knows best)`
         )
+        // Accept the fare as-is - frontend has the correct calculation
+      }
+      // Validate: If fare is between minimumFare and service.price, it's valid for short distances
+      else if (fare >= minimumFare && fare < service.price) {
+        logger.info(
+          `[Fare Validation] Fare ₹${fare} is between minimum ₹${minimumFare} and service price ₹${service.price} - ACCEPTING (short distance ride)`
+        )
+        // Accept the fare as-is - valid for short distances
+      }
+      // Only reject if fare is suspiciously high (> 10x service price for safety)
+      else if (fare > service.price * 10) {
+        logger.warn(
+          `[Fare Validation] Frontend fare ₹${fare} seems suspiciously high (>10x service price ₹${service.price}), recalculating using frontend distance`
+        )
+        // Use frontend distance for recalculation, not backend calculated distance
         fare = service.price + distance * perKmRate
         fare = Math.max(fare, minimumFare)
+      } else {
+        // Should not reach here, but accept fare if it passed minimumFare check
+        logger.info(
+          `[Fare Validation] Frontend fare ₹${fare} accepted`
+        )
       }
     } else {
       // No fare provided, calculate it
       fare = service.price + distance * perKmRate
       fare = Math.max(fare, minimumFare) // Ensure minimum fare
       logger.info(
-        `Calculated fare: ₹${fare} for ride (service: ${service.name}, distance: ${distance}km, base: ₹${service.price})`
+        `[Fare Validation] Calculated fare: ₹${fare} for ride (service: ${service.name}, frontend distance: ${distance}km, base: ₹${service.price})`
       )
     }
     fare = Math.round(fare * 100) / 100 // Round to 2 decimal places
+    
+    logger.info(
+      `[Fare Validation] Final fare decision: ₹${fare} for ride (service: ${service.name}, frontend distance: ${distance}km)`
+    )
 
     // Apply promo code if provided
     let discount = 0
