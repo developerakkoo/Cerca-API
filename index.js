@@ -14,6 +14,7 @@ const connectDB = require('./db')
 // Workers (Redis-free)
 const { initRideWorker } = require('./src/workers/rideBooking.worker')
 const initScheduledRideWorker = require('./src/workers/scheduledRide.worker')
+const initRideAutoCancelWorker = require('./src/workers/rideAutoCancel.worker')
 
 const app = express()
 const port = process.env.PORT || 3000
@@ -48,6 +49,14 @@ try {
   logger.info('✅ Scheduled Ride Worker initialized')
 } catch (error) {
   logger.error(`❌ Scheduled Ride Worker failed: ${error.message}`)
+  logger.error(error.stack)
+}
+
+try {
+  initRideAutoCancelWorker()
+  logger.info('✅ Ride Auto-Cancellation Worker initialized')
+} catch (error) {
+  logger.error(`❌ Ride Auto-Cancellation Worker failed: ${error.message}`)
   logger.error(error.stack)
 }
 
