@@ -129,6 +129,7 @@ app.use('/notifications', require('./Routes/User/notification.routes'))
 app.use('/emergencies', require('./Routes/User/emergency.routes'))
 app.use('/api/v1/payment', require('./Routes/payment.route'))
 app.use('/api/google-maps', require('./Routes/googleMaps.routes'))
+app.use('/api/offers', require('./Routes/User/offer.routes'))
 
 /* =======================
    HEALTH & UPLOAD
