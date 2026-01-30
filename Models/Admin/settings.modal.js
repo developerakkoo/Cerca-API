@@ -41,6 +41,7 @@ const SettingsSchema = new mongoose.Schema({
         cercaSmall: {
             name: { type: String, default: 'Cerca Small' },
             price: { type: Number, required: true, default: 299 },
+            perMinuteRate: { type: Number, required: true, default: 2 },
             seats: { type: Number, default: 4 },
             enabled: { type: Boolean, default: true },
             imagePath: { type: String, default: 'assets/cars/cerca-small.png' }
@@ -48,6 +49,7 @@ const SettingsSchema = new mongoose.Schema({
         cercaMedium: {
             name: { type: String, default: 'Cerca Medium' },
             price: { type: Number, required: true, default: 499 },
+            perMinuteRate: { type: Number, required: true, default: 3 },
             seats: { type: Number, default: 6 },
             enabled: { type: Boolean, default: true },
             imagePath: { type: String, default: 'assets/cars/Cerca-medium.png' }
@@ -55,6 +57,7 @@ const SettingsSchema = new mongoose.Schema({
         cercaLarge: {
             name: { type: String, default: 'Cerca Large' },
             price: { type: Number, required: true, default: 699 },
+            perMinuteRate: { type: Number, required: true, default: 4 },
             seats: { type: Number, default: 8 },
             enabled: { type: Boolean, default: true },
             imagePath: { type: String, default: 'assets/cars/cerca-large.png' }

@@ -139,6 +139,51 @@ const searchNearbyDrivers = async (userId, location) => {
   }
 }
 
+/**
+ * Map service name to vehicleService key
+ * @param {string} serviceName - Service name (e.g., "sedan", "suv", "auto", "Cerca Small", etc.)
+ * @returns {string} - Vehicle service key ("cercaSmall", "cercaMedium", "cercaLarge")
+ */
+const mapServiceToVehicleService = (serviceName) => {
+  const normalized = serviceName.toLowerCase()
+  // Map common service names to vehicle services
+  if (normalized.includes('small') || normalized === 'sedan') {
+    return 'cercaSmall'
+  } else if (normalized.includes('medium') || normalized === 'suv') {
+    return 'cercaMedium'
+  } else if (normalized.includes('large') || normalized === 'auto') {
+    return 'cercaLarge'
+  }
+  // Default to small if unknown
+  return 'cercaSmall'
+}
+
+/**
+ * Calculate fare with time component
+ * @param {number} basePrice - Base price from service
+ * @param {number} distance - Distance in km
+ * @param {number} duration - Duration in minutes
+ * @param {number} perKmRate - Per km rate from settings
+ * @param {number} perMinuteRate - Per minute rate for vehicle type
+ * @param {number} minimumFare - Minimum fare from settings
+ * @returns {Object} - Fare breakdown
+ */
+const calculateFareWithTime = (basePrice, distance, duration, perKmRate, perMinuteRate, minimumFare) => {
+  const baseFare = basePrice
+  const distanceFare = distance * perKmRate
+  const timeFare = (duration || 0) * (perMinuteRate || 0)
+  const subtotal = baseFare + distanceFare + timeFare
+  const fareAfterMinimum = Math.max(subtotal, minimumFare)
+  
+  return {
+    baseFare: Math.round(baseFare * 100) / 100,
+    distanceFare: Math.round(distanceFare * 100) / 100,
+    timeFare: Math.round(timeFare * 100) / 100,
+    subtotal: Math.round(subtotal * 100) / 100,
+    fareAfterMinimum: Math.round(fareAfterMinimum * 100) / 100
+  }
+}
+
 const createRide = async rideData => {
   try {
     const riderId = rideData.riderId || rideData.rider
@@ -259,18 +304,38 @@ const createRide = async rideData => {
       )
     }
 
+    // Map service to vehicleService to get perMinuteRate
+    const vehicleServiceKey = mapServiceToVehicleService(service.name)
+    const vehicleService = settings.vehicleServices?.[vehicleServiceKey]
+    const perMinuteRate = vehicleService?.perMinuteRate || 0
+
+    // Get estimated duration from rideData (frontend should provide this)
+    const estimatedDuration = rideData.estimatedDuration || 0
+
     // Log service found for debugging
     logger.info(
-      `[Service Mapping] Frontend sent service: "${selectedService}", Backend found service: "${service.name}", price: ₹${service.price}`
+      `[Service Mapping] Frontend sent service: "${selectedService}", Backend found service: "${service.name}", price: ₹${service.price}, perMinuteRate: ₹${perMinuteRate}/min, estimatedDuration: ${estimatedDuration}min`
     )
 
-    // Calculate fare: Use frontend fare if provided, otherwise calculate
+    // Calculate fare with time component
+    let fareBreakdown
     let fare
+    
     if (rideData.fare && rideData.fare > 0) {
-      // Use frontend fare, but validate it's reasonable
+      // Frontend provided fare - validate it but trust frontend calculation
       fare = rideData.fare
       logger.info(
-        `[Fare Validation] Frontend fare: ₹${fare}, service: ${service.name}, service.price: ₹${service.price}, frontend distance: ${distance}km, minimumFare: ₹${minimumFare}`
+        `[Fare Validation] Frontend fare: ₹${fare}, service: ${service.name}, service.price: ₹${service.price}, frontend distance: ${distance}km, estimatedDuration: ${estimatedDuration}min, minimumFare: ₹${minimumFare}`
+      )
+      
+      // Calculate expected fare breakdown for logging/validation
+      fareBreakdown = calculateFareWithTime(
+        service.price,
+        distance,
+        estimatedDuration,
+        perKmRate,
+        perMinuteRate,
+        minimumFare
       )
       
       // Validate: fare should be >= minimumFare
@@ -280,46 +345,36 @@ const createRide = async rideData => {
         )
         fare = minimumFare
       }
-      // CRITICAL: If fare >= service.price (base fare), trust it - frontend knows best
-      else if (fare >= service.price) {
-        logger.info(
-          `[Fare Validation] Frontend fare ₹${fare} >= service base price ₹${service.price} - ACCEPTING (frontend knows best)`
-        )
-        // Accept the fare as-is - frontend has the correct calculation
-      }
-      // Validate: If fare is between minimumFare and service.price, it's valid for short distances
-      else if (fare >= minimumFare && fare < service.price) {
-        logger.info(
-          `[Fare Validation] Fare ₹${fare} is between minimum ₹${minimumFare} and service price ₹${service.price} - ACCEPTING (short distance ride)`
-        )
-        // Accept the fare as-is - valid for short distances
-      }
-      // Only reject if fare is suspiciously high (> 10x service price for safety)
-      else if (fare > service.price * 10) {
+      // If fare is suspiciously high (> 10x expected fare), recalculate
+      else if (fare > fareBreakdown.fareAfterMinimum * 10) {
         logger.warn(
-          `[Fare Validation] Frontend fare ₹${fare} seems suspiciously high (>10x service price ₹${service.price}), recalculating using frontend distance`
+          `[Fare Validation] Frontend fare ₹${fare} seems suspiciously high (>10x expected ₹${fareBreakdown.fareAfterMinimum}), recalculating`
         )
-        // Use frontend distance for recalculation, not backend calculated distance
-        fare = service.price + distance * perKmRate
-        fare = Math.max(fare, minimumFare)
+        fare = fareBreakdown.fareAfterMinimum
       } else {
-        // Should not reach here, but accept fare if it passed minimumFare check
         logger.info(
-          `[Fare Validation] Frontend fare ₹${fare} accepted`
+          `[Fare Validation] Frontend fare ₹${fare} accepted (expected: ₹${fareBreakdown.fareAfterMinimum})`
         )
+        // Use frontend fare but keep breakdown for reference
       }
     } else {
-      // No fare provided, calculate it
-      fare = service.price + distance * perKmRate
-      fare = Math.max(fare, minimumFare) // Ensure minimum fare
+      // No fare provided, calculate it with time component
+      fareBreakdown = calculateFareWithTime(
+        service.price,
+        distance,
+        estimatedDuration,
+        perKmRate,
+        perMinuteRate,
+        minimumFare
+      )
+      fare = fareBreakdown.fareAfterMinimum
       logger.info(
-        `[Fare Validation] Calculated fare: ₹${fare} for ride (service: ${service.name}, frontend distance: ${distance}km, base: ₹${service.price})`
+        `[Fare Validation] Calculated fare: ₹${fare} for ride (service: ${service.name}, distance: ${distance}km, duration: ${estimatedDuration}min, base: ₹${service.price}, perMinuteRate: ₹${perMinuteRate}/min)`
       )
     }
-    fare = Math.round(fare * 100) / 100 // Round to 2 decimal places
     
     logger.info(
-      `[Fare Validation] Final fare decision: ₹${fare} for ride (service: ${service.name}, frontend distance: ${distance}km)`
+      `[Fare Validation] Final fare decision: ₹${fare} for ride (service: ${service.name}, distance: ${distance}km, duration: ${estimatedDuration}min)`
     )
 
     // Apply promo code if provided
@@ -348,6 +403,7 @@ const createRide = async rideData => {
             coupon.applicableRideTypes.includes(rideData.rideType || 'normal')
 
           if (serviceApplicable && rideTypeApplicable) {
+            // Apply promo code discount to fare after minimum check
             const discountResult = coupon.calculateDiscount(fare)
             if (discountResult.discount > 0) {
               discount = discountResult.discount
@@ -425,6 +481,7 @@ const createRide = async rideData => {
       dropoffLocation: { type: 'Point', coordinates: dropoffLngLat },
       fare: finalFare,
       distanceInKm: Math.round(distance * 100) / 100, // Round to 2 decimal places
+      estimatedDuration: estimatedDuration || null, // Store estimated duration
       rideType: rideData.rideType || 'normal',
       bookingType: rideData.bookingType || 'INSTANT',
       bookingMeta: rideData.bookingMeta || {},
@@ -435,7 +492,17 @@ const createRide = async rideData => {
       dropoffAddress: rideData.dropoffAddress,
       service: service.name,
       promoCode: rideData.promoCode || null,
-      discount: discount
+      discount: discount,
+      // Store fare breakdown for transparency
+      fareBreakdown: fareBreakdown ? {
+        baseFare: fareBreakdown.baseFare,
+        distanceFare: fareBreakdown.distanceFare,
+        timeFare: fareBreakdown.timeFare,
+        subtotal: fareBreakdown.subtotal,
+        fareAfterMinimum: fareBreakdown.fareAfterMinimum,
+        discount: discount,
+        finalFare: finalFare
+      } : null
       // startOtp & stopOtp come from schema defaults
     }
 
@@ -644,16 +711,64 @@ const completeRide = async (rideId, fare) => {
       )
     }
 
+    // First update end time to calculate actualDuration
+    await updateRideEndTime(rideId)
+    
+    // Recalculate fare with actual duration
+    let recalculatedFare = fare
+    let fareBreakdown = null
+    let oldFare = currentRide?.fare || fare || 0
+    
+    try {
+      const recalculated = await recalculateRideFare(rideId)
+      recalculatedFare = recalculated.finalFare
+      fareBreakdown = recalculated
+      logger.info(
+        `[Fare Recalculation] Fare recalculated - rideId: ${rideId}, oldFare: ₹${oldFare}, newFare: ₹${recalculatedFare}`
+      )
+    } catch (recalcError) {
+      logger.warn(
+        `[Fare Recalculation] Failed to recalculate fare for rideId ${rideId}, using provided fare: ${recalcError.message}`
+      )
+      // Use provided fare if recalculation fails
+    }
+
+    // Update ride with recalculated fare and fare breakdown
+    const updateData = {
+      status: 'completed',
+      fare: recalculatedFare
+    }
+    
+    if (fareBreakdown) {
+      updateData.fareBreakdown = {
+        baseFare: fareBreakdown.baseFare,
+        distanceFare: fareBreakdown.distanceFare,
+        timeFare: fareBreakdown.timeFare,
+        subtotal: fareBreakdown.subtotal,
+        fareAfterMinimum: fareBreakdown.fareAfterMinimum,
+        discount: fareBreakdown.discount,
+        finalFare: fareBreakdown.finalFare
+      }
+      // Update discount if promo code was re-applied
+      if (fareBreakdown.discount > 0) {
+        updateData.discount = fareBreakdown.discount
+      }
+    }
+
     const ride = await Ride.findByIdAndUpdate(
       rideId,
-      { status: 'completed', fare },
+      updateData,
       { new: true }
     ).populate('driver rider')
     if (!ride) throw new Error('Ride not found')
 
     logger.info(
-      `[Fare Tracking] Ride completed - rideId: ${rideId}, fare stored: ₹${ride.fare}`
+      `[Fare Tracking] Ride completed - rideId: ${rideId}, fare stored: ₹${ride.fare}, oldFare: ₹${oldFare}, difference: ₹${recalculatedFare - oldFare}`
     )
+
+    // Return ride with fare difference info for payment adjustment
+    ride._fareDifference = recalculatedFare - oldFare
+    ride._oldFare = oldFare
 
     return ride
   } catch (error) {
@@ -1038,6 +1153,114 @@ const updateRideStartTime = async rideId => {
     return ride
   } catch (error) {
     throw new Error(`Error updating ride start time: ${error.message}`)
+  }
+}
+
+/**
+ * Recalculate ride fare based on actual duration
+ * @param {string} rideId - Ride ID
+ * @returns {Promise<Object>} - Updated fare breakdown
+ */
+const recalculateRideFare = async (rideId) => {
+  try {
+    const ride = await Ride.findById(rideId)
+    if (!ride) throw new Error('Ride not found')
+
+    // Skip recalculation for special booking types
+    if (ride.bookingType !== 'INSTANT') {
+      logger.info(`[Fare Recalculation] Skipping recalculation for booking type: ${ride.bookingType}`)
+      return {
+        baseFare: ride.fareBreakdown?.baseFare || 0,
+        distanceFare: ride.fareBreakdown?.distanceFare || 0,
+        timeFare: ride.fareBreakdown?.timeFare || 0,
+        subtotal: ride.fare || 0,
+        fareAfterMinimum: ride.fare || 0,
+        discount: ride.discount || 0,
+        finalFare: ride.fare || 0
+      }
+    }
+
+    // Get settings and vehicle service
+    const Settings = require('../Models/Admin/settings.modal.js')
+    const settings = await Settings.findOne()
+    if (!settings) throw new Error('Admin settings not found')
+
+    const { perKmRate, minimumFare } = settings.pricingConfigurations
+
+    // Find service
+    const service = settings.services.find(
+      s => s.name.toLowerCase() === ride.service?.toLowerCase()
+    )
+    if (!service) throw new Error(`Service not found: ${ride.service}`)
+
+    // Map service to vehicleService to get perMinuteRate
+    const vehicleServiceKey = mapServiceToVehicleService(service.name)
+    const vehicleService = settings.vehicleServices?.[vehicleServiceKey]
+    const perMinuteRate = vehicleService?.perMinuteRate || 0
+
+    // Get actual duration (should be calculated by updateRideEndTime)
+    const actualDuration = ride.actualDuration || 0
+    const distance = ride.distanceInKm || 0
+
+    logger.info(
+      `[Fare Recalculation] Recalculating fare for rideId: ${rideId}, distance: ${distance}km, actualDuration: ${actualDuration}min, perMinuteRate: ₹${perMinuteRate}/min`
+    )
+
+    // Calculate fare breakdown with actual duration
+    const fareBreakdown = calculateFareWithTime(
+      service.price,
+      distance,
+      actualDuration,
+      perKmRate,
+      perMinuteRate,
+      minimumFare
+    )
+
+    // Re-apply promo code discount if promo code exists
+    let discount = 0
+    let finalFare = fareBreakdown.fareAfterMinimum
+
+    if (ride.promoCode) {
+      const Coupon = require('../Models/Admin/coupon.modal.js')
+      const coupon = await Coupon.findOne({
+        couponCode: ride.promoCode.toUpperCase().trim()
+      })
+
+      if (coupon) {
+        // Validate coupon is still valid
+        const canUse = coupon.canUserUse(ride.rider._id || ride.rider)
+        if (canUse.canUse) {
+          const serviceApplicable =
+            !coupon.applicableServices ||
+            coupon.applicableServices.length === 0 ||
+            coupon.applicableServices.includes(service.name)
+
+          if (serviceApplicable) {
+            const discountResult = coupon.calculateDiscount(fareBreakdown.fareAfterMinimum)
+            if (discountResult.discount > 0) {
+              discount = discountResult.discount
+              finalFare = discountResult.finalFare
+              logger.info(
+                `[Fare Recalculation] Promo code ${ride.promoCode} re-applied, discount: ₹${discount}, finalFare: ₹${finalFare}`
+              )
+            }
+          }
+        }
+      }
+    }
+
+    return {
+      baseFare: fareBreakdown.baseFare,
+      distanceFare: fareBreakdown.distanceFare,
+      timeFare: fareBreakdown.timeFare,
+      subtotal: fareBreakdown.subtotal,
+      fareAfterMinimum: fareBreakdown.fareAfterMinimum,
+      discount: Math.round(discount * 100) / 100,
+      finalFare: Math.round(finalFare * 100) / 100
+    }
+  } catch (error) {
+    logger.error(`Error recalculating ride fare for rideId ${rideId}:`, error)
+    throw new Error(`Error recalculating ride fare: ${error.message}`)
   }
 }
 
@@ -1725,6 +1948,8 @@ module.exports = {
   updateDriverStatus,
   updateDriverLocation,
   searchNearbyDrivers,
+  mapServiceToVehicleService,
+  calculateFareWithTime,
   createRide,
   assignDriverToRide,
   startRide,
@@ -1755,5 +1980,6 @@ module.exports = {
   getUpcomingBookingsForDriver,
   getScheduledRidesToStart,
   searchDriversWithProgressiveRadius,
-  validateAndFixDriverStatus
+  validateAndFixDriverStatus,
+  recalculateRideFare
 }

@@ -235,6 +235,7 @@ const getPublicSettings = async (req, res) => {
                     cercaSmall: {
                         name: 'Cerca Small',
                         price: 299,
+                        perMinuteRate: 2,
                         seats: 4,
                         enabled: true,
                         imagePath: 'assets/cars/cerca-small.png'
@@ -242,6 +243,7 @@ const getPublicSettings = async (req, res) => {
                     cercaMedium: {
                         name: 'Cerca Medium',
                         price: 499,
+                        perMinuteRate: 3,
                         seats: 6,
                         enabled: true,
                         imagePath: 'assets/cars/Cerca-medium.png'
@@ -249,6 +251,7 @@ const getPublicSettings = async (req, res) => {
                     cercaLarge: {
                         name: 'Cerca Large',
                         price: 699,
+                        perMinuteRate: 4,
                         seats: 8,
                         enabled: true,
                         imagePath: 'assets/cars/cerca-large.png'
@@ -270,6 +273,7 @@ const getPublicSettings = async (req, res) => {
                 cercaSmall: {
                     name: 'Cerca Small',
                     price: 299,
+                    perMinuteRate: 2,
                     seats: 4,
                     enabled: true,
                     imagePath: 'assets/cars/cerca-small.png'
@@ -277,6 +281,7 @@ const getPublicSettings = async (req, res) => {
                 cercaMedium: {
                     name: 'Cerca Medium',
                     price: 499,
+                    perMinuteRate: 3,
                     seats: 6,
                     enabled: true,
                     imagePath: 'assets/cars/Cerca-medium.png'
@@ -284,6 +289,7 @@ const getPublicSettings = async (req, res) => {
                 cercaLarge: {
                     name: 'Cerca Large',
                     price: 699,
+                    perMinuteRate: 4,
                     seats: 8,
                     enabled: true,
                     imagePath: 'assets/cars/cerca-large.png'

@@ -125,6 +125,17 @@ const rideSchema = new mongoose.Schema({
     estimatedArrivalTime: Date,
     driverArrivedAt: Date,
 
+    // Fare breakdown for transparency
+    fareBreakdown: {
+        baseFare: Number,
+        distanceFare: Number,
+        timeFare: Number,
+        subtotal: Number,
+        fareAfterMinimum: Number,
+        discount: Number,
+        finalFare: Number
+    },
+
     riderRating: {
         type: Number,
         min: 1,

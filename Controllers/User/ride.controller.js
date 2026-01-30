@@ -3,6 +3,7 @@ import Settings from '../../Models/Admin/settings.modal.js'
 import logger from '../../utils/logger.js'
 import crypto from 'crypto'
 import rideBookingQueue from '../../src/queues/rideBooking.queue.js'
+const { mapServiceToVehicleService, calculateFareWithTime, calculateHaversineDistance } = require('../../utils/ride_booking_functions.js')
 
 /**
  * @desc    Create a new ride
@@ -269,4 +270,176 @@ export const searchRide = async (req, res) => {
     console.error(error)
     res.status(500).json({ message: 'Error fetching nearby drivers' })
   }
+}
+
+/**
+ * @desc    Calculate fare with time component
+ * @route   POST /rides/calculate-fare
+ */
+export const calculateFare = async (req, res) => {
+  try {
+    const { pickupLocation, dropoffLocation, vehicleType, promoCode, userId, estimatedDuration } = req.body
+
+    // Validate required fields
+    if (!pickupLocation || !dropoffLocation) {
+      return res.status(400).json({
+        success: false,
+        message: 'Pickup and dropoff locations are required'
+      })
+    }
+
+    // Extract coordinates
+    let pickupLat, pickupLng, dropoffLat, dropoffLng
+    
+    if (pickupLocation.coordinates && Array.isArray(pickupLocation.coordinates)) {
+      [pickupLng, pickupLat] = pickupLocation.coordinates
+    } else if (pickupLocation.latitude && pickupLocation.longitude) {
+      pickupLat = pickupLocation.latitude
+      pickupLng = pickupLocation.longitude
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid pickup location format'
+      })
+    }
+
+    if (dropoffLocation.coordinates && Array.isArray(dropoffLocation.coordinates)) {
+      [dropoffLng, dropoffLat] = dropoffLocation.coordinates
+    } else if (dropoffLocation.latitude && dropoffLocation.longitude) {
+      dropoffLat = dropoffLocation.latitude
+      dropoffLng = dropoffLocation.longitude
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid dropoff location format'
+      })
+    }
+
+    // Calculate distance using Haversine formula
+    const distance = calculateHaversineDistance(pickupLat, pickupLng, dropoffLat, dropoffLng)
+
+    // Estimate duration if not provided (using average speed of 35 km/h for city driving)
+    let duration = estimatedDuration
+    if (!duration || duration <= 0) {
+      const averageSpeedKmh = 35.0
+      duration = Math.ceil((distance / averageSpeedKmh) * 60) // Convert to minutes
+    }
+
+    // Fetch admin settings
+    const settings = await Settings.findOne()
+    if (!settings) {
+      return res.status(500).json({
+        success: false,
+        message: 'Admin settings not found'
+      })
+    }
+
+    const { perKmRate, minimumFare } = settings.pricingConfigurations
+
+    // Map vehicle type to service name
+    const serviceNameMap = {
+      'small': 'sedan',
+      'medium': 'suv',
+      'large': 'auto'
+    }
+    const serviceName = serviceNameMap[vehicleType] || vehicleType || 'sedan'
+
+    // Find service
+    const service = settings.services.find(
+      s => s.name.toLowerCase() === serviceName.toLowerCase()
+    )
+
+    if (!service) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid vehicle type: ${vehicleType}`
+      })
+    }
+
+    // Map service to vehicleService to get perMinuteRate
+    const vehicleServiceKey = mapServiceToVehicleService(service.name)
+    const vehicleService = settings.vehicleServices?.[vehicleServiceKey]
+    const perMinuteRate = vehicleService?.perMinuteRate || 0
+
+    // Calculate fare breakdown
+    const fareBreakdown = calculateFareWithTime(
+      service.price,
+      distance,
+      duration,
+      perKmRate,
+      perMinuteRate,
+      minimumFare
+    )
+
+    // Apply promo code if provided
+    let discount = 0
+    let finalFare = fareBreakdown.fareAfterMinimum
+    let promoCodeApplied = null
+
+    if (promoCode && userId) {
+      const Coupon = require('../../Models/Admin/coupon.modal.js')
+      const coupon = await Coupon.findOne({
+        couponCode: promoCode.toUpperCase().trim()
+      })
+
+      if (coupon) {
+        const canUse = coupon.canUserUse(userId)
+        if (canUse.canUse) {
+          const serviceApplicable =
+            !coupon.applicableServices ||
+            coupon.applicableServices.length === 0 ||
+            coupon.applicableServices.includes(service.name)
+
+          if (serviceApplicable) {
+            const discountResult = coupon.calculateDiscount(fareBreakdown.fareAfterMinimum)
+            if (discountResult.discount > 0) {
+              discount = discountResult.discount
+              finalFare = discountResult.finalFare
+              promoCodeApplied = coupon.couponCode
+            }
+          }
+        }
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        distance: Math.round(distance * 100) / 100,
+        estimatedDuration: duration,
+        fareBreakdown: {
+          baseFare: fareBreakdown.baseFare,
+          distanceFare: fareBreakdown.distanceFare,
+          timeFare: fareBreakdown.timeFare,
+          subtotal: fareBreakdown.subtotal,
+          minimumFare: minimumFare,
+          fareAfterMinimum: fareBreakdown.fareAfterMinimum,
+          promoCode: promoCodeApplied,
+          discount: Math.round(discount * 100) / 100,
+          finalFare: Math.round(finalFare * 100) / 100
+        },
+        vehicleType: vehicleType || 'small'
+      }
+    })
+  } catch (error) {
+    logger.error('Error calculating fare:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Error calculating fare',
+      error: error.message
+    })
+  }
+}
+
+// CommonJS export for route compatibility
+module.exports = {
+  createRide,
+  getAllRides,
+  getRideById,
+  updateRide,
+  deleteRide,
+  getRidesByUserId,
+  getRidesByDriverId,
+  searchRide,
+  calculateFare
 }

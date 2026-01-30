@@ -12,12 +12,17 @@ const {
   deleteRide,
   getRidesByUserId,
   getRidesByDriverId,
-  searchRide
+  searchRide,
+  calculateFare
 } = require('../Controllers/User/ride.controller');
 
 // Create a new ride
 // POST /rides
 router.post('/rides', createRide);
+
+// Calculate fare
+// POST /rides/calculate-fare
+router.post('/rides/calculate-fare', calculateFare);
 
 // Get all rides
 // GET /rides

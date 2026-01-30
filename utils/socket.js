@@ -1679,23 +1679,31 @@ function initializeSocket (server) {
           `[Fare Tracking] rideCompleted event - rideId: ${rideId}, fare from event: ₹${fare || 'not provided'}`
         )
 
+        // completeRide internally calls updateRideEndTime and recalculates fare
         const completedRide = await completeRide(rideId, fare)
-        await updateRideEndTime(rideId)
 
         logger.info(
           `Ride completed successfully - rideId: ${rideId}, finalFare stored in ride: ₹${completedRide.fare}`
         )
         
         // Log fare tracking for debugging
+        const fareDifference = completedRide._fareDifference || 0
+        const oldFare = completedRide._oldFare || fare || 0
         logger.info(
-          `[Fare Tracking] Ride completion - rideId: ${rideId}, fare from event: ₹${fare || 'not provided'}, fare in ride: ₹${completedRide.fare}, paymentMethod: ${completedRide.paymentMethod || 'not set'}`
+          `[Fare Tracking] Ride completion - rideId: ${rideId}, oldFare: ₹${oldFare}, newFare: ₹${completedRide.fare}, difference: ₹${fareDifference}, paymentMethod: ${completedRide.paymentMethod || 'not set'}`
         )
+        
+        // Handle payment adjustment if fare changed
+        if (Math.abs(fareDifference) > 0.01 && completedRide.paymentMethod !== 'CASH') {
+          await handleFareDifference(completedRide, oldFare, completedRide.fare, completedRide.paymentMethod)
+        }
         
         // Log ride data for debugging
         logger.info(`storeRideEarnings: Ride data check - rideId: ${rideId}, driver: ${completedRide.driver ? (completedRide.driver._id || completedRide.driver) : 'missing'}, rider: ${completedRide.rider ? (completedRide.rider._id || completedRide.rider) : 'missing'}, fare: ${completedRide.fare}`)
 
         // Store earnings IMMEDIATELY after completing ride (before any saves that might lose populated fields)
         // This ensures driver/rider are still populated from completeRide()
+        // Earnings are calculated from final fare (after recalculation)
         storeRideEarnings(completedRide).catch(err => {
           logger.error(
             `Error storing ride earnings for rideId: ${rideId}:`,
@@ -1731,7 +1739,9 @@ function initializeSocket (server) {
         }
 
         // Process WALLET payment deduction if payment method is WALLET
-        if (completedRide.paymentMethod === 'WALLET') {
+        // Note: Payment adjustment is handled in handleFareDifference if fare changed
+        if (completedRide.paymentMethod === 'WALLET' && Math.abs(fareDifference) <= 0.01) {
+          // Only process if fare didn't change (already handled in handleFareDifference)
           try {
             const User = require('../Models/User/user.model')
             const WalletTransaction = require('../Models/User/walletTransaction.model')
