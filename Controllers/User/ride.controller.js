@@ -3,7 +3,8 @@ import Settings from '../../Models/Admin/settings.modal.js'
 import logger from '../../utils/logger.js'
 import crypto from 'crypto'
 import rideBookingQueue from '../../src/queues/rideBooking.queue.js'
-const { mapServiceToVehicleService, calculateFareWithTime, calculateHaversineDistance } = require('../../utils/ride_booking_functions.js')
+import rideBookingFunctions from '../../utils/ride_booking_functions.js'
+const { mapServiceToVehicleService, calculateFareWithTime, calculateHaversineDistance } = rideBookingFunctions
 
 /**
  * @desc    Create a new ride
@@ -377,7 +378,7 @@ export const calculateFare = async (req, res) => {
     let promoCodeApplied = null
 
     if (promoCode && userId) {
-      const Coupon = require('../../Models/Admin/coupon.modal.js')
+      const Coupon = (await import('../../Models/Admin/coupon.modal.js')).default
       const coupon = await Coupon.findOne({
         couponCode: promoCode.toUpperCase().trim()
       })
