@@ -1,10 +1,6 @@
 // routes/ride.routes.js
-const express = require('express');
-const router = express.Router();
-
-// Adjust the path to your controller file as needed
-// Example assumes: controllers/ride.controller.js exports via module.exports
-const {
+import express from 'express';
+import {
   createRide,
   getAllRides,
   getRideById,
@@ -14,7 +10,9 @@ const {
   getRidesByDriverId,
   searchRide,
   calculateFare
-} = require('../Controllers/User/ride.controller');
+} from '../Controllers/User/ride.controller.js';
+
+const router = express.Router();
 
 // Create a new ride
 // POST /rides
@@ -52,4 +50,4 @@ router.get('/rides/driver/:driverId', getRidesByDriverId);
 // POST /rides/search/:id
 router.post('/rides/search/:id', searchRide);
 
-module.exports = router;
+export default router;

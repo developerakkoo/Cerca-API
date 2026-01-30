@@ -122,14 +122,32 @@ app.use('/admin', require('./Routes/Admin/payments.routes'))
 app.use('/settings', require('./Routes/admin.routes'))
 app.use('/coupons', require('./Routes/coupon.routes'))
 app.use('/address', require('./Routes/User/address.route'))
-app.use('/rides', require('./Routes/ride.routes'))
-app.use('/messages', require('./Routes/Driver/message.routes'))
-app.use('/ratings', require('./Routes/Driver/rating.routes'))
-app.use('/notifications', require('./Routes/User/notification.routes'))
-app.use('/emergencies', require('./Routes/User/emergency.routes'))
-app.use('/api/v1/payment', require('./Routes/payment.route'))
-app.use('/api/google-maps', require('./Routes/googleMaps.routes'))
-app.use('/api/offers', require('./Routes/User/offer.routes'))
+
+// Load ES module route asynchronously (ride.routes.js is ES module)
+// Wrap in async IIFE to load route before server starts
+;(async () => {
+  try {
+    const rideRoutes = await import('./Routes/ride.routes.js')
+    app.use('/rides', rideRoutes.default)
+    
+    // Register remaining routes after ride routes are loaded
+    app.use('/messages', require('./Routes/Driver/message.routes'))
+    app.use('/ratings', require('./Routes/Driver/rating.routes'))
+    app.use('/notifications', require('./Routes/User/notification.routes'))
+    app.use('/emergencies', require('./Routes/User/emergency.routes'))
+    app.use('/api/v1/payment', require('./Routes/payment.route'))
+    app.use('/api/google-maps', require('./Routes/googleMaps.routes'))
+    app.use('/api/offers', require('./Routes/User/offer.routes'))
+    
+    // Start server after all routes are loaded
+    server.listen(port, () => {
+      logger.info(`🚀 Server running on http://localhost:${port}`)
+    })
+  } catch (error) {
+    logger.error('Failed to load routes:', error)
+    process.exit(1)
+  }
+})()
 
 /* =======================
    HEALTH & UPLOAD
@@ -155,7 +173,5 @@ app.post('/upload', upload.single('image'), (req, res) => {
 
 /* =======================
    START SERVER
+   (Server startup moved to routes section to support async route loading)
 ======================= */
-server.listen(port, () => {
-  logger.info(`🚀 Server running on http://localhost:${port}`)
-})

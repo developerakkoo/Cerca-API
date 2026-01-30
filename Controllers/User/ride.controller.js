@@ -432,15 +432,4 @@ export const calculateFare = async (req, res) => {
   }
 }
 
-// CommonJS export for route compatibility
-module.exports = {
-  createRide,
-  getAllRides,
-  getRideById,
-  updateRide,
-  deleteRide,
-  getRidesByUserId,
-  getRidesByDriverId,
-  searchRide,
-  calculateFare
-}
+// All functions are already exported individually above using ES module syntax
